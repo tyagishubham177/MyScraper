@@ -47,105 +47,110 @@ async def main() -> None:
     """Check the product page and send an SMS alert if in stock."""
     print("Opening browser...")
     browser = await launch(headless=True, args=["--no-sandbox"])
-    await asyncio.sleep(2)
-    page = await browser.newPage()
-    await asyncio.sleep(2)
-
-    # capture browser console messages and page errors for debugging
-    page.on('console', lambda msg: print("PAGE LOG:", msg.text))
-    page.on('pageerror', lambda err: print("PAGE ERROR:", err))
-
-    # create artifacts dir and helper logger that also takes screenshots
-    os.makedirs("artifacts", exist_ok=True)
-    step = 0
-
-    async def log(*msgs: object) -> None:
-        nonlocal step
-        text = " ".join(str(m) for m in msgs)
-        print(text)
-        step += 1
-        safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
-        await page.screenshot({'path': f"artifacts/{step:02d}_{safe}.png"})
+    try:
+        await asyncio.sleep(2)
+        page = await browser.newPage()
         await asyncio.sleep(2)
 
-    print(f"Navigating to {URL}")
-    await page.goto(URL, timeout=60000)
-    await asyncio.sleep(2)
-    await log("Page loaded")
+        # capture browser console messages and page errors for debugging
+        page.on('console', lambda msg: print("PAGE LOG:", msg.text))
+        page.on('pageerror', lambda err: print("PAGE ERROR:", err))
 
-    # handle pincode modal if it appears
-    modal = await page.querySelector("input[placeholder='Enter Your Pincode']")
-    if modal:
-        await log("Pincode input found → typing", PINCODE)
-        await modal.type(PINCODE)
+        # create artifacts dir and helper logger that also takes screenshots
+        os.makedirs("artifacts", exist_ok=True)
+        step = 0
+
+        async def log(*msgs: object) -> None:
+            nonlocal step
+            text = " ".join(str(m) for m in msgs)
+            print(text)
+            step += 1
+            safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
+            await page.screenshot({'path': f"artifacts/{step:02d}_{safe}.png"})
+            await asyncio.sleep(2)
+
+        print(f"Navigating to {URL}")
+        await page.goto(URL, timeout=60000)
         await asyncio.sleep(2)
-        await log("Pincode typed")
-        # confirm focus after typing
-        active = await page.evaluate(
-            "document.activeElement ? document.activeElement.placeholder : ''"
-        )
-        await log("Active element placeholder:", active)
-        try:
-            # wait for dropdown suggestions to appear
-            await page.waitForSelector(".ui-menu-item", {"timeout": 5000})
-            options = await page.evaluate(
-                "Array.from(document.querySelectorAll('.ui-menu-item')).map(el => el.textContent.trim())"
+        await log("Page loaded")
+
+        # handle pincode modal if it appears
+        modal = await page.querySelector("input[placeholder='Enter Your Pincode']")
+        if modal:
+            await log("Pincode input found → typing", PINCODE)
+            await modal.type(PINCODE)
+            await asyncio.sleep(2)
+            await log("Pincode typed")
+            # confirm focus after typing
+            active = await page.evaluate(
+                "document.activeElement ? document.activeElement.placeholder : ''"
             )
-            await log("Dropdown shown:", ", ".join(options) or "none")
-        except Exception:
-            await log("Dropdown not detected")
-        await modal.focus()
-        await page.keyboard.press("ArrowDown")
-        await page.keyboard.press("Enter")
+            await log("Active element placeholder:", active)
+            try:
+                # wait for dropdown suggestions to appear
+                await page.waitForSelector(".ui-menu-item", {"timeout": 5000})
+                options = await page.evaluate(
+                    "Array.from(document.querySelectorAll('.ui-menu-item')).map(el => el.textContent.trim())"
+                )
+                await log("Dropdown shown:", ", ".join(options) or "none")
+            except Exception:
+                await log("Dropdown not detected")
+            await modal.focus()
+            await page.keyboard.press("ArrowDown")
+            await page.keyboard.press("Enter")
+            await asyncio.sleep(2)
+            value = await modal.evaluate("el => el.value")
+            await log("Pincode selected", value)
+            reasons = ["pincode entered"]
+        else:
+            await log("Pincode input not found")
+            reasons = ["no pincode input"]
+
+        # Fetch page content for BeautifulSoup parsing
+        html = await page.content()
         await asyncio.sleep(2)
-        value = await modal.evaluate("el => el.value")
-        await log("Pincode selected", value)
-        reasons = ["pincode entered"]
-    else:
-        await log("Pincode input not found")
-        reasons = ["no pincode input"]
+        soup = BeautifulSoup(html, "html.parser")
 
-    # Fetch page content for BeautifulSoup parsing
-    html = await page.content()
-    await asyncio.sleep(2)
-    soup = BeautifulSoup(html, "html.parser")
+        await log("Checking availability indicators…")
+        sold_out = soup.select_one("div.alert.alert-danger.mt-3") is not None
+        so_status = "found" if sold_out else "missing"
+        await log("Sold out indicator:", so_status)
+        reasons.append(f"soldout {so_status}")
 
-    await log("Checking availability indicators…")
-    sold_out = soup.select_one("div.alert.alert-danger.mt-3") is not None
-    so_status = "found" if sold_out else "missing"
-    await log("Sold out indicator:", so_status)
-    reasons.append(f"soldout {so_status}")
+        disabled_btn = soup.select_one("a.btn.btn-primary.add-to-cart.disabled") is not None
+        db_status = "found" if disabled_btn else "missing"
+        await log("Add to Cart disabled:", db_status)
+        reasons.append("button disabled" if disabled_btn else "button not disabled")
 
-    disabled_btn = soup.select_one("a.btn.btn-primary.add-to-cart.disabled") is not None
-    db_status = "found" if disabled_btn else "missing"
-    await log("Add to Cart disabled:", db_status)
-    reasons.append("button disabled" if disabled_btn else "button not disabled")
+        notify_me = soup.select_one("button.btn.btn-primary.product_enquiry") is not None
+        nm_status = "found" if notify_me else "missing"
+        await log("Notify Me button:", nm_status)
+        reasons.append(f"notify {nm_status}")
 
-    notify_me = soup.select_one("button.btn.btn-primary.product_enquiry") is not None
-    nm_status = "found" if notify_me else "missing"
-    await log("Notify Me button:", nm_status)
-    reasons.append(f"notify {nm_status}")
+        add_btn = soup.select_one("a.btn.btn-primary.add-to-cart:not(.disabled)") is not None
+        ab_status = "found" if add_btn else "missing"
+        await log("Add to Cart enabled:", ab_status)
+        reasons.append(f"addbtn {ab_status}")
 
-    add_btn = soup.select_one("a.btn.btn-primary.add-to-cart:not(.disabled)") is not None
-    ab_status = "found" if add_btn else "missing"
-    await log("Add to Cart enabled:", ab_status)
-    reasons.append(f"addbtn {ab_status}")
+        in_stock = add_btn and not sold_out and not disabled_btn
+        if in_stock:
+            reasons.append("button enabled")
+            await log("Sending Fast2SMS notification…")
+            # Fast2SMS auto-decodes, so send plain (`payload` encodes)
+            send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
+            await asyncio.sleep(2)
+        else:
+            await log("Item considered out of stock")
 
-    in_stock = add_btn and not sold_out and not disabled_btn
-    if in_stock:
-        reasons.append("button enabled")
-        await log("Sending Fast2SMS notification…")
-        # Fast2SMS auto-decodes, so send plain (`payload` encodes)
-        send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
-        await asyncio.sleep(2)
-    else:
-        await log("Item considered out of stock")
+        await log("Decision:", "sent alert" if in_stock else "no alert",
+                 "→", "; ".join(reasons) or "no indicators")
 
-    await log("Decision:", "sent alert" if in_stock else "no alert",
-             "→", "; ".join(reasons) or "no indicators")
-
-    await browser.close()
-    await asyncio.sleep(2)
+    finally:
+        print("Closing browser…")
+        try:
+            await browser.close()
+        except Exception as e:
+            print("Error closing browser:", e)
 
 
 if __name__ == "__main__":
