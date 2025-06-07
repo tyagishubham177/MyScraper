@@ -101,25 +101,45 @@ async def main():
         sold_out_visible = False
         if sold_out_elem:
             sold_out_visible = await sold_out_elem.is_visible()
-        so_status = "visible" if sold_out_visible else ("hidden" if sold_out_elem else "missing")
+        so_status = (
+            "visible" if sold_out_visible else
+            ("hidden" if sold_out_elem else "missing")
+        )
         await log("Sold Out indicator:", so_status)
         reasons.append(f"soldout {so_status}")
 
         disabled_elem = await page.query_selector("a.btn.btn-primary.add-to-cart.disabled")
-        disabled_btn = bool(disabled_elem and await disabled_elem.is_visible())
-        db_status = "found" if disabled_btn else "missing"
+        disabled_visible = False
+        if disabled_elem:
+            disabled_visible = await disabled_elem.is_visible()
+        disabled_btn = disabled_visible
+        db_status = (
+            "visible" if disabled_visible else
+            ("hidden" if disabled_elem else "missing")
+        )
         await log("Add to Cart disabled:", db_status)
-        reasons.append("button disabled" if disabled_btn else "button not disabled")
+        reasons.append(f"disabled {db_status}")
 
         notify_elem = await page.query_selector("button.btn.btn-primary.product_enquiry")
-        notify_me = bool(notify_elem and await notify_elem.is_visible())
-        nm_status = "found" if notify_me else "missing"
+        notify_visible = False
+        if notify_elem:
+            notify_visible = await notify_elem.is_visible()
+        nm_status = (
+            "visible" if notify_visible else
+            ("hidden" if notify_elem else "missing")
+        )
         await log("Notify Me button:", nm_status)
         reasons.append(f"notify {nm_status}")
 
         enabled_elem = await page.query_selector("a.btn.btn-primary.add-to-cart:not(.disabled)")
-        add_btn = bool(enabled_elem and await enabled_elem.is_visible())
-        ab_status = "found" if add_btn else "missing"
+        enabled_visible = False
+        if enabled_elem:
+            enabled_visible = await enabled_elem.is_visible()
+        add_btn = enabled_visible
+        ab_status = (
+            "visible" if enabled_visible else
+            ("hidden" if enabled_elem else "missing")
+        )
         await log("Add to Cart enabled:", ab_status)
         reasons.append(f"addbtn {ab_status}")
 
