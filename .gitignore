@@ -1,0 +1,21 @@
+# ─── Python ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# ─── Virtual envs / tooling ──────────────────
+.env
+.venv/
+env/
+venv/
+.playwright/
+
+# ─── VS Code / JetBrains ─────────────────────
+.vscode/
+.idea/
+
+# ─── OS cruft ────────────────────────────────
+.DS_Store
+Thumbs.db
