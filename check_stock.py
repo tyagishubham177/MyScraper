@@ -64,11 +64,23 @@ async def main() -> None:
         await page.screenshot({'path': f"artifacts/{step:02d}_{safe}.png"})
         await asyncio.sleep(5)
 
-    await log(f"Navigating to {URL}")
+    print(f"Navigating to {URL}")
     await page.goto(URL, timeout=60000)
     await asyncio.sleep(5)
+    await log("Page loaded")
 
-    reasons = []
+    # handle pincode modal if it appears
+    modal = await page.querySelector("input[placeholder='Enter Your Pincode']")
+    if modal:
+        await log("Pincode input found → typing", PINCODE)
+        await modal.type(PINCODE)
+        await modal.press("Enter")
+        await asyncio.sleep(2)
+        await log("Pincode entered")
+        reasons = ["pincode entered"]
+    else:
+        await log("Pincode input not found")
+        reasons = ["no pincode input"]
 
     # Fetch page content for BeautifulSoup parsing
     html = await page.content()
