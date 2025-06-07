@@ -43,26 +43,31 @@ def send_fast2sms(msg: str):
 
 def main() -> None:
     """Check the product page and send an SMS alert if in stock."""
+    print("Opening browser...")
     with sync_playwright() as p:
         page = p.chromium.launch(headless=True).new_page()
+        print(f"Navigating to {URL}")
         page.goto(URL, timeout=60000)
 
-        # Enter pincode if modal pops
+        print(f"Entering pincode: {PINCODE}")
         try:
             page.fill('input[placeholder="Enter Your Pincode"]', PINCODE)
             page.keyboard.press("Enter")
             page.wait_for_timeout(3000)
-        except Exception:
-            pass
+            print("Pincode entered")
+        except Exception as e:
+            print("Pincode modal not found:", e)
 
+        print("Checking availability in page content...")
         html = page.content()
         in_stock = "Add to Cart" in html and "disabled" not in html
 
         if in_stock:
+            print("Add to Cart button found and enabled")
             # Fast2SMS auto-decodes, so send plain (`payload` encodes)
             send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
         else:
-            print("Out of stock.")
+            print("Add to Cart not found or disabled → Out of stock")
 
 if __name__ == "__main__":
     main()
