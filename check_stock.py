@@ -74,9 +74,12 @@ async def main() -> None:
     if modal:
         await log("Pincode input found → typing", PINCODE)
         await modal.type(PINCODE)
-        await modal.press("Enter")
+        await asyncio.sleep(5)
+        await log("Pincode typed")
+        await page.keyboard.press("ArrowDown")
+        await page.keyboard.press("Enter")
         await asyncio.sleep(2)
-        await log("Pincode entered")
+        await log("Pincode selected")
         reasons = ["pincode entered"]
     else:
         await log("Pincode input not found")
