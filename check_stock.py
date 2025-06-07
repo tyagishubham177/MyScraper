@@ -47,9 +47,13 @@ async def main() -> None:
     """Check the product page and send an SMS alert if in stock."""
     print("Opening browser...")
     browser = await launch(headless=True, args=["--no-sandbox"])
-    await asyncio.sleep(5)
+    await asyncio.sleep(2)
     page = await browser.newPage()
-    await asyncio.sleep(5)
+    await asyncio.sleep(2)
+
+    # capture browser console messages and page errors for debugging
+    page.on('console', lambda msg: print("PAGE LOG:", msg.text))
+    page.on('pageerror', lambda err: print("PAGE ERROR:", err))
 
     # create artifacts dir and helper logger that also takes screenshots
     os.makedirs("artifacts", exist_ok=True)
@@ -62,11 +66,11 @@ async def main() -> None:
         step += 1
         safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
         await page.screenshot({'path': f"artifacts/{step:02d}_{safe}.png"})
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)
 
     print(f"Navigating to {URL}")
     await page.goto(URL, timeout=60000)
-    await asyncio.sleep(5)
+    await asyncio.sleep(2)
     await log("Page loaded")
 
     # handle pincode modal if it appears
@@ -74,18 +78,28 @@ async def main() -> None:
     if modal:
         await log("Pincode input found → typing", PINCODE)
         await modal.type(PINCODE)
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)
         await log("Pincode typed")
+        # confirm focus after typing
+        active = await page.evaluate(
+            "document.activeElement ? document.activeElement.placeholder : ''"
+        )
+        await log("Active element placeholder:", active)
         try:
             # wait for dropdown suggestions to appear
             await page.waitForSelector(".ui-menu-item", {"timeout": 5000})
-            await log("Dropdown shown")
+            options = await page.evaluate(
+                "Array.from(document.querySelectorAll('.ui-menu-item')).map(el => el.textContent.trim())"
+            )
+            await log("Dropdown shown:", ", ".join(options) or "none")
         except Exception:
             await log("Dropdown not detected")
+        await modal.focus()
         await page.keyboard.press("ArrowDown")
         await page.keyboard.press("Enter")
-        await asyncio.sleep(5)
-        await log("Pincode selected")
+        await asyncio.sleep(2)
+        value = await modal.evaluate("el => el.value")
+        await log("Pincode selected", value)
         reasons = ["pincode entered"]
     else:
         await log("Pincode input not found")
@@ -93,7 +107,7 @@ async def main() -> None:
 
     # Fetch page content for BeautifulSoup parsing
     html = await page.content()
-    await asyncio.sleep(5)
+    await asyncio.sleep(2)
     soup = BeautifulSoup(html, "html.parser")
 
     await log("Checking availability indicators…")
@@ -123,7 +137,7 @@ async def main() -> None:
         await log("Sending Fast2SMS notification…")
         # Fast2SMS auto-decodes, so send plain (`payload` encodes)
         send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)
     else:
         await log("Item considered out of stock")
 
@@ -131,7 +145,7 @@ async def main() -> None:
              "→", "; ".join(reasons) or "no indicators")
 
     await browser.close()
-    await asyncio.sleep(5)
+    await asyncio.sleep(2)
 
 
 if __name__ == "__main__":
