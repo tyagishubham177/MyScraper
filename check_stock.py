@@ -46,7 +46,7 @@ def send_fast2sms(msg: str):
 async def main() -> None:
     """Check the product page and send an SMS alert if in stock."""
     print("Opening browser...")
-    browser = await launch(headless=True)
+    browser = await launch(headless=True, args=["--no-sandbox"])
     page = await browser.newPage()
 
     # create artifacts dir and helper logger that also takes screenshots
