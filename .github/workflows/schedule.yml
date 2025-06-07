@@ -17,7 +17,7 @@ jobs:
       - name: Install deps
         run: |
           pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
+          python -m pyppeteer install
 
       - name: Run stock checker
         env:
@@ -25,3 +25,9 @@ jobs:
           F2S_API_KEY:  ${{ secrets.F2S_API_KEY }}
           F2S_NUMBERS:  ${{ secrets.F2S_NUMBERS }}
         run: python check_stock.py
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v3
+        with:
+          name: screenshots
+          path: artifacts
