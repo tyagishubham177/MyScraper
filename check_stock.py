@@ -30,8 +30,6 @@ def main():
         html = page.content()
         if "Add to Cart" in html and "disabled" not in html:
             notify_whatsapp()
-            notify_sms()
-            notify_email()
 
 if __name__ == "__main__":
     main()
