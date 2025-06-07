@@ -76,9 +76,15 @@ async def main() -> None:
         await modal.type(PINCODE)
         await asyncio.sleep(5)
         await log("Pincode typed")
+        try:
+            # wait for dropdown suggestions to appear
+            await page.waitForSelector(".ui-menu-item", {"timeout": 5000})
+            await log("Dropdown shown")
+        except Exception:
+            await log("Dropdown not detected")
         await page.keyboard.press("ArrowDown")
         await page.keyboard.press("Enter")
-        await asyncio.sleep(2)
+        await asyncio.sleep(5)
         await log("Pincode selected")
         reasons = ["pincode entered"]
     else:
