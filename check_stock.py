@@ -47,7 +47,9 @@ async def main() -> None:
     """Check the product page and send an SMS alert if in stock."""
     print("Opening browser...")
     browser = await launch(headless=True, args=["--no-sandbox"])
+    await asyncio.sleep(5)
     page = await browser.newPage()
+    await asyncio.sleep(5)
 
     # create artifacts dir and helper logger that also takes screenshots
     os.makedirs("artifacts", exist_ok=True)
@@ -60,14 +62,17 @@ async def main() -> None:
         step += 1
         safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
         await page.screenshot({'path': f"artifacts/{step:02d}_{safe}.png"})
+        await asyncio.sleep(5)
 
     await log(f"Navigating to {URL}")
     await page.goto(URL, timeout=60000)
+    await asyncio.sleep(5)
 
     reasons = []
 
     # Fetch page content for BeautifulSoup parsing
     html = await page.content()
+    await asyncio.sleep(5)
     soup = BeautifulSoup(html, "html.parser")
 
     await log("Checking availability indicators…")
@@ -97,6 +102,7 @@ async def main() -> None:
         await log("Sending Fast2SMS notification…")
         # Fast2SMS auto-decodes, so send plain (`payload` encodes)
         send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
+        await asyncio.sleep(5)
     else:
         await log("Item considered out of stock")
 
@@ -104,6 +110,7 @@ async def main() -> None:
              "→", "; ".join(reasons) or "no indicators")
 
     await browser.close()
+    await asyncio.sleep(5)
 
 
 if __name__ == "__main__":
