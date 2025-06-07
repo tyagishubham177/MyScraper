@@ -10,3 +10,8 @@ _Amul High-Protein Rose Lassi (pack of 30)_ flips from “Sold Out” ➜ “Add
    git clone https://github.com/<you>/amul-lassi-tracker.git
    cd amul-lassi-tracker
    pip install -r requirements.txt
+   ```
+
+2. **Trigger the workflow manually**
+   - Open your repository on GitHub and go to the **Actions** tab.
+   - Select **Lassi Watchdog** and use the **Run workflow** button.

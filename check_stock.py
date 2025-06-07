@@ -27,11 +27,22 @@ def send_fast2sms(msg: str):
         "Content-Type": "application/x-www-form-urlencoded",
     }
 
-    r = requests.post("https://www.fast2sms.com/dev/bulkV2",
-                      data=payload, headers=headers, timeout=10)
+    try:
+        r = requests.post(
+            "https://www.fast2sms.com/dev/bulkV2",
+            data=payload,
+            headers=headers,
+            timeout=10,
+        )
+        r.raise_for_status()
+    except requests.RequestException as e:
+        print("Fast2SMS error:", e)
+        return
+
     print("Fast2SMS:", r.status_code, r.text)
 
-def main():
+def main() -> None:
+    """Check the product page and send an SMS alert if in stock."""
     with sync_playwright() as p:
         page = p.chromium.launch(headless=True).new_page()
         page.goto(URL, timeout=60000)
@@ -48,11 +59,10 @@ def main():
         in_stock = "Add to Cart" in html and "disabled" not in html
 
         if in_stock:
-            text = urllib.parse.quote_plus(       # URL-encode just in case
-                f"🚨 Amul Rose Lassi in stock! {URL}"
-            )
             # Fast2SMS auto-decodes, so send plain (`payload` encodes)
             send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
+        else:
+            print("Out of stock.")
 
 if __name__ == "__main__":
     main()
