@@ -1,17 +1,22 @@
-import os, urllib.parse, requests, asyncio
-from bs4 import BeautifulSoup
-from pyppeteer import launch
+import os
+import time
+from datetime import datetime
+import requests
+from playwright.sync_api import sync_playwright
 
-# ——————————————————————————————————————————
+# ────────────────────────────────────────────────────────────────
 # Config from GitHub Secrets / .env
-URL       = ("https://shop.amul.com/en/product/"
-             "amul-high-protein-rose-lassi-200-ml-or-pack-of-30")
-PINCODE   = os.getenv("PINCODE",  "110001")
-F2S_KEY   = os.getenv("F2S_API_KEY")            # Fast2SMS auth key
-F2S_TO    = os.getenv("F2S_NUMBERS")            # 91xxxxxxxxxx,91yyyyyyyyy  (comma-sep)
-# ——————————————————————————————————————————
+URL = (
+    "https://shop.amul.com/en/product/"
+    "amul-high-protein-rose-lassi-200-ml-or-pack-of-30"
+)
+PINCODE = os.getenv("PINCODE", "110001")
+F2S_KEY = os.getenv("F2S_API_KEY")  # Fast2SMS auth key
+F2S_TO = os.getenv("F2S_NUMBERS")  # 91xxxxxxxxxx,91yyyyyyyyy (comma-sep)
+# ────────────────────────────────────────────────────────────────
 
-def send_fast2sms(msg: str):
+
+def send_fast2sms(msg: str) -> None:
     """POST → Fast2SMS Quick-SMS route (no DLT)."""
     if not (F2S_KEY and F2S_TO):
         print("⚠️  Fast2SMS creds missing")
@@ -20,7 +25,7 @@ def send_fast2sms(msg: str):
     payload = {
         "message": msg,
         "language": "english",
-        "route": "q",            # quick-sms route
+        "route": "q",  # quick-sms route
         "numbers": F2S_TO,
     }
     headers = {
@@ -43,96 +48,79 @@ def send_fast2sms(msg: str):
     print("Fast2SMS:", r.status_code, r.text)
 
 
-async def main() -> None:
+def check_product_stock() -> None:
     """Check the product page and send an SMS alert if in stock."""
-    print("Opening browser...")
-    browser = await launch(headless=True, args=["--no-sandbox"])
-    await asyncio.sleep(5)
-    page = await browser.newPage()
-    await asyncio.sleep(5)
-
-    # create artifacts dir and helper logger that also takes screenshots
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     os.makedirs("artifacts", exist_ok=True)
-    step = 0
+    screenshot_file = f"artifacts/amul_stock_{PINCODE}_{timestamp}.png"
+    html_file = f"artifacts/amul_stock_{PINCODE}_{timestamp}.html"
 
-    async def log(*msgs: object) -> None:
-        nonlocal step
-        text = " ".join(str(m) for m in msgs)
-        print(text)
-        step += 1
-        safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
-        await page.screenshot({'path': f"artifacts/{step:02d}_{safe}.png"})
-        await asyncio.sleep(5)
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(viewport={"width": 1280, "height": 800})
+        page = context.new_page()
 
-    print(f"Navigating to {URL}")
-    await page.goto(URL, timeout=60000)
-    await asyncio.sleep(5)
-    await log("Page loaded")
+        print(f"Navigating to: {URL}")
+        page.goto(URL, timeout=60000)
 
-    # handle pincode modal if it appears
-    modal = await page.querySelector("input[placeholder='Enter Your Pincode']")
-    if modal:
-        await log("Pincode input found → typing", PINCODE)
-        await modal.type(PINCODE)
-        await asyncio.sleep(5)
-        await log("Pincode typed")
+        # Step 1: Wait for the pincode input
+        page.wait_for_selector("input[placeholder='Enter Your Pincode']", timeout=30000)
+
+        # Step 2: Type the pincode
+        page.fill("input[placeholder='Enter Your Pincode']", PINCODE)
+
+        # Step 3: Wait for suggestion & select
         try:
-            # wait for dropdown suggestions to appear
-            await page.waitForSelector(".ui-menu-item", {"timeout": 5000})
-            await log("Dropdown shown")
+            page.wait_for_selector(".ui-menu-item", timeout=10000)
+            page.keyboard.press("ArrowDown")
+            page.keyboard.press("Enter")
+            print(f"Selected pincode: {PINCODE}")
         except Exception:
-            await log("Dropdown not detected")
-        await page.keyboard.press("ArrowDown")
-        await page.keyboard.press("Enter")
-        await asyncio.sleep(5)
-        await log("Pincode selected")
-        reasons = ["pincode entered"]
-    else:
-        await log("Pincode input not found")
-        reasons = ["no pincode input"]
+            print("⚠️ Suggestions not found")
 
-    # Fetch page content for BeautifulSoup parsing
-    html = await page.content()
-    await asyncio.sleep(5)
-    soup = BeautifulSoup(html, "html.parser")
+        # Step 4: Wait for modal to (hopefully) close
+        try:
+            page.wait_for_selector("#locationWidgetModal", state="hidden", timeout=5000)
+            print("🎉 Modal closed automatically!")
+        except Exception:
+            print("⚠️ Modal might still be open—check if you need an extra step.")
 
-    await log("Checking availability indicators…")
-    sold_out = soup.select_one("div.alert.alert-danger.mt-3") is not None
-    so_status = "found" if sold_out else "missing"
-    await log("Sold out indicator:", so_status)
-    reasons.append(f"soldout {so_status}")
+        # Allow page to settle
+        time.sleep(3)
 
-    disabled_btn = soup.select_one("a.btn.btn-primary.add-to-cart.disabled") is not None
-    db_status = "found" if disabled_btn else "missing"
-    await log("Add to Cart disabled:", db_status)
-    reasons.append("button disabled" if disabled_btn else "button not disabled")
+        # Check availability using page selectors
+        sold_out = page.query_selector("div.alert.alert-danger.mt-3") is not None
+        disabled_btn = page.query_selector("a.btn.btn-primary.add-to-cart.disabled") is not None
+        notify_me = page.query_selector("button.btn.btn-primary.product_enquiry") is not None
+        add_btn = page.query_selector("a.btn.btn-primary.add-to-cart:not(.disabled)") is not None
 
-    notify_me = soup.select_one("button.btn.btn-primary.product_enquiry") is not None
-    nm_status = "found" if notify_me else "missing"
-    await log("Notify Me button:", nm_status)
-    reasons.append(f"notify {nm_status}")
+        in_stock = add_btn and not sold_out and not disabled_btn
 
-    add_btn = soup.select_one("a.btn.btn-primary.add-to-cart:not(.disabled)") is not None
-    ab_status = "found" if add_btn else "missing"
-    await log("Add to Cart enabled:", ab_status)
-    reasons.append(f"addbtn {ab_status}")
+        reasons = [
+            "soldout found" if sold_out else "soldout missing",
+            "button disabled" if disabled_btn else "button not disabled",
+            "notify found" if notify_me else "notify missing",
+            "addbtn found" if add_btn else "addbtn missing",
+        ]
 
-    in_stock = add_btn and not sold_out and not disabled_btn
-    if in_stock:
-        reasons.append("button enabled")
-        await log("Sending Fast2SMS notification…")
-        # Fast2SMS auto-decodes, so send plain (`payload` encodes)
-        send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
-        await asyncio.sleep(5)
-    else:
-        await log("Item considered out of stock")
+        if in_stock:
+            reasons.append("button enabled")
+            print("Sending Fast2SMS notification…")
+            send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
+        else:
+            print("Item considered out of stock")
 
-    await log("Decision:", "sent alert" if in_stock else "no alert",
-             "→", "; ".join(reasons) or "no indicators")
+        print("Decision:", "sent alert" if in_stock else "no alert", "→", "; ".join(reasons))
 
-    await browser.close()
-    await asyncio.sleep(5)
+        # Save artifacts
+        page.screenshot(path=screenshot_file, full_page=True)
+        with open(html_file, "w", encoding="utf-8") as f:
+            f.write(page.content())
+
+        print(f"Saved screenshot => {screenshot_file}")
+        print(f"Saved HTML => {html_file}")
+        browser.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    check_product_stock()
