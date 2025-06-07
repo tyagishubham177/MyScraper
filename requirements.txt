@@ -1,2 +1,3 @@
-playwright>=1.43
+beautifulsoup4>=4.12
+pyppeteer>=1.0
 requests>=2.32

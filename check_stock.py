@@ -1,5 +1,6 @@
-import os, urllib.parse, requests
-from playwright.sync_api import sync_playwright
+import os, urllib.parse, requests, asyncio
+from bs4 import BeautifulSoup
+from pyppeteer import launch
 
 # ——————————————————————————————————————————
 # Config from GitHub Secrets / .env
@@ -42,99 +43,68 @@ def send_fast2sms(msg: str):
     print("Fast2SMS:", r.status_code, r.text)
 
 
-def main() -> None:
+async def main() -> None:
     """Check the product page and send an SMS alert if in stock."""
     print("Opening browser...")
-    with sync_playwright() as p:
-        page = p.chromium.launch(headless=True).new_page()
+    browser = await launch(headless=True, args=["--no-sandbox"])
+    page = await browser.newPage()
 
-        # create artifacts dir and helper logger that also takes screenshots
-        os.makedirs("artifacts", exist_ok=True)
-        step = 0
+    # create artifacts dir and helper logger that also takes screenshots
+    os.makedirs("artifacts", exist_ok=True)
+    step = 0
 
-        def log(*msgs: object) -> None:
-            nonlocal step
-            text = " ".join(str(m) for m in msgs)
-            print(text)
-            step += 1
-            safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
-            page.screenshot(path=f"artifacts/{step:02d}_{safe}.png")
+    async def log(*msgs: object) -> None:
+        nonlocal step
+        text = " ".join(str(m) for m in msgs)
+        print(text)
+        step += 1
+        safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
+        await page.screenshot({'path': f"artifacts/{step:02d}_{safe}.png"})
 
-        log(f"Navigating to {URL}")
-        page.goto(URL, timeout=60000)
+    await log(f"Navigating to {URL}")
+    await page.goto(URL, timeout=60000)
 
-        reasons = []
+    reasons = []
 
-        log("Checking pincode popup elements…")
-        modal = page.query_selector(".modal-content")
-        modal_status = "found" if modal else "missing"
-        log("Modal:", modal_status)
-        reasons.append(f"modal {modal_status}")
+    # Fetch page content for BeautifulSoup parsing
+    html = await page.content()
+    soup = BeautifulSoup(html, "html.parser")
 
-        close_btn = page.query_selector("button[aria-label='Close']")
-        cb_status = "found" if close_btn else "missing"
-        log("Close button:", cb_status)
-        reasons.append(f"close {cb_status}")
+    await log("Checking availability indicators…")
+    sold_out = soup.select_one("div.alert.alert-danger.mt-3") is not None
+    so_status = "found" if sold_out else "missing"
+    await log("Sold out indicator:", so_status)
+    reasons.append(f"soldout {so_status}")
 
-        loc_btn = page.query_selector("text=Get my location")
-        loc_status = "found" if loc_btn else "missing"
-        log("Get my location:", loc_status)
-        reasons.append(f"getloc {loc_status}")
+    disabled_btn = soup.select_one("a.btn.btn-primary.add-to-cart.disabled") is not None
+    db_status = "found" if disabled_btn else "missing"
+    await log("Add to Cart disabled:", db_status)
+    reasons.append("button disabled" if disabled_btn else "button not disabled")
 
-        pin_input = page.query_selector("input[placeholder='Enter Your Pincode']")
-        if pin_input:
-            log("Pincode input found → typing", PINCODE)
-            pin_input.fill(PINCODE)
-            page.wait_for_timeout(1000)
-            suggestion = page.query_selector(f"text={PINCODE}")
-            if suggestion:
-                log("Pincode suggestion found → clicking")
-                suggestion.click()
-            else:
-                log("Pincode suggestion not found → pressing Enter")
-                pin_input.press("Enter")
-            page.wait_for_timeout(2000)
-            log("Pincode entered")
-            reasons.append("pincode entered")
-        else:
-            log("Pincode input not found")
-            reasons.append("no pincode input")
+    notify_me = soup.select_one("button.btn.btn-primary.product_enquiry") is not None
+    nm_status = "found" if notify_me else "missing"
+    await log("Notify Me button:", nm_status)
+    reasons.append(f"notify {nm_status}")
 
-        log("Checking availability indicators…")
-        sold_out = page.query_selector("div.alert.alert-danger.mt-3")
-        so_status = "found" if sold_out else "missing"
-        log("Sold out indicator:", so_status)
-        reasons.append(f"soldout {so_status}")
+    add_btn = soup.select_one("a.btn.btn-primary.add-to-cart:not(.disabled)") is not None
+    ab_status = "found" if add_btn else "missing"
+    await log("Add to Cart enabled:", ab_status)
+    reasons.append(f"addbtn {ab_status}")
 
-        disabled_btn = page.query_selector("a.btn.btn-primary.add-to-cart.disabled")
-        db_status = "found" if disabled_btn else "missing"
-        log("Add to Cart disabled:", db_status)
-        if disabled_btn:
-            reasons.append("button disabled")
-        else:
-            reasons.append("button not disabled")
+    in_stock = add_btn and not sold_out and not disabled_btn
+    if in_stock:
+        reasons.append("button enabled")
+        await log("Sending Fast2SMS notification…")
+        # Fast2SMS auto-decodes, so send plain (`payload` encodes)
+        send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
+    else:
+        await log("Item considered out of stock")
 
-        notify_me = page.query_selector("button.btn.btn-primary.product_enquiry")
-        nm_status = "found" if notify_me else "missing"
-        log("Notify Me button:", nm_status)
-        reasons.append(f"notify {nm_status}")
+    await log("Decision:", "sent alert" if in_stock else "no alert",
+             "→", "; ".join(reasons) or "no indicators")
 
-        add_btn = page.query_selector("a.btn.btn-primary.add-to-cart:not(.disabled)")
-        in_stock = bool(add_btn)
-        ab_status = "found" if in_stock else "missing"
-        log("Add to Cart enabled:", ab_status)
-        reasons.append(f"addbtn {ab_status}")
-        if in_stock:
-            reasons.append("button enabled")
-            log("Sending Fast2SMS notification…")
-            # Fast2SMS auto-decodes, so send plain (`payload` encodes)
-            send_fast2sms(f"🚨 Amul Rose Lassi in stock! {URL}")
-        else:
-            log("Item considered out of stock")
-
-        log("Decision:", "sent alert" if in_stock else "no alert",
-            "→", "; ".join(reasons) or "no indicators")
+    await browser.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
