@@ -1,0 +1,27 @@
+name: Lassi Watchdog
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"   # every 2 h (UTC) ⇒ every 2 h IST
+  workflow_dispatch:        # manual run button
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with: {python-version: "3.x"}
+
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Run stock checker
+        env:
+          PINCODE:   ${{ secrets.PINCODE }}
+          WA_PHONE:  ${{ secrets.WA_PHONE }}
+          WA_KEY:    ${{ secrets.WA_KEY }}
+        run: python check_stock.py
