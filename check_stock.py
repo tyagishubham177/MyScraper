@@ -79,15 +79,11 @@ async def main():
                     await log("Dropdown shown")
                 except Exception:
                     await log("Dropdown not detected")
-                suggestion_list = await page.query_selector("#automatic")
-                if suggestion_list:
-                    suggestion_item = await suggestion_list.query_selector(f"text=247001")
-                    if suggestion_item:
-                        await suggestion_item.click()
-                    else:
-                        await page.keyboard.press("ArrowDown")
-                        await page.keyboard.press("Enter")
-                else:
+                suggestion_selector = f"#automatic a.searchitem-name:has-text(\"{PINCODE}\")"
+                try:
+                    await page.wait_for_selector(suggestion_selector, timeout=5000)
+                    await page.click(suggestion_selector)
+                except Exception:
                     await page.keyboard.press("ArrowDown")
                     await page.keyboard.press("Enter")
                 await asyncio.sleep(5)
