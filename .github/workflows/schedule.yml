@@ -21,7 +21,7 @@ jobs:
 
       - name: Run stock checker
         env:
-          PINCODE:   ${{ secrets.PINCODE }}
-          WA_PHONE:  ${{ secrets.WA_PHONE }}
-          WA_KEY:    ${{ secrets.WA_KEY }}
+          PINCODE:      ${{ secrets.PINCODE }}
+          F2S_API_KEY:  ${{ secrets.F2S_API_KEY }}
+          F2S_NUMBERS:  ${{ secrets.F2S_NUMBERS }}
         run: python check_stock.py
