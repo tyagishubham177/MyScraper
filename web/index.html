@@ -36,6 +36,17 @@
   <button id="enable">Enable workflow</button>
   <button id="disable">Disable workflow</button>
   <pre id="result"></pre>
+  <h2>Recent runs</h2>
+  <table id="runs" style="margin:auto; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th style="border-bottom:1px solid #ccc;padding:4px;">Time</th>
+        <th style="border-bottom:1px solid #ccc;padding:4px;">Status</th>
+        <th style="border-bottom:1px solid #ccc;padding:4px;">Details</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
   <script>
     async function call(path) {
       document.getElementById('result').textContent = 'Processing...';
@@ -63,9 +74,38 @@
 
     document.getElementById('enable').onclick = () => call('/api/enable');
     document.getElementById('disable').onclick = () => call('/api/disable');
-    document.getElementById('refresh').onclick = fetchStatus;
+    document.getElementById('refresh').onclick = () => {
+      fetchStatus();
+      fetchRuns();
+    };
+
+    async function fetchRuns() {
+      const table = document.getElementById('runs').querySelector('tbody');
+      table.innerHTML = '<tr><td colspan="3">Loading…</td></tr>';
+      try {
+        const res = await fetch('/api/runs');
+        if (!res.ok) {
+          table.innerHTML = '<tr><td colspan="3">Error</td></tr>';
+          return;
+        }
+        const data = await res.json();
+        if (!data.runs || !data.runs.length) {
+          table.innerHTML = '<tr><td colspan="3">No data</td></tr>';
+          return;
+        }
+        table.innerHTML = data.runs.map(r =>
+          `<tr>` +
+          `<td style="padding:4px;border-bottom:1px solid #eee;">${new Date(r.created_at).toLocaleString()}</td>` +
+          `<td style="padding:4px;border-bottom:1px solid #eee;">${r.conclusion || r.status}</td>` +
+          `<td style="padding:4px;border-bottom:1px solid #eee;"><a href="${r.url}" target="_blank">View</a></td>` +
+          `</tr>`).join('');
+      } catch (e) {
+        table.innerHTML = '<tr><td colspan="3">Error</td></tr>';
+      }
+    }
 
     fetchStatus();
+    fetchRuns();
   </script>
 </body>
 </html>
