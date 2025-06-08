@@ -1,0 +1,322 @@
+:root {
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --secondary-color: #6c757d;
+}
+
+    html {
+      height: 100%;
+      overflow-y: auto; /* Allow scrolling on html element */
+    }
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center; /* This centers the card when content is short */
+      justify-content: center;
+      position: relative; /* Needed for z-indexing of particles-js */
+      overflow-x: hidden; /* Prevent horizontal scrollbars */
+      overflow-y: auto;   /* Allow vertical scrolling for the body */
+      padding-top: 2rem; /* Add some padding if card is very tall */
+      padding-bottom: 2rem; /* Add some padding if card is very tall */
+    }
+    /* Adjust alignment when body needs to scroll */
+    body.is-scrollable {
+      align-items: flex-start; /* Align card to top when scrollable */
+    }
+
+
+    @keyframes gradientAnimation {
+      0% {
+        background-image: linear-gradient(135deg, #89f7fe, #66a6ff); /* Light Blue to Blue */
+        background-position: 0% 50%;
+      }
+      25% {
+        background-image: linear-gradient(135deg, #66a6ff, #ffb3ba); /* Blue to Pink */
+        background-position: 50% 50%;
+      }
+      50% {
+        background-image: linear-gradient(135deg, #ffb3ba, #ffdf7e); /* Pink to Yellow */
+        background-position: 100% 50%;
+      }
+      75% {
+        background-image: linear-gradient(135deg, #ffdf7e, #b4f8c8); /* Yellow to Green */
+        background-position: 50% 50%;
+      }
+      100% {
+        background-image: linear-gradient(135deg, #b4f8c8, #89f7fe); /* Green to Light Blue */
+        background-position: 0% 50%;
+      }
+    }
+
+    #particles-js-bg { /* Renamed to avoid conflict if particles-js creates its own with that ID */
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: -2; /* Behind particles-js canvas */
+      animation: gradientAnimation 20s ease infinite;
+      background-size: 400% 400%;
+    }
+
+    .card {
+      max-width: 800px;
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.1); /* Adjusted opacity */
+      backdrop-filter: blur(20px); /* Increased blur */
+      -webkit-backdrop-filter: blur(20px); /* For Safari */
+      border: 1px solid rgba(209, 213, 219, 0.3);
+      z-index: 1; /* Ensure card is above background elements */
+      animation: cardFadeIn 0.8s ease-out forwards;
+      opacity: 0; /* Start hidden for fade-in */
+      transform-style: preserve-3d; /* For vanilla-tilt.js */
+    }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+
+    /* Neumorphic Button Styling & Ripple Effect */
+    .btn-neumorphic {
+      border-radius: 20px !important; /* Softer corners, !important to override Bootstrap if needed */
+      background: rgba(224, 224, 224, 0.10) !important; /* Light background for neumorphic effect on darkish bg */
+      padding: 12px 20px !important;
+      font-weight: 600 !important;
+      transition: all 0.15s ease-in-out !important;
+      border: none !important; /* Remove bootstrap border */
+      box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2), -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
+      position: relative !important; /* For ripple */
+      overflow: hidden !important; /* To contain ripple */
+      color: #fff !important; /* Default text color for neumorphic buttons */
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5); /* Subtle shadow for readability */
+    }
+
+    .btn-neumorphic:hover {
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2), -2px -2px 5px rgba(255, 255, 255, 0.05) !important;
+      transform: translateY(-1px) !important; /* Subtle lift */
+    }
+
+    .btn-neumorphic:active {
+      box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
+      transform: translateY(1px) !important; /* Press in */
+    }
+
+#enable.btn-neumorphic {
+  background: var(--success-color) !important; /* Bootstrap success green */
+  color: #fff !important; /* Ensure text is white for contrast */
+}
+
+#disable.btn-neumorphic {
+  background: var(--danger-color) !important; /* Bootstrap danger red */
+  color: #fff !important; /* Ensure text is white for contrast */
+}
+
+/* Optional: Adjust hover/active states if the new background conflicts badly */
+#enable.btn-neumorphic:hover {
+  background: #218838 !important; /* Darker green on hover */
+}
+
+#disable.btn-neumorphic:hover {
+  background: #c82333 !important; /* Darker red on hover */
+}
+
+/* Keep existing neumorphic box-shadows for pressed state, but ensure bg color is not lost */
+#enable.btn-neumorphic:active {
+  background: #1e7e34 !important; /* Even darker green when active */
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
+}
+
+#disable.btn-neumorphic:active {
+  background: #bd2130 !important; /* Even darker red when active */
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
+}
+
+    /* Specific colors for icon and text if needed, but keeping text white by default for this bg */
+    #enable.btn-neumorphic { /* color: #28a745 !important; */ }
+    #disable.btn-neumorphic { /* color: #dc3545 !important; */ }
+    #refresh.btn-neumorphic { /* color: #6c757d !important; */ }
+
+    /* Make icons slightly more prominent on neumorphic buttons */
+    .btn-neumorphic i {
+      filter: brightness(1.2);
+    }
+
+    /* Ripple Effect */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3); /* Light ripple */
+      transform: scale(0);
+      animation: ripple-animation 0.6s linear;
+      pointer-events: none; /* So it doesn't interfere with button clicks */
+    }
+
+    @keyframes ripple-animation {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* Glowing/Pulsing Effects for Active States */
+    /* Base neumorphic shadow must be repeated here */
+    @keyframes glow-success {
+      0%, 100% { box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05), 0 0 5px var(--success-color), 0 0 10px var(--success-color) !important; }
+      50% { box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05), 0 0 15px var(--success-color), 0 0 20px var(--success-color) !important; }
+    }
+    .glow-success {
+      animation: glow-success 1.5s infinite ease-in-out;
+    }
+
+    @keyframes glow-danger {
+      0%, 100% { box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05), 0 0 5px var(--danger-color), 0 0 10px var(--danger-color) !important; }
+      50% { box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05), 0 0 15px var(--danger-color), 0 0 20px var(--danger-color) !important; }
+    }
+    .glow-danger {
+      animation: glow-danger 1.5s infinite ease-in-out;
+    }
+
+    /* Status pulse animation - existing */
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.7;
+      }
+    }
+
+    .status-loading-pulse {
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    #status {
+      padding: 0.35em 0.65em; /* For badge-like appearance */
+      vertical-align: middle; /* Align with icon */
+    }
+
+    /* Accordion header hover effects */
+    .accordion-button {
+      transition: background-color 0.2s ease-out;
+    }
+    .accordion-button:hover {
+      background-color: rgba(0,0,0,0.03); /* Subtle darken */
+    }
+
+    /* Fade-in animation for accordion body */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .fade-in-content {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    /* Floating Action Button (FAB) */
+    .fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      background-color: #0d6efd; /* Bootstrap primary blue */
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      text-decoration: none;
+      z-index: 1050;
+      transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+    }
+    .fab:hover {
+      background-color: #0b5ed7; /* Darker shade of primary blue */
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    .fab i,
+    .fab svg {
+      width: 24px;
+      height: 24px;
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5);
+    }
+    .card h1.text-primary {
+        text-shadow: 0 0 4px rgba(0, 0, 0, 0.2); /* Subtle dark shadow for primary text */
+    }
+    .card p { /* For general paragraph text inside the card */
+        text-shadow: 0 0 2px rgba(0,0,0,0.1); /* Very subtle shadow for general text if needed */
+    }
+
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .spin-icon {
+      animation: spin 1s linear infinite;
+      display: inline-block; /* Ensures transform is applied correctly */
+    }
+
+    .skeleton-loader {
+      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+      border-radius: .25rem; /* Standard Bootstrap border-radius */
+      height: 1em; /* Default height, can be overridden */
+    }
+    .skeleton-loader.skeleton-text { /* For text lines */
+      width: 75%;
+      margin-bottom: .5rem;
+    }
+    .skeleton-loader.skeleton-text-full { /* For full width text lines */
+      width: 100%;
+      margin-bottom: .5rem;
+    }
+    .skeleton-loader.skeleton-badge { /* For badge like elements */
+      width: 30%;
+      height: 1.5em; /* Taller for badge */
+    }
+    .accordion-button.skeleton-item .skeleton-loader {
+       margin-right: 1rem; /* Space between icon and text */
+    }
+     .accordion-button.skeleton-item .skeleton-icon-placeholder {
+      width: 24px; /* Lucide icon size */
+      height: 24px;
+      margin-right: 0.5rem; /* Bootstrap's default me-2 for icons */
+    }
+
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Carousel customizations */
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+    }
+    .carousel-control-prev-icon {
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http://www.w3.org/2000/svg'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'3'%20viewBox%3D'0%200%2016%2016'%3E%3Cpath%20d%3D'M11%201%203%208l8%207'/%3E%3C/svg%3E");
+    }
+    .carousel-control-next-icon {
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http://www.w3.org/2000/svg'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'3'%20viewBox%3D'0%200%2016%2016'%3E%3Cpath%20d%3D'M5%201l8%207-8%207'/%3E%3C/svg%3E");
+    }
+    .carousel-counter {
+      position: absolute;
+      right: 0.75rem;
+      bottom: 0.75rem;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.8rem;
+    }
