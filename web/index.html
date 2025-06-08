@@ -2,57 +2,62 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lassi Watchdog Control</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
-      text-align: center;
+      background: linear-gradient(135deg,#ffecd2,#fcb69f);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    button {
-      margin: 0 5px 10px 0;
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    #status {
-      font-weight: bold;
+    .card {
+      max-width: 800px;
+      width: 100%;
     }
     #result {
-      margin-top: 20px;
       white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
-  <h1>Lassi Watchdog Control</h1>
-  <p>
-    Workflow status:
-    <span id="status">Loading…</span>
-    <button id="refresh">Check status</button>
-  </p>
-  <p>Use the buttons below to enable or disable the scheduled GitHub Action.</p>
-  <button id="enable">Enable workflow</button>
-  <button id="disable">Disable workflow</button>
-  <pre id="result"></pre>
-  <h2>Recent runs</h2>
-  <table id="runs" style="margin:auto; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th style="border-bottom:1px solid #ccc;padding:4px;">Time</th>
-        <th style="border-bottom:1px solid #ccc;padding:4px;">Status</th>
-        <th style="border-bottom:1px solid #ccc;padding:4px;">Details</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="container py-4 d-flex justify-content-center">
+    <div class="card shadow-lg mx-auto">
+      <div class="card-body text-center">
+        <h1 class="text-primary mb-4">Lassi Watchdog Control</h1>
+        <p>
+          Workflow status:
+          <span id="status" class="fw-bold">Loading…</span>
+          <div id="loader" class="spinner-border text-info ms-2" role="status" style="display:none;width:1.5rem;height:1.5rem;"><span class="visually-hidden">Loading...</span></div>
+          <button id="refresh" class="btn btn-sm btn-secondary ms-2">Check status</button>
+        </p>
+        <p>Use the buttons below to enable or disable the scheduled GitHub Action.</p>
+        <div class="mb-3">
+          <button id="enable" class="btn btn-success me-2">Enable workflow</button>
+          <button id="disable" class="btn btn-danger">Disable workflow</button>
+        </div>
+        <pre id="result" class="bg-light p-2 rounded"></pre>
+        <h2 class="mt-4">Recent runs</h2>
+        <div id="runsAccordion" class="accordion"></div>
+      </div>
+    </div>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    const loader = document.getElementById('loader');
+    const showLoader = () => loader.style.display = 'inline-block';
+    const hideLoader = () => loader.style.display = 'none';
+
     async function call(path) {
+      showLoader();
       document.getElementById('result').textContent = 'Processing...';
       const res = await fetch(path, { method: 'POST' });
       const text = await res.text();
+      hideLoader();
       document.getElementById('result').textContent = text;
       await fetchStatus();
     }
@@ -81,99 +86,132 @@
     };
 
     async function fetchRuns() {
-      const table = document.getElementById('runs').querySelector('tbody');
-      table.innerHTML = '<tr><td colspan="3">Loading…</td></tr>';
+      const acc = document.getElementById('runsAccordion');
+      acc.innerHTML = '<div class="text-center py-2">Loading…</div>';
       try {
         const res = await fetch('/api/runs');
         if (!res.ok) {
-          table.innerHTML = '<tr><td colspan="3">Error</td></tr>';
+          acc.innerHTML = '<div class="text-danger">Error</div>';
           return;
         }
         const data = await res.json();
         if (!data.runs || !data.runs.length) {
-          table.innerHTML = '<tr><td colspan="3">No data</td></tr>';
+          acc.innerHTML = '<div class="text-muted">No data</div>';
           return;
         }
-        table.innerHTML = data.runs.map(r =>
-          `<tr class="run" data-id="${r.id}">`+
-          `<td style="padding:4px;border-bottom:1px solid #eee;">${new Date(r.created_at).toLocaleString()}</td>`+
-          `<td style="padding:4px;border-bottom:1px solid #eee;">${r.conclusion || r.status}</td>`+
-          `<td style="padding:4px;border-bottom:1px solid #eee;">`+
-          `<button class="toggle">Show</button> `+
-          `<a href="${r.url}" target="_blank">View</a>`+
-          `</td>`+
-          `</tr>`+
-          `<tr class="details" style="display:none;">`+
-          `<td colspan="3" style="padding:4px;border-bottom:1px solid #eee;">Loading…</td>`+
-          `</tr>`
-        ).join('');
+        acc.innerHTML = '';
+        data.runs.forEach((r, idx) => {
+          const item = document.createElement('div');
+          item.className = 'accordion-item';
+          const headingId = `heading${idx}`;
+          const collapseId = `collapse${idx}`;
+          item.innerHTML = `
+            <h2 class="accordion-header" id="${headingId}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
+                ${new Date(r.created_at).toLocaleString()} - ${r.conclusion || r.status}
+              </button>
+            </h2>
+            <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-id="${r.id}" data-url="${r.url}">
+              <div class="accordion-body">Loading…</div>
+            </div>
+          `;
+          acc.appendChild(item);
+        });
 
-        table.querySelectorAll('button.toggle').forEach(btn => {
-          btn.onclick = async () => {
-            const row = btn.closest('tr');
-            const detailsRow = row.nextElementSibling;
-            if (detailsRow.style.display === 'none') {
-              if (!detailsRow.dataset.loaded) {
-                const id = row.dataset.id;
-                const r = await fetch(`/api/run?id=${id}`);
-                if (r.ok) {
-                  const info = await r.json();
-                  let html = '';
-                  if (info.step) {
-                    html += `<p><strong>Run stock checker</strong><br>`;
-                    html += `Status: ${info.step.status}`;
-                    if (info.step.conclusion) {
-                      html += `, Conclusion: ${info.step.conclusion}`;
-                    }
-                    if (info.step.started_at) {
-                      const st = new Date(info.step.started_at).toLocaleString();
-                      html += `<br>Started: ${st}`;
-                    }
-                    if (info.step.completed_at) {
-                      const ct = new Date(info.step.completed_at).toLocaleString();
-                      html += `<br>Completed: ${ct}`;
-                    }
-                    html += `</p>`;
-                  } else {
-                    html += '<p>No "Run stock checker" step found.</p>';
+        acc.querySelectorAll('.accordion-collapse').forEach(col => {
+          col.addEventListener('show.bs.collapse', async () => {
+            if (col.dataset.loaded) return;
+            const id = col.dataset.id;
+            const url = col.dataset.url;
+            const body = col.querySelector('.accordion-body');
+            body.textContent = 'Loading…';
+            const r = await fetch(`/api/run?id=${id}`);
+            if (r.ok) {
+              const info = await r.json();
+              let html = '';
+              html += `<p><a href="${url}" target="_blank">View on GitHub</a></p>`;
+              if (info.step) {
+                html += `<p><strong>Run stock checker</strong><br>`;
+                html += `Status: ${info.step.status}`;
+                if (info.step.conclusion) {
+                  html += `, Conclusion: ${info.step.conclusion}`;
+                }
+                if (info.step.started_at) {
+                  const st = new Date(info.step.started_at).toLocaleString();
+                  html += `<br>Started: ${st}`;
+                }
+                if (info.step.completed_at) {
+                  const ct = new Date(info.step.completed_at).toLocaleString();
+                  html += `<br>Completed: ${ct}`;
+                }
+                html += `</p>`;
+              } else {
+                html += '<p>No "Run stock checker" step found.</p>';
+              }
+              body.innerHTML = html;
+
+              const logRes = await fetch(`/api/logs?id=${id}`);
+              if (logRes.ok) {
+                const blob = await logRes.blob();
+                const zip = await JSZip.loadAsync(blob);
+                for (const fname of Object.keys(zip.files)) {
+                  const lower = fname.toLowerCase();
+                  if (lower.includes('run_stock_checker') || lower.includes('stock checker')) {
+                    const text = await zip.files[fname].async('string');
+                    body.innerHTML += `<pre class="bg-light border mt-2 p-2 small">${text}</pre>`;
+                    break;
                   }
-                  detailsRow.firstElementChild.innerHTML = html;
-                  if (info.artifacts && info.artifacts.length) {
-                    const div = document.createElement('div');
-                    detailsRow.firstElementChild.appendChild(div);
-                    for (const art of info.artifacts) {
-                      const zipRes = await fetch(`/api/artifact?id=${art.id}`);
-                      if (zipRes.ok) {
-                        const blob = await zipRes.blob();
-                        const zip = await JSZip.loadAsync(blob);
-                        for (const fname of Object.keys(zip.files)) {
-                          if (fname.toLowerCase().endsWith('.png')) {
-                            const data = await zip.files[fname].async('base64');
-                            const img = document.createElement('img');
-                            img.src = 'data:image/png;base64,' + data;
-                            img.style.maxWidth = '100%';
-                            img.style.margin = '2px 0';
-                            div.appendChild(img);
-                          }
-                        }
+                }
+              }
+
+              if (info.artifacts && info.artifacts.length) {
+                const carouselId = `carousel${id}`;
+                let items = '';
+                let first = true;
+                for (const art of info.artifacts) {
+                  const zipRes = await fetch(`/api/artifact?id=${art.id}`);
+                  if (zipRes.ok) {
+                    const blob = await zipRes.blob();
+                    const zip = await JSZip.loadAsync(blob);
+                    for (const fname of Object.keys(zip.files)) {
+                      if (fname.toLowerCase().endsWith('.png')) {
+                        const data = await zip.files[fname].async('base64');
+                        items += `
+                          <div class="carousel-item ${first ? 'active' : ''}">
+                            <img src="data:image/png;base64,${data}" class="d-block w-100">
+                          </div>
+                        `;
+                        first = false;
                       }
                     }
                   }
-                  detailsRow.dataset.loaded = 'true';
-                } else {
-                  detailsRow.firstElementChild.textContent = 'Error loading details';
+                }
+                if (items) {
+                  body.innerHTML += `
+                    <div id="${carouselId}" class="carousel slide mt-3">
+                      <div class="carousel-inner">
+                        ${items}
+                      </div>
+                      <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon"></span>
+                        <span class="visually-hidden">Previous</span>
+                      </button>
+                      <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next">
+                        <span class="carousel-control-next-icon"></span>
+                        <span class="visually-hidden">Next</span>
+                      </button>
+                    </div>
+                  `;
                 }
               }
-              detailsRow.style.display = '';
-              btn.textContent = 'Hide';
+              col.dataset.loaded = 'true';
             } else {
-              detailsRow.style.display = 'none';
-              btn.textContent = 'Show';
+              body.textContent = 'Error loading details';
             }
-          };
+          }, { once: true });
         });
       } catch (e) {
-        table.innerHTML = '<tr><td colspan="3">Error</td></tr>';
+        acc.innerHTML = '<div class="text-danger">Error</div>';
       }
     }
 
