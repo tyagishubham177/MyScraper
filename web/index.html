@@ -569,19 +569,19 @@
         });
 
         acc.querySelectorAll('.accordion-collapse').forEach(col => {
+          // Extract the numerical index from the collapse element's ID (e.g., "collapse0" -> "0")
+          const numericalIndex = col.id.replace('collapse', '');
+
           col.addEventListener('show.bs.collapse', async (event) => {
-            const currentCollapse = event.target;
+            const currentCollapse = event.target; // This is 'col'
             if (currentCollapse.dataset.overviewLoaded) return;
 
-            const runId = currentCollapse.dataset.runId; // Corrected: Was col.dataset.id
-            const runUrl = currentCollapse.dataset.runUrl; // Corrected: Was col.dataset.url
-            // const runCreatedAt = currentCollapse.dataset.runCreatedAt; // Available if needed
-            // const runConclusion = currentCollapse.dataset.runConclusion; // Available if needed
+            const runId = currentCollapse.dataset.runId;
+            const runUrl = currentCollapse.dataset.runUrl;
 
-            // Construct unique IDs for tab panes based on the collapseId's suffix
-            const collapseIdSuffix = currentCollapse.id.substring(currentCollapse.id.lastIndexOf('-') + 1);
-            const overviewTabPane = currentCollapse.querySelector(`#overview-${collapseIdSuffix}`);
-            const executionTabPane = currentCollapse.querySelector(`#execution-${collapseIdSuffix}`);
+            // Use the derived numericalIndex for querying elements
+            const overviewTabPane = currentCollapse.querySelector(`#overview-${numericalIndex}`);
+            const executionTabPane = currentCollapse.querySelector(`#execution-${numericalIndex}`);
 
             overviewTabPane.innerHTML = 'Loading overview...'; // Reset before fetch
             executionTabPane.innerHTML = 'Loading execution details...'; // Reset before fetch
@@ -623,14 +623,14 @@
           });
 
           // Logs Tab Lazy Loading
-          // Corrected: Use 'col' which is the .accordion-collapse element in this scope
-          const logsTabTrigger = col.querySelector(`button[id^="logs-tab-${collapseIdSuffix}"]`);
-          const logsTabPane = col.querySelector(`div[id^="logs-${collapseIdSuffix}"]`);
+          // Use the derived numericalIndex for querying elements
+          const logsTabTrigger = col.querySelector(`#logs-tab-${numericalIndex}`);
+          const logsTabPane = col.querySelector(`#logs-${numericalIndex}`);
           if (logsTabTrigger && logsTabPane) {
             logsTabTrigger.addEventListener('shown.bs.tab', async () => {
               if (logsTabPane.dataset.loaded) return;
               logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">Loading logs...`; // Keep search bar
-              const runIdForLog = col.dataset.runId; // Corrected: Use 'col' to get runId
+              const runIdForLog = col.dataset.runId;
               try {
                 const logRes = await fetch(`/api/logs?id=${runIdForLog}`);
                 if (!logRes.ok) throw new Error(`Failed to fetch logs: ${logRes.status}`);
@@ -654,14 +654,14 @@
           }
 
           // Artifacts Tab Lazy Loading
-          // Corrected: Use 'col' which is the .accordion-collapse element in this scope
-          const artifactsTabTrigger = col.querySelector(`button[id^="artifacts-tab-${collapseIdSuffix}"]`);
-          const artifactsTabPane = col.querySelector(`div[id^="artifacts-${collapseIdSuffix}"]`);
+          // Use the derived numericalIndex for querying elements
+          const artifactsTabTrigger = col.querySelector(`#artifacts-tab-${numericalIndex}`);
+          const artifactsTabPane = col.querySelector(`#artifacts-${numericalIndex}`);
           if (artifactsTabTrigger && artifactsTabPane) {
             artifactsTabTrigger.addEventListener('shown.bs.tab', async () => {
               if (artifactsTabPane.dataset.loaded) return;
               artifactsTabPane.textContent = 'Loading artifacts...';
-              const runIdForArtifact = col.dataset.runId; // Corrected: Use 'col' to get runId
+              const runIdForArtifact = col.dataset.runId;
               try {
                  const r = await fetch(`/api/run?id=${runIdForArtifact}`); // Need full run info for artifacts array
                  if (!r.ok) throw new Error(`Failed to fetch run details for artifacts: ${r.status}`);
