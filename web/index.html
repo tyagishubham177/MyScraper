@@ -16,23 +16,42 @@
       background-size: 400% 400%; /* Needs to be large enough for smooth animation */
       align-items: center;
       justify-content: center;
+      background-attachment: fixed; /* subtle parallax */
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.4) 0, rgba(255,255,255,0) 60%),
+        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.3) 0, rgba(255,255,255,0) 60%);
+      background-size: 400% 400%;
+      animation: floatParticles 20s linear infinite;
+    }
+
+    @keyframes floatParticles {
+      0% { background-position: 0% 0%, 100% 100%; }
+      50% { background-position: 50% -25%, 50% 125%; }
+      100% { background-position: 0% 0%, 100% 100%; }
     }
 
     @keyframes gradientAnimation {
       0% {
-        background-image: linear-gradient(135deg, #ffecd2, #fcb69f);
+        background-image: linear-gradient(135deg, #ff9a9e, #fad0c4);
         background-position: 0% 50%;
       }
       33% {
-        background-image: linear-gradient(135deg, #fcb69f, #fbc2eb);
+        background-image: linear-gradient(135deg, #fad0c4, #fcb69f);
         background-position: 100% 50%;
       }
       66% {
-        background-image: linear-gradient(135deg, #fbc2eb, #a18cd1);
+        background-image: linear-gradient(135deg, #fcb69f, #90fdf4);
         background-position: 0% 50%;
       }
       100% {
-        background-image: linear-gradient(135deg, #a18cd1, #ffecd2);
+        background-image: linear-gradient(135deg, #90fdf4, #ff9a9e);
         background-position: 100% 50%;
       }
     }
@@ -44,7 +63,11 @@
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px); /* For Safari */
       border: 1px solid rgba(209, 213, 219, 0.3);
-      /* shadow-lg should still look okay, but might need adjustment if visible */
+      transition: transform 0.2s;
+      transform-style: preserve-3d;
+    }
+    .card:hover {
+      transform: perspective(800px) rotateX(2deg) rotateY(-2deg);
     }
     #result {
       white-space: pre-wrap;
@@ -125,23 +148,82 @@
       width: 24px; /* Adjust if needed */
       height: 24px; /* Adjust if needed */
     }
+
+    /* Ripple effect for buttons */
+    .btn-ripple {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-ripple::after {
+      content: '';
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      transform: scale(0);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .btn-ripple:active::after {
+      transform: scale(4);
+      opacity: 0;
+      transition: transform 0.4s, opacity 0.8s;
+      top: calc(var(--y, 50%) - 50px);
+      left: calc(var(--x, 50%) - 50px);
+    }
+
+    /* Skeleton placeholder */
+    .skeleton {
+      position: relative;
+      overflow: hidden;
+      background: #e9ecef;
+    }
+    .skeleton::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -150px;
+      width: 150px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(300%); }
+    }
+
+    /* Dark mode */
+    body.dark-mode {
+      color: #f8f9fa;
+    }
+    body.dark-mode .card {
+      background-color: rgba(0,0,0,0.4);
+      border-color: rgba(255,255,255,0.25);
+    }
+    body.dark-mode .bg-light {
+      background-color: rgba(255,255,255,0.2) !important;
+    }
   </style>
 </head>
 <body>
   <div class="container py-4 d-flex justify-content-center">
     <div class="card shadow-lg mx-auto">
       <div class="card-body text-center">
-        <h1 class="text-primary mb-4">Lassi Watchdog Control</h1>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h1 class="text-primary m-0">Lassi Watchdog Control</h1>
+          <button id="themeToggle" class="btn btn-outline-secondary btn-sm btn-ripple"><i id="themeIcon" data-lucide="moon"></i></button>
+        </div>
         <p>
           Workflow status:
           <span id="status" class="fw-bold">Loading…</span><i data-lucide="info" class="ms-1"></i>
           <div id="loader" class="spinner-border text-info ms-2" role="status" style="display:none;width:1.5rem;height:1.5rem;"><span class="visually-hidden">Loading...</span></div>
-          <button id="refresh" class="btn btn-sm btn-secondary ms-2"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
+          <button id="refresh" class="btn btn-sm btn-secondary ms-2 btn-ripple"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
         </p>
         <p>Use the buttons below to enable or disable the scheduled GitHub Action.</p>
         <div class="mb-3">
-          <button id="enable" class="btn btn-success me-2"><i data-lucide="play-circle" class="me-1"></i>Enable workflow</button>
-          <button id="disable" class="btn btn-danger"><i data-lucide="stop-circle" class="me-1"></i>Disable workflow</button>
+          <button id="enable" class="btn btn-success me-2 btn-ripple"><i data-lucide="play-circle" class="me-1"></i>Enable workflow</button>
+          <button id="disable" class="btn btn-danger btn-ripple"><i data-lucide="stop-circle" class="me-1"></i>Disable workflow</button>
         </div>
         <pre id="result" class="bg-light p-2 rounded"></pre>
         <h2 class="mt-4">Recent runs</h2>
@@ -224,7 +306,7 @@
 
     async function fetchRuns() {
       const acc = document.getElementById('runsAccordion');
-      acc.innerHTML = '<div class="text-center py-2">Loading…</div>';
+      acc.innerHTML = '<div class="skeleton rounded mb-2" style="height:2rem;"></div>'.repeat(3);
       try {
         const res = await fetch('/api/runs');
         if (!res.ok) {
@@ -242,10 +324,25 @@
           item.className = 'accordion-item';
           const headingId = `heading${idx}`;
           const collapseId = `collapse${idx}`;
+          const dt = new Date(r.created_at);
+          const dateStr = dt.toLocaleString('en-US', { day:'2-digit', month:'short', year:'2-digit', hour:'numeric', minute:'2-digit', hour12:true });
+          let icon = 'loader';
+          let color = 'text-primary';
+          let label = r.status;
+          if (r.conclusion) {
+            label = r.conclusion.charAt(0).toUpperCase() + r.conclusion.slice(1);
+            if (r.conclusion === 'success') { icon = 'check-circle'; color = 'text-success'; }
+            else if (r.conclusion === 'failure') { icon = 'x-circle'; color = 'text-danger'; }
+            else { icon = 'alert-circle'; color = 'text-warning'; }
+          } else if (r.status === 'in_progress') {
+            icon = 'loader';
+            color = 'text-primary';
+            label = 'Running';
+          }
           item.innerHTML = `
             <h2 class="accordion-header" id="${headingId}">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
-                ${new Date(r.created_at).toLocaleString()} - ${r.conclusion || r.status}
+                <i data-lucide="${icon}" class="me-1 ${color}"></i> ${dateStr} - ${label}
               </button>
             </h2>
             <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-id="${r.id}" data-url="${r.url}">
@@ -254,6 +351,7 @@
           `;
           acc.appendChild(item);
         });
+        lucide.createIcons();
 
         acc.querySelectorAll('.accordion-collapse').forEach(col => {
           col.addEventListener('show.bs.collapse', async () => {
@@ -265,27 +363,45 @@
             const r = await fetch(`/api/run?id=${id}`);
             if (r.ok) {
               const info = await r.json();
-              let html = '';
-              html += `<p><a href="${url}" target="_blank">View on GitHub</a></p>`;
+              const tabs = `
+                <ul class="nav nav-tabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ov${id}" type="button" role="tab">Overview</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#log${id}" type="button" role="tab">Logs</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#art${id}" type="button" role="tab">Artifacts</button>
+                  </li>
+                </ul>
+                <div class="tab-content p-2 border border-top-0">
+                  <div class="tab-pane fade show active" id="ov${id}" role="tabpanel"></div>
+                  <div class="tab-pane fade" id="log${id}" role="tabpanel">Loading…</div>
+                  <div class="tab-pane fade" id="art${id}" role="tabpanel"></div>
+                </div>`;
+              body.innerHTML = tabs;
+              const ov = body.querySelector(`#ov${id}`);
+              let overview = `<p><a href="${url}" target="_blank">View on GitHub</a></p>`;
               if (info.step) {
-                html += `<p><strong>Run stock checker</strong><br>`;
-                html += `Status: ${info.step.status}`;
+                overview += `<p><strong>Run stock checker</strong><br>`;
+                overview += `Status: ${info.step.status}`;
                 if (info.step.conclusion) {
-                  html += `, Conclusion: ${info.step.conclusion}`;
+                  overview += `, Conclusion: ${info.step.conclusion}`;
                 }
                 if (info.step.started_at) {
                   const st = new Date(info.step.started_at).toLocaleString();
-                  html += `<br>Started: ${st}`;
+                  overview += `<br>Started: ${st}`;
                 }
                 if (info.step.completed_at) {
                   const ct = new Date(info.step.completed_at).toLocaleString();
-                  html += `<br>Completed: ${ct}`;
+                  overview += `<br>Completed: ${ct}`;
                 }
-                html += `</p>`;
+                overview += `</p>`;
               } else {
-                html += '<p>No "Run stock checker" step found.</p>';
+                overview += '<p>No "Run stock checker" step found.</p>';
               }
-              body.innerHTML = html;
+              ov.innerHTML = overview;
 
               const logRes = await fetch(`/api/logs?id=${id}`);
               if (logRes.ok) {
@@ -294,8 +410,11 @@
                 for (const fname of Object.keys(zip.files)) {
                   const lower = fname.toLowerCase();
                   if (lower.includes('run_stock_checker') || lower.includes('stock checker')) {
-                    const text = await zip.files[fname].async('string');
-                    body.innerHTML += `<pre class="bg-light border mt-2 p-2 small">${text}</pre>`;
+                    const raw = await zip.files[fname].async('string');
+                    const cleaned = raw.split('\n').map(l => l.replace(/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?\s*/, '')).filter(l => !/^##\[/.test(l)).join('\n');
+                    const logPane = body.querySelector(`#log${id}`);
+                    logPane.textContent = '';
+                    logPane.appendChild(Object.assign(document.createElement('pre'), { className: 'bg-light border p-2 small', textContent: cleaned }));
                     break;
                   }
                 }
@@ -324,11 +443,10 @@
                   }
                 }
                 if (items) {
-                  body.innerHTML += `
-                    <div id="${carouselId}" class="carousel slide mt-3">
-                      <div class="carousel-inner">
-                        ${items}
-                      </div>
+                  const artPane = body.querySelector(`#art${id}`);
+                  artPane.innerHTML = `
+                    <div id="${carouselId}" class="carousel slide">
+                      <div class="carousel-inner">${items}</div>
                       <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev">
                         <span class="carousel-control-prev-icon"></span>
                         <span class="visually-hidden">Previous</span>
@@ -337,8 +455,7 @@
                         <span class="carousel-control-next-icon"></span>
                         <span class="visually-hidden">Next</span>
                       </button>
-                    </div>
-                  `;
+                    </div>`;
                 }
               }
               // Apply fade-in animation to the loaded content
@@ -358,6 +475,22 @@
 
     fetchStatus();
     fetchRuns();
+
+    document.querySelectorAll('.btn-ripple').forEach(btn => {
+      btn.addEventListener('pointerdown', e => {
+        const rect = btn.getBoundingClientRect();
+        btn.style.setProperty('--x', `${e.clientX - rect.left}px`);
+        btn.style.setProperty('--y', `${e.clientY - rect.top}px`);
+      });
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      themeIcon.setAttribute('data-lucide', document.body.classList.contains('dark-mode') ? 'sun' : 'moon');
+      lucide.createIcons();
+    });
   </script>
 
   <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History">
