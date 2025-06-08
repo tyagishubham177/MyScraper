@@ -120,7 +120,22 @@
                   const info = await r.json();
                   let html = '';
                   if (info.step) {
-                    html += `<p>Run stock checker: ${info.step.conclusion || info.step.status}</p>`;
+                    html += `<p><strong>Run stock checker</strong><br>`;
+                    html += `Status: ${info.step.status}`;
+                    if (info.step.conclusion) {
+                      html += `, Conclusion: ${info.step.conclusion}`;
+                    }
+                    if (info.step.started_at) {
+                      const st = new Date(info.step.started_at).toLocaleString();
+                      html += `<br>Started: ${st}`;
+                    }
+                    if (info.step.completed_at) {
+                      const ct = new Date(info.step.completed_at).toLocaleString();
+                      html += `<br>Completed: ${ct}`;
+                    }
+                    html += `</p>`;
+                  } else {
+                    html += '<p>No "Run stock checker" step found.</p>';
                   }
                   detailsRow.firstElementChild.innerHTML = html;
                   if (info.artifacts && info.artifacts.length) {
