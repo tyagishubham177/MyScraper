@@ -841,29 +841,31 @@
   </a>
 
   <script>
-    lucide.createIcons(); // Call once after all new items are added to the DOM
+    document.addEventListener('DOMContentLoaded', function() {
+      lucide.createIcons(); // Call once after all new items are added to the DOM
 
-    // Initialize Bootstrap Tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
+      // Initialize Bootstrap Tooltips
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+      })
 
-    // Check if body needs to be scrollable and adjust alignment
-    function checkBodyScrollable() {
-      if (document.body.scrollHeight > window.innerHeight) {
-        document.body.classList.add('is-scrollable');
-      } else {
-        document.body.classList.remove('is-scrollable');
+      // Check if body needs to be scrollable and adjust alignment
+      function checkBodyScrollable() {
+        if (document.body.scrollHeight > window.innerHeight) {
+          document.body.classList.add('is-scrollable');
+        } else {
+          document.body.classList.remove('is-scrollable');
+        }
       }
-    }
-    // Check on load and on window resize
-    window.addEventListener('load', checkBodyScrollable);
-    window.addEventListener('resize', checkBodyScrollable);
-    // Also check after accordion items are shown/hidden as this changes body height
-    document.querySelectorAll('.accordion-collapse').forEach(item => {
-      item.addEventListener('shown.bs.collapse', checkBodyScrollable);
-      item.addEventListener('hidden.bs.collapse', checkBodyScrollable);
+      // Check on load and on window resize
+      window.addEventListener('load', checkBodyScrollable); // load is fine here as it's for initial check
+      window.addEventListener('resize', checkBodyScrollable);
+      // Also check after accordion items are shown/hidden as this changes body height
+      document.querySelectorAll('.accordion-collapse').forEach(item => {
+        item.addEventListener('shown.bs.collapse', checkBodyScrollable);
+        item.addEventListener('hidden.bs.collapse', checkBodyScrollable);
+      });
     });
   </script>
 </body>
