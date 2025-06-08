@@ -8,17 +8,27 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://unpkg.com/lucide-static@latest/dist/lucide.min.js"></script>
   <style>
+    html {
+      height: 100%;
+      overflow-y: auto; /* Allow scrolling on html element */
+    }
     body {
       font-family: 'Inter', Arial, sans-serif;
       min-height: 100vh;
       display: flex;
-      /* animation: gradientAnimation 15s ease infinite; */ /* Disabled to let particles.js handle background */
-      /* background-size: 400% 400%; */ /* Needs to be large enough for smooth animation */
-      align-items: center;
+      align-items: center; /* This centers the card when content is short */
       justify-content: center;
       position: relative; /* Needed for z-indexing of particles-js */
-      overflow: hidden; /* Hide scrollbars if parallax isn't perfectly aligned */
+      overflow-x: hidden; /* Prevent horizontal scrollbars */
+      overflow-y: auto;   /* Allow vertical scrolling for the body */
+      padding-top: 2rem; /* Add some padding if card is very tall */
+      padding-bottom: 2rem; /* Add some padding if card is very tall */
     }
+    /* Adjust alignment when body needs to scroll */
+    body.is-scrollable {
+      align-items: flex-start; /* Align card to top when scrollable */
+    }
+
 
     @keyframes gradientAnimation {
       0% {
@@ -89,6 +99,7 @@
       position: relative !important; /* For ripple */
       overflow: hidden !important; /* To contain ripple */
       color: #fff !important; /* Default text color for neumorphic buttons */
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5); /* Subtle shadow for readability */
     }
 
     .btn-neumorphic:hover {
@@ -209,7 +220,15 @@
     .fab i { /* Ensure icon is centered well if needed, Lucide default usually fine */
       width: 24px; /* Adjust if needed */
       height: 24px; /* Adjust if needed */
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5); /* Added for FAB icon */
     }
+    .card h1.text-primary {
+        text-shadow: 0 0 4px rgba(0, 0, 0, 0.2); /* Subtle dark shadow for primary text */
+    }
+    .card p { /* For general paragraph text inside the card */
+        text-shadow: 0 0 2px rgba(0,0,0,0.1); /* Very subtle shadow for general text if needed */
+    }
+
 
     @keyframes spin {
       0% { transform: rotate(0deg); }
@@ -298,11 +317,25 @@
 
     async function call(path) {
       showLoader();
-      document.getElementById('result').textContent = 'Processing...';
-      const res = await fetch(path, { method: 'POST' });
-      const text = await res.text();
-      document.getElementById('result').textContent = text;
-      await fetchStatus();
+      const resultEl = document.getElementById('result');
+      resultEl.textContent = 'Processing...';
+      try {
+        const res = await fetch(path, { method: 'POST' });
+        if (res.ok) {
+          // Optionally, could use res.text() if the API sometimes returns useful non-error messages
+          // For now, a generic success message is fine since fetchStatus updates the primary status.
+          resultEl.textContent = 'Action processed successfully. New status reflected above.';
+          resultEl.className = 'bg-light p-2 rounded text-success-emphasis'; // Use Bootstrap text color
+        } else {
+          const errorText = await res.text();
+          resultEl.textContent = `Error: ${errorText || res.statusText}`;
+          resultEl.className = 'bg-light p-2 rounded text-danger-emphasis'; // Use Bootstrap text color
+        }
+      } catch (error) {
+        resultEl.textContent = `Network or client-side error: ${error.message}`;
+        resultEl.className = 'bg-light p-2 rounded text-danger-emphasis';
+      }
+      await fetchStatus(); // This will update the main status badge and hide loader
     }
 
     async function fetchStatus() {
@@ -533,13 +566,15 @@
             const currentCollapse = event.target;
             if (currentCollapse.dataset.overviewLoaded) return;
 
-            const runId = currentCollapse.dataset.runId;
-            const runUrl = currentCollapse.dataset.runUrl;
+            const runId = currentCollapse.dataset.runId; // Corrected: Was col.dataset.id
+            const runUrl = currentCollapse.dataset.runUrl; // Corrected: Was col.dataset.url
             // const runCreatedAt = currentCollapse.dataset.runCreatedAt; // Available if needed
             // const runConclusion = currentCollapse.dataset.runConclusion; // Available if needed
 
-            const overviewTabPane = currentCollapse.querySelector(`#overview-${currentCollapse.id.split('-')[1]}`);
-            const executionTabPane = currentCollapse.querySelector(`#execution-${currentCollapse.id.split('-')[1]}`);
+            // Construct unique IDs for tab panes based on the collapseId's suffix
+            const collapseIdSuffix = currentCollapse.id.substring(currentCollapse.id.lastIndexOf('-') + 1);
+            const overviewTabPane = currentCollapse.querySelector(`#overview-${collapseIdSuffix}`);
+            const executionTabPane = currentCollapse.querySelector(`#execution-${collapseIdSuffix}`);
 
             overviewTabPane.innerHTML = 'Loading overview...'; // Reset before fetch
             executionTabPane.innerHTML = 'Loading execution details...'; // Reset before fetch
@@ -550,11 +585,11 @@
               const info = await r.json();
 
               // Populate Overview Tab
-              let overviewHtml = `<p><a href="${runUrl}" target="_blank">View on GitHub</a></p>`;
+              let overviewHtml = `<p><a href="${runUrl}" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>`; // Added rel attribute
               overviewHtml += `<p><strong>Status:</strong> ${info.status || 'N/A'}</p>`;
               overviewHtml += `<p><strong>Conclusion:</strong> ${info.conclusion || 'N/A'}</p>`;
-              if (info.started_at) overviewHtml += `<p><strong>Started:</strong> ${new Date(info.started_at).toLocaleString()}</p>`;
-              if (info.completed_at) overviewHtml += `<p><strong>Completed:</strong> ${new Date(info.completed_at).toLocaleString()}</p>`;
+              if (info.started_at) overviewHtml += `<p><strong>Started:</strong> ${formatRunDate(info.started_at)}</p>`; // Using formatRunDate
+              if (info.completed_at) overviewHtml += `<p><strong>Completed:</strong> ${formatRunDate(info.completed_at)}</p>`; // Using formatRunDate
               overviewTabPane.innerHTML = overviewHtml;
               overviewTabPane.classList.add('fade-in-content');
 
@@ -581,15 +616,15 @@
           });
 
           // Logs Tab Lazy Loading
-          const logsTabTrigger = col.querySelector(`button[id^="logs-tab-"]`);
-          const logsTabPane = col.querySelector(`div[id^="logs-"]`);
+          const logsTabTrigger = currentCollapse.querySelector(`button[id^="logs-tab-${collapseIdSuffix}"]`);
+          const logsTabPane = currentCollapse.querySelector(`div[id^="logs-${collapseIdSuffix}"]`);
           if (logsTabTrigger && logsTabPane) {
             logsTabTrigger.addEventListener('shown.bs.tab', async () => {
               if (logsTabPane.dataset.loaded) return;
               logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">Loading logs...`; // Keep search bar
-              const runId = col.dataset.runId;
+              const currentRunId = currentCollapse.dataset.runId; // Use runId from the current collapse scope
               try {
-                const logRes = await fetch(`/api/logs?id=${runId}`);
+                const logRes = await fetch(`/api/logs?id=${currentRunId}`);
                 if (!logRes.ok) throw new Error(`Failed to fetch logs: ${logRes.status}`);
                 const blob = await logRes.blob();
                 const zip = await JSZip.loadAsync(blob);
@@ -611,15 +646,15 @@
           }
 
           // Artifacts Tab Lazy Loading
-          const artifactsTabTrigger = col.querySelector(`button[id^="artifacts-tab-"]`);
-          const artifactsTabPane = col.querySelector(`div[id^="artifacts-"]`);
+          const artifactsTabTrigger = currentCollapse.querySelector(`button[id^="artifacts-tab-${collapseIdSuffix}"]`);
+          const artifactsTabPane = currentCollapse.querySelector(`div[id^="artifacts-${collapseIdSuffix}"]`);
           if (artifactsTabTrigger && artifactsTabPane) {
             artifactsTabTrigger.addEventListener('shown.bs.tab', async () => {
               if (artifactsTabPane.dataset.loaded) return;
               artifactsTabPane.textContent = 'Loading artifacts...';
-              const runId = col.dataset.runId;
+              const currentRunId = currentCollapse.dataset.runId; // Use runId from the current collapse scope
               try {
-                 const r = await fetch(`/api/run?id=${runId}`); // Need full run info for artifacts array
+                 const r = await fetch(`/api/run?id=${currentRunId}`); // Need full run info for artifacts array
                  if (!r.ok) throw new Error(`Failed to fetch run details for artifacts: ${r.status}`);
                  const info = await r.json();
 
@@ -813,6 +848,23 @@
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl)
     })
+
+    // Check if body needs to be scrollable and adjust alignment
+    function checkBodyScrollable() {
+      if (document.body.scrollHeight > window.innerHeight) {
+        document.body.classList.add('is-scrollable');
+      } else {
+        document.body.classList.remove('is-scrollable');
+      }
+    }
+    // Check on load and on window resize
+    window.addEventListener('load', checkBodyScrollable);
+    window.addEventListener('resize', checkBodyScrollable);
+    // Also check after accordion items are shown/hidden as this changes body height
+    document.querySelectorAll('.accordion-collapse').forEach(item => {
+      item.addEventListener('shown.bs.collapse', checkBodyScrollable);
+      item.addEventListener('hidden.bs.collapse', checkBodyScrollable);
+    });
   </script>
 </body>
 </html>
