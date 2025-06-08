@@ -479,6 +479,7 @@
 
     async function fetchRuns() {
       const acc = document.getElementById('runsAccordion');
+      // console.log('fetchRuns: Starting, preparing skeleton loaders.'); // Simulated log
       // Skeleton Loading
       let skeletonHTML = '';
       for (let i = 0; i < 3; i++) {
@@ -499,13 +500,20 @@
       // If skeleton items had data-lucide attributes, you'd call lucide.createIcons() here.
 
       try {
+        // console.log('fetchRuns: Fetching /api/runs...'); // Simulated log
         const res = await fetch('/api/runs');
+        // console.log('fetchRuns: Response received from /api/runs', res); // Simulated log
         if (!res.ok) {
-          acc.innerHTML = '<div class="text-danger">Error</div>';
+          // console.error('fetchRuns: API response not OK', res.status, res.statusText); // Simulated log
+          acc.innerHTML = `<div class="text-danger">Error fetching runs: ${res.status} ${res.statusText}</div>`;
           return;
         }
+        // console.log('fetchRuns: Attempting to parse JSON response...'); // Simulated log
         const data = await res.json();
+        // console.log('fetchRuns: JSON data parsed:', data); // Simulated log
+
         if (!data.runs || !data.runs.length) {
+          // console.log('fetchRuns: No runs data found or empty runs array.'); // Simulated log
           acc.innerHTML = '<div class="text-muted">No data</div>';
           return;
         }
@@ -703,7 +711,8 @@
           }
         });
       } catch (e) {
-        acc.innerHTML = '<div class="text-danger">Error</div>';
+        // console.error('fetchRuns: Error caught during fetch or processing:', e); // Simulated log
+        acc.innerHTML = `<div class="text-danger">Error loading runs. Details: ${e.message}</div>`;
       }
     }
 
@@ -842,7 +851,22 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      lucide.createIcons(); // Call once after all new items are added to the DOM
+      function initLucideIcons(retries = 5) {
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          try {
+            lucide.createIcons();
+            // console.log('Lucide icons initialized successfully.'); // Optional: for debugging in browser
+          } catch (e) {
+            // console.error('Error calling lucide.createIcons():', e); // Optional: for debugging
+          }
+        } else if (retries > 0) {
+          // console.log('Lucide object not available, retrying... Retries left: ' + (retries - 1)); // Optional
+          setTimeout(() => initLucideIcons(retries - 1), 200); // Wait 200ms and retry
+        } else {
+          // console.error('Lucide library failed to load after multiple retries. Icons may not render.'); // Optional
+        }
+      }
+      initLucideIcons(); // Initial call to initialize Lucide icons
 
       // Initialize Bootstrap Tooltips
       var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
