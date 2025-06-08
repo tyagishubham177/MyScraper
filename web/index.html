@@ -685,7 +685,7 @@
                  const info = await r.json();
 
                 if (info.artifacts && info.artifacts.length) {
-                  const carouselId = `carousel-${runId}`;
+                  const carouselId = `carousel-${runIdForArtifact}`;
                   let itemsHtml = '';
                   let isFirstItem = true;
                   for (const art of info.artifacts) {
