@@ -18,7 +18,7 @@ _Amul High-Protein Rose Lassi (pack of 30)_ flips from “Sold Out” ➜ “Add
 
 ## 🌐 Web UI on Vercel
 
-This repo includes a small web interface (in `web/`) that can be deployed to [Vercel](https://vercel.com). The page exposes **Enable** and **Disable** buttons that call GitHub's API to toggle the scheduled workflow.
+This repo includes a small web interface (in `web/`) that can be deployed to [Vercel](https://vercel.com). The page exposes **Enable** and **Disable** buttons and also shows the current workflow status with a **Check status** button.
 
 ### Deploy steps
 1. Push this repository to your own GitHub account.
