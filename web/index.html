@@ -47,6 +47,7 @@
     </thead>
     <tbody></tbody>
   </table>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js"></script>
   <script>
     async function call(path) {
       document.getElementById('result').textContent = 'Processing...';
@@ -94,11 +95,68 @@
           return;
         }
         table.innerHTML = data.runs.map(r =>
-          `<tr>` +
-          `<td style="padding:4px;border-bottom:1px solid #eee;">${new Date(r.created_at).toLocaleString()}</td>` +
-          `<td style="padding:4px;border-bottom:1px solid #eee;">${r.conclusion || r.status}</td>` +
-          `<td style="padding:4px;border-bottom:1px solid #eee;"><a href="${r.url}" target="_blank">View</a></td>` +
-          `</tr>`).join('');
+          `<tr class="run" data-id="${r.id}">`+
+          `<td style="padding:4px;border-bottom:1px solid #eee;">${new Date(r.created_at).toLocaleString()}</td>`+
+          `<td style="padding:4px;border-bottom:1px solid #eee;">${r.conclusion || r.status}</td>`+
+          `<td style="padding:4px;border-bottom:1px solid #eee;">`+
+          `<button class="toggle">Show</button> `+
+          `<a href="${r.url}" target="_blank">View</a>`+
+          `</td>`+
+          `</tr>`+
+          `<tr class="details" style="display:none;">`+
+          `<td colspan="3" style="padding:4px;border-bottom:1px solid #eee;">Loading…</td>`+
+          `</tr>`
+        ).join('');
+
+        table.querySelectorAll('button.toggle').forEach(btn => {
+          btn.onclick = async () => {
+            const row = btn.closest('tr');
+            const detailsRow = row.nextElementSibling;
+            if (detailsRow.style.display === 'none') {
+              if (!detailsRow.dataset.loaded) {
+                const id = row.dataset.id;
+                const r = await fetch(`/api/run?id=${id}`);
+                if (r.ok) {
+                  const info = await r.json();
+                  let html = '';
+                  if (info.step) {
+                    html += `<p>Run stock checker: ${info.step.conclusion || info.step.status}</p>`;
+                  }
+                  detailsRow.firstElementChild.innerHTML = html;
+                  if (info.artifacts && info.artifacts.length) {
+                    const div = document.createElement('div');
+                    detailsRow.firstElementChild.appendChild(div);
+                    for (const art of info.artifacts) {
+                      const zipRes = await fetch(`/api/artifact?id=${art.id}`);
+                      if (zipRes.ok) {
+                        const blob = await zipRes.blob();
+                        const zip = await JSZip.loadAsync(blob);
+                        for (const fname of Object.keys(zip.files)) {
+                          if (fname.toLowerCase().endsWith('.png')) {
+                            const data = await zip.files[fname].async('base64');
+                            const img = document.createElement('img');
+                            img.src = 'data:image/png;base64,' + data;
+                            img.style.maxWidth = '100%';
+                            img.style.margin = '2px 0';
+                            div.appendChild(img);
+                          }
+                        }
+                      }
+                    }
+                  }
+                  detailsRow.dataset.loaded = 'true';
+                } else {
+                  detailsRow.firstElementChild.textContent = 'Error loading details';
+                }
+              }
+              detailsRow.style.display = '';
+              btn.textContent = 'Hide';
+            } else {
+              detailsRow.style.display = 'none';
+              btn.textContent = 'Show';
+            }
+          };
+        });
       } catch (e) {
         table.innerHTML = '<tr><td colspan="3">Error</td></tr>';
       }
