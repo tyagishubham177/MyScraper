@@ -98,6 +98,33 @@
     .fade-in-content {
       animation: fadeIn 0.5s ease-out forwards;
     }
+
+    /* Floating Action Button (FAB) */
+    .fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      background-color: #0d6efd; /* Bootstrap primary blue */
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      text-decoration: none;
+      z-index: 1050;
+      transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+    }
+    .fab:hover {
+      background-color: #0b5ed7; /* Darker shade of primary blue */
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    .fab i { /* Ensure icon is centered well if needed, Lucide default usually fine */
+      width: 24px; /* Adjust if needed */
+      height: 24px; /* Adjust if needed */
+    }
   </style>
 </head>
 <body>
@@ -332,6 +359,11 @@
     fetchStatus();
     fetchRuns();
   </script>
+
+  <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History">
+    <i data-lucide="external-link"></i>
+  </a>
+
   <script>
     lucide.createIcons();
   </script>
