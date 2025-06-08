@@ -1,4 +1,4 @@
-import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js';
+// JSZip is loaded globally via a script tag in index.html
 import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from './config.js';
 import {cleanLogText, formatRunDate, getStatusBadge} from './utils.js';
 
