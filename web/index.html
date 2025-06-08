@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Lassi Watchdog Control</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; }
+    button { margin: 0 5px 10px 0; padding: 10px 20px; }
+    #result { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Lassi Watchdog Control</h1>
+  <p>Use the buttons below to enable or disable the scheduled GitHub Action.</p>
+  <button id="enable">Enable workflow</button>
+  <button id="disable">Disable workflow</button>
+  <pre id="result"></pre>
+  <script>
+    async function call(path) {
+      document.getElementById('result').textContent = 'Processing...';
+      const res = await fetch(path, {method: 'POST'});
+      const text = await res.text();
+      document.getElementById('result').textContent = text;
+    }
+    document.getElementById('enable').onclick = () => call('/api/enable');
+    document.getElementById('disable').onclick = () => call('/api/disable');
+  </script>
+</body>
+</html>
