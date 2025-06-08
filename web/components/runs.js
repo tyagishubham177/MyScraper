@@ -1,6 +1,6 @@
 // JSZip is loaded globally via a script tag in index.html
 import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from './config.js';
-import {cleanLogText, formatRunDate, getStatusBadge} from './utils.js';
+import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog} from './utils.js';
 
 export async function fetchRuns() {
   const acc = document.getElementById('runsAccordion');
@@ -137,7 +137,8 @@ export async function fetchRuns() {
                 rawLogText = await zip.files[firstFile].async('string');
               }
             }
-            const cleanedLogText = cleanLogText(rawLogText);
+            const trimmed = extractCheckStockLog(rawLogText);
+            const cleanedLogText = cleanLogText(trimmed);
             logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs..."><pre class="bg-light border mt-2 p-2 small fade-in-content">${cleanedLogText}</pre>`;
             logsTabPane.dataset.loaded = 'true';
           } catch (err) {

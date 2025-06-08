@@ -61,3 +61,18 @@ export function getStatusBadge(status, conclusion) {
   }
   return `<span class="badge ${badgeClass} rounded-pill">${icon}${statusText}</span>`;
 }
+
+// Extract only the portion of a GitHub log related to the check_stock.py script
+// by trimming everything before the script begins outputting.
+export function extractCheckStockLog(logText) {
+  if (!logText) return '';
+  const launchIdx = logText.search(/Launching browser/i);
+  if (launchIdx !== -1) {
+    return logText.slice(launchIdx);
+  }
+  const cmdIdx = logText.search(/check_stock\.py/i);
+  if (cmdIdx !== -1) {
+    return logText.slice(cmdIdx);
+  }
+  return logText;
+}

@@ -1,5 +1,6 @@
-import {fetchStatus} from './status.js';
+import {fetchStatus, showLoader} from './status.js';
 import {fetchRuns} from './runs.js';
+import {createRipple} from './utils.js';
 
 export function initTilt() {
   const cardElement = document.querySelector('.card');
@@ -41,6 +42,14 @@ export function initBackground() {
 }
 
 export function initPage() {
+  const refreshButton = document.getElementById('refresh');
+  if (refreshButton) {
+    refreshButton.addEventListener('click', () => {
+      showLoader();
+      fetchStatus();
+    });
+    refreshButton.addEventListener('click', createRipple);
+  }
   fetchStatus();
   fetchRuns();
   initTilt();
