@@ -11,6 +11,34 @@ export default async function handler(req, res) {
   const repo = process.env.GH_REPO;
   const token = process.env.GH_TOKEN;
 
+  // --- New: Fetch overall run details ---
+  const runDetailsUrl = `https://api.github.com/repos/${repo}/actions/runs/${id}`;
+  let runStatus = null, runConclusion = null, runStartedAt = null, runCompletedAt = null, runHtmlUrl = null;
+
+  try {
+    const runDetailsRes = await fetch(runDetailsUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json'
+      }
+    });
+    if (runDetailsRes.ok) {
+      const runDetailsData = await runDetailsRes.json();
+      runStatus = runDetailsData.status;
+      runConclusion = runDetailsData.conclusion;
+      runStartedAt = runDetailsData.run_started_at; // Use run_started_at
+      runCompletedAt = runDetailsData.completed_at;
+      runHtmlUrl = runDetailsData.html_url;
+    } else {
+      console.error(`Failed to fetch run details: ${runDetailsRes.status} from ${runDetailsUrl}`);
+      // Proceeding, frontend will show N/A or handle nulls for these fields
+    }
+  } catch (error) {
+    console.error(`Error fetching run details from ${runDetailsUrl}: ${error.message}`);
+    // Proceeding, frontend will show N/A or handle nulls for these fields
+  }
+  // --- End new section ---
+
   const jobsUrl = `https://api.github.com/repos/${repo}/actions/runs/${id}/jobs`;
   const jobsRes = await fetch(jobsUrl, {
     headers: {
@@ -53,5 +81,13 @@ export default async function handler(req, res) {
     artifacts = artData.artifacts.map(a => ({ id: a.id, name: a.name }));
   }
 
-  res.status(200).json({ step: stepInfo, artifacts });
+  res.status(200).json({
+    status: runStatus,
+    conclusion: runConclusion,
+    started_at: runStartedAt,
+    completed_at: runCompletedAt,
+    html_url: runHtmlUrl,
+    step: stepInfo,
+    artifacts
+  });
 }

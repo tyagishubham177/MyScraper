@@ -111,6 +111,36 @@
       transform: translateY(1px) !important; /* Press in */
     }
 
+#enable.btn-neumorphic {
+  background: #28a745 !important; /* Bootstrap success green */
+  color: #fff !important; /* Ensure text is white for contrast */
+}
+
+#disable.btn-neumorphic {
+  background: #dc3545 !important; /* Bootstrap danger red */
+  color: #fff !important; /* Ensure text is white for contrast */
+}
+
+/* Optional: Adjust hover/active states if the new background conflicts badly */
+#enable.btn-neumorphic:hover {
+  background: #218838 !important; /* Darker green on hover */
+}
+
+#disable.btn-neumorphic:hover {
+  background: #c82333 !important; /* Darker red on hover */
+}
+
+/* Keep existing neumorphic box-shadows for pressed state, but ensure bg color is not lost */
+#enable.btn-neumorphic:active {
+  background: #1e7e34 !important; /* Even darker green when active */
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
+}
+
+#disable.btn-neumorphic:active {
+  background: #bd2130 !important; /* Even darker red when active */
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
+}
+
     /* Specific colors for icon and text if needed, but keeping text white by default for this bg */
     #enable.btn-neumorphic { /* color: #28a745 !important; */ }
     #disable.btn-neumorphic { /* color: #dc3545 !important; */ }
@@ -284,7 +314,7 @@
           Workflow status:
           <span id="status" class="fw-bold">Loading…</span><i data-lucide="info" class="ms-1"></i>
           <div id="loader" class="spinner-border text-info ms-2" role="status" style="display:none;width:1.5rem;height:1.5rem;"><span class="visually-hidden">Loading...</span></div>
-          <button id="refresh" class="btn btn-sm btn-secondary ms-2 btn-neumorphic" data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh workflow status and run list"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
+          <button id="refresh" class="btn btn-sm btn-secondary ms-2 btn-neumorphic"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
         </p>
         <p>Use the buttons below to enable or disable the scheduled GitHub Action.</p>
         <div class="mb-3">
@@ -323,6 +353,7 @@
         if (res.ok) {
           // Optionally, could use res.text() if the API sometimes returns useful non-error messages
           // For now, a generic success message is fine since fetchStatus updates the primary status.
+          resultEl.textContent = ''; // Clear the "Processing..." message
           // resultEl.textContent = 'Action processed successfully. New status reflected above.';
           resultEl.className = 'bg-light p-2 rounded text-success-emphasis'; // Use Bootstrap text color
         } else {
@@ -526,7 +557,7 @@
           item.innerHTML = `
             <h2 class="accordion-header" id="${headingId}">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
-                <i data-lucide="calendar-days" class="me-2"></i> ${formattedDate} - ${statusBadgeHTML}
+                <i data-lucide="calendar-days" class="me-2"></i> ${formattedDate} ${statusBadgeHTML}
               </button>
             </h2>
             <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-run-id="${r.id}" data-run-url="${r.url}" data-run-created-at="${r.created_at}" data-run-conclusion="${r.conclusion || r.status}">
@@ -588,11 +619,12 @@
               const info = await r.json();
 
               // Populate Overview Tab
-              let overviewHtml = `<p><a href="${runUrl}" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>`; // Added rel attribute
+              const githubLink = info.html_url || runUrl; // Use info.html_url if available
+              let overviewHtml = `<p><a href="${githubLink}" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>`;
               overviewHtml += `<p><strong>Status:</strong> ${info.status || 'N/A'}</p>`;
               overviewHtml += `<p><strong>Conclusion:</strong> ${info.conclusion || 'N/A'}</p>`;
-              if (info.started_at) overviewHtml += `<p><strong>Started:</strong> ${formatRunDate(info.started_at)}</p>`; // Using formatRunDate
-              if (info.completed_at) overviewHtml += `<p><strong>Completed:</strong> ${formatRunDate(info.completed_at)}</p>`; // Using formatRunDate
+              overviewHtml += `<p><strong>Started:</strong> ${info.started_at ? formatRunDate(info.started_at) : 'N/A'}</p>`;
+              overviewHtml += `<p><strong>Completed:</strong> ${info.completed_at ? formatRunDate(info.completed_at) : 'N/A'}</p>`;
               overviewTabPane.innerHTML = overviewHtml;
               overviewTabPane.classList.add('fade-in-content');
 
@@ -633,13 +665,33 @@
                 const blob = await logRes.blob();
                 const zip = await JSZip.loadAsync(blob);
                 let rawLogText = "No relevant log file found.";
+                let foundLog = false;
+                const normalizedStepName = "runstockchecker"; // "Run stock checker" -> "runstockchecker"
+
                 for (const fname of Object.keys(zip.files)) {
-                  const lower = fname.toLowerCase();
-                  if (lower.includes('run_stock_checker') || lower.includes('stock checker')) {
+                  const lowerFname = fname.toLowerCase();
+                  const normalizedFname = lowerFname.replace(/[\s_]+/g, '');
+
+                  // Primary, more specific match (e.g., "job_name/1_Run_stock_checker.txt" -> "job_name/1_runstockchecker.txt")
+                  if (normalizedFname.includes(normalizedStepName)) {
                     rawLogText = await zip.files[fname].async('string');
+                    foundLog = true;
                     break;
                   }
                 }
+
+                if (!foundLog) {
+                  // Fallback to broader, existing matches if primary didn't find anything
+                  for (const fname of Object.keys(zip.files)) {
+                    const lowerFname = fname.toLowerCase();
+                    if (lowerFname.includes('run_stock_checker') || lowerFname.includes('stock checker') || lowerFname.includes('stock-checker')) { // Added 'stock-checker'
+                      rawLogText = await zip.files[fname].async('string');
+                      foundLog = true; // Mark as found
+                      break;
+                    }
+                  }
+                }
+
                 const cleanedLogText = cleanLogText(rawLogText);
                 logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs..."><pre class="bg-light border mt-2 p-2 small fade-in-content">${cleanedLogText}</pre>`;
                 logsTabPane.dataset.loaded = 'true';
@@ -873,8 +925,8 @@
     });
   </script>
 
-  <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History" data-bs-toggle="tooltip" data-bs-placement="left" title="Open Fast2SMS Transactional History">
-    <i data-lucide="external-link"></i>
+  <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History">
+    <i data-lucide="link"></i>
   </a>
 
   <script>
