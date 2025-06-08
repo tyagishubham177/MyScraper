@@ -81,10 +81,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    #result {
-      white-space: pre-wrap;
-      /* Keeping bg-light on #result for readability, it will be less transparent */
-    }
 
     /* Neumorphic Button Styling & Ripple Effect */
     .btn-neumorphic {
@@ -321,7 +317,6 @@
           <button id="enable" class="btn btn-success me-2 btn-neumorphic"><i data-lucide="play-circle" class="me-1"></i>Enable workflow</button>
           <button id="disable" class="btn btn-danger btn-neumorphic"><i data-lucide="stop-circle" class="me-1"></i>Disable workflow</button>
         </div>
-        <pre id="result" class="bg-light p-2 rounded"></pre>
         <h2 class="mt-4">Recent runs</h2>
         <div id="runsAccordion" class="accordion"></div>
       </div>
@@ -346,26 +341,12 @@
 
     async function call(path) {
       showLoader();
-      const resultEl = document.getElementById('result');
-      resultEl.textContent = 'Processing...';
       try {
-        const res = await fetch(path, { method: 'POST' });
-        if (res.ok) {
-          // Optionally, could use res.text() if the API sometimes returns useful non-error messages
-          // For now, a generic success message is fine since fetchStatus updates the primary status.
-          resultEl.textContent = ''; // Clear the "Processing..." message
-          // resultEl.textContent = 'Action processed successfully. New status reflected above.';
-          resultEl.className = 'bg-light p-2 rounded text-success-emphasis'; // Use Bootstrap text color
-        } else {
-          const errorText = await res.text();
-          resultEl.textContent = `Error: ${errorText || res.statusText}`;
-          resultEl.className = 'bg-light p-2 rounded text-danger-emphasis'; // Use Bootstrap text color
-        }
+        await fetch(path, { method: "POST" });
       } catch (error) {
-        resultEl.textContent = `Network or client-side error: ${error.message}`;
-        resultEl.className = 'bg-light p-2 rounded text-danger-emphasis';
+        console.error("Action error:", error);
       }
-      await fetchStatus(); // This will update the main status badge and hide loader
+      await fetchStatus();
     }
 
     async function fetchStatus() {
@@ -567,9 +548,6 @@
                     <button class="nav-link active" id="overview-tab-${idx}" data-bs-toggle="tab" data-bs-target="#overview-${idx}" type="button" role="tab" aria-controls="overview-${idx}" aria-selected="true">Overview</button>
                   </li>
                   <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="execution-tab-${idx}" data-bs-toggle="tab" data-bs-target="#execution-${idx}" type="button" role="tab" aria-controls="execution-${idx}" aria-selected="false">Execution</button>
-                  </li>
-                  <li class="nav-item" role="presentation">
                     <button class="nav-link" id="logs-tab-${idx}" data-bs-toggle="tab" data-bs-target="#logs-${idx}" type="button" role="tab" aria-controls="logs-${idx}" aria-selected="false">Logs</button>
                   </li>
                   <li class="nav-item" role="presentation">
@@ -581,13 +559,12 @@
                 </ul>
                 <div class="tab-content pt-2" id="runTabsContent-${idx}">
                   <div class="tab-pane fade show active p-2" id="overview-${idx}" role="tabpanel" aria-labelledby="overview-tab-${idx}">Loading overview...</div>
-                  <div class="tab-pane fade p-2" id="execution-${idx}" role="tabpanel" aria-labelledby="execution-tab-${idx}">Loading execution details...</div>
                   <div class="tab-pane fade p-2" id="logs-${idx}" role="tabpanel" aria-labelledby="logs-tab-${idx}">
                     <input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">
                     Loading logs...
                   </div>
                   <div class="tab-pane fade p-2" id="artifacts-${idx}" role="tabpanel" aria-labelledby="artifacts-tab-${idx}">Loading artifacts...</div>
-                  <div class="tab-pane fade p-2" id="performance-${idx}" role="tabpanel" aria-labelledby="performance-tab-${idx}">Performance data not available for this run.</div>
+                  <div class="tab-pane fade p-2" id="performance-${idx}" role="tabpanel" aria-labelledby="performance-tab-${idx}">Loading performance...</div>
                 </div>
               </div>
             </div>
@@ -608,10 +585,10 @@
 
             // Use the derived numericalIndex for querying elements
             const overviewTabPane = currentCollapse.querySelector(`#overview-${numericalIndex}`);
-            const executionTabPane = currentCollapse.querySelector(`#execution-${numericalIndex}`);
+            const performanceTabPane = currentCollapse.querySelector(`#performance-${numericalIndex}`);
 
             overviewTabPane.innerHTML = 'Loading overview...'; // Reset before fetch
-            executionTabPane.innerHTML = 'Loading execution details...'; // Reset before fetch
+            if (performanceTabPane) performanceTabPane.textContent = 'Loading performance...';
 
             try {
               const r = await fetch(`/api/run?id=${runId}`);
@@ -625,28 +602,32 @@
               overviewHtml += `<p><strong>Conclusion:</strong> ${info.conclusion || 'N/A'}</p>`;
               overviewHtml += `<p><strong>Started:</strong> ${info.started_at ? formatRunDate(info.started_at) : 'N/A'}</p>`;
               overviewHtml += `<p><strong>Completed:</strong> ${info.completed_at ? formatRunDate(info.completed_at) : 'N/A'}</p>`;
+              if (info.step) {
+                overviewHtml += `<h6 class="mt-3">Step: Run stock checker</h6>`;
+                overviewHtml += `<p>Status: ${info.step.status}</p>`;
+                if (info.step.conclusion) overviewHtml += `<p>Conclusion: ${info.step.conclusion}</p>`;
+                if (info.step.started_at) overviewHtml += `<p>Started: ${new Date(info.step.started_at).toLocaleString()}</p>`;
+                if (info.step.completed_at) overviewHtml += `<p>Completed: ${new Date(info.step.completed_at).toLocaleString()}</p>`;
+              } else {
+                overviewHtml += '<p>No "Run stock checker" step found.</p>';
+              }
               overviewTabPane.innerHTML = overviewHtml;
               overviewTabPane.classList.add('fade-in-content');
 
-              // Populate Execution Details Tab
-              let executionHtml = '';
-              if (info.step) {
-                executionHtml += `<p><strong>Step: Run stock checker</strong></p>`;
-                executionHtml += `<p>Status: ${info.step.status}</p>`;
-                if (info.step.conclusion) executionHtml += `<p>Conclusion: ${info.step.conclusion}</p>`;
-                if (info.step.started_at) executionHtml += `<p>Started: ${new Date(info.step.started_at).toLocaleString()}</p>`;
-                if (info.step.completed_at) executionHtml += `<p>Completed: ${new Date(info.step.completed_at).toLocaleString()}</p>`;
-              } else {
-                executionHtml = '<p>No "Run stock checker" step found.</p>';
+              if (performanceTabPane) {
+                let perfHtml = 'Performance data not available.';
+                if (info.started_at && info.completed_at) {
+                  const durSec = (new Date(info.completed_at) - new Date(info.started_at)) / 1000;
+                  perfHtml = `<p>Duration: ${durSec.toFixed(1)}s</p>`;
+                }
+                performanceTabPane.innerHTML = perfHtml;
+                performanceTabPane.classList.add('fade-in-content');
               }
-              executionTabPane.innerHTML = executionHtml;
-              executionTabPane.classList.add('fade-in-content');
 
-              currentCollapse.dataset.overviewLoaded = 'true'; // Mark overview/execution as loaded
+              currentCollapse.dataset.overviewLoaded = 'true'; // Mark overview as loaded
 
             } catch (err) {
               overviewTabPane.innerHTML = `<div class="text-danger">Error loading overview: ${err.message}</div>`;
-              executionTabPane.innerHTML = `<div class="text-danger">Error loading execution details.</div>`;
             }
           });
 
@@ -684,11 +665,17 @@
                   // Fallback to broader, existing matches if primary didn't find anything
                   for (const fname of Object.keys(zip.files)) {
                     const lowerFname = fname.toLowerCase();
-                    if (lowerFname.includes('run_stock_checker') || lowerFname.includes('stock checker') || lowerFname.includes('stock-checker')) { // Added 'stock-checker'
+                    if (lowerFname.includes('run_stock_checker') || lowerFname.includes('stock checker') || lowerFname.includes('stock-checker')) {
                       rawLogText = await zip.files[fname].async('string');
                       foundLog = true; // Mark as found
                       break;
                     }
+                  }
+                }
+                if (!foundLog) {
+                  const firstFile = Object.keys(zip.files)[0];
+                  if (firstFile) {
+                    rawLogText = await zip.files[firstFile].async('string');
                   }
                 }
 
@@ -926,7 +913,7 @@
   </script>
 
   <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History">
-    <i data-lucide="link"></i>
+    <i data-lucide="external-link"></i>
   </a>
 
   <script>
