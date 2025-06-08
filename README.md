@@ -1,30 +1,63 @@
 # 🥤 Amul Lassi Tracker
 
-**Zero-rupee GitHub Actions bot** that pings your WhatsApp every time
-_Amul High-Protein Rose Lassi (pack of 30)_ flips from “Sold Out” ➜ “Add to Cart”.
+Amul periodically releases a *High-Protein Rose Lassi* pack that often goes out of stock in minutes. This repository contains a small Python utility and accompanying GitHub Actions workflow that watches the [Amul web store](https://shop.amul.com) for the pack of 30 being available. When the script detects that the product can be added to cart, a message is sent via Fast2SMS so that you can order immediately.
 
-## 🔧 Setup (5 mins)
+The project was created with the goal of running **for free** using only GitHub Actions. By default the action checks every two hours and uploads screenshots of each run for debugging.
 
-1. **Clone & install**
+## How it works
+
+1. **check_stock.py** uses [Playwright](https://playwright.dev) to load the product page in a headless browser. It types your pincode, waits for the availability indicators and determines whether the item is in stock.
+2. When an "Add to Cart" button is found and the page does not show "Sold Out", the script sends an SMS through the Fast2SMS API. Multiple recipients can be configured via environment variables.
+3. Each run saves screenshots inside the `artifacts/` directory. When executed by GitHub Actions these screenshots are uploaded as an action artifact so you can see exactly what the page looked like.
+
+The workflow definition lives in `.github/workflows/schedule.yml` and runs every two hours (`cron: "0 */2 * * *"`). You can also trigger it manually from the Actions tab.
+
+## Getting started
+
+1. **Clone the repository and install dependencies**
    ```bash
    git clone https://github.com/<you>/amul-lassi-tracker.git
    cd amul-lassi-tracker
    pip install -r requirements.txt
    ```
+   Playwright needs browser binaries so run `playwright install` if you plan to execute the script locally.
 
-2. **Trigger the workflow manually**
-   - Open your repository on GitHub and go to the **Actions** tab.
-   - Select **Lassi Watchdog** and use the **Run workflow** button.
+2. **Set up environment variables**
+   - `PINCODE` – the postal code used on the Amul store.
+   - `F2S_API_KEY` – your Fast2SMS authentication key.
+   - `F2S_NUMBERS` – comma separated list of phone numbers to notify (e.g. `91xxxxxxxxxx`).
+   These can be placed in a `.env` file or configured as GitHub secrets when using the workflow.
 
-## 🌐 Web UI on Vercel
+3. **Run locally**
+   ```bash
+   python check_stock.py
+   ```
+   The script prints each step and saves screenshots to the `artifacts/` folder.
 
-This repo includes a small web interface (in `web/`) that can be deployed to [Vercel](https://vercel.com). The page exposes **Enable** and **Disable** buttons and also shows the current workflow status with a **Check status** button.
+4. **Run via GitHub Actions**
+   - Fork this repository or push it to your own account.
+   - Add the above variables as secrets in your GitHub project.
+   - The `Lassi Watchdog` workflow will check every two hours and upload screenshots from each run.
 
-### Deploy steps
-1. Push this repository to your own GitHub account.
+## Optional web interface
+
+The `web/` folder contains a very small HTML page and three API endpoints that can be deployed to [Vercel](https://vercel.com). The page lets you enable or disable the scheduled GitHub Action and check its current status.
+
+### Deploying the UI
+
+1. Push your copy of this repository to GitHub.
 2. Create a new Vercel project and import the repo.
-3. In the Vercel dashboard, define the following environment variables:
-   - `GH_REPO` – `<owner>/<repo>` name of this repo.
-   - `GH_TOKEN` – a GitHub token with `workflow` scope.
-   - `GH_WORKFLOW` – name of the workflow file (defaults to `schedule.yml`).
-4. Deploy. Visiting the deployed URL will show a page to enable or disable the workflow.
+3. In Vercel, set the environment variables:
+   - `GH_REPO` – `<owner>/<repo>` pointing to your GitHub repository.
+   - `GH_TOKEN` – a token with the `workflow` scope so the API can toggle the workflow.
+   - `GH_WORKFLOW` – workflow filename, defaults to `schedule.yml`.
+4. Deploy the project. Visiting the deployed URL will display buttons to enable/disable the workflow and a **Check status** button to see if it is currently active.
+
+## Files
+
+- `check_stock.py` – main Playwright script that performs the stock check and sends notifications.
+- `requirements.txt` – Python dependencies: `playwright`, `beautifulsoup4` and `requests`.
+- `.github/workflows/schedule.yml` – GitHub Actions workflow that installs dependencies, runs the script and uploads screenshots.
+- `web/` – optional Vercel front‑end for toggling the workflow.
+
+With this setup you can monitor Amul's store for the elusive lassi pack and get an instant alert on your phone as soon as it becomes available.
