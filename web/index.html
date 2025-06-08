@@ -623,15 +623,16 @@
           });
 
           // Logs Tab Lazy Loading
-          const logsTabTrigger = currentCollapse.querySelector(`button[id^="logs-tab-${collapseIdSuffix}"]`);
-          const logsTabPane = currentCollapse.querySelector(`div[id^="logs-${collapseIdSuffix}"]`);
+          // Corrected: Use 'col' which is the .accordion-collapse element in this scope
+          const logsTabTrigger = col.querySelector(`button[id^="logs-tab-${collapseIdSuffix}"]`);
+          const logsTabPane = col.querySelector(`div[id^="logs-${collapseIdSuffix}"]`);
           if (logsTabTrigger && logsTabPane) {
             logsTabTrigger.addEventListener('shown.bs.tab', async () => {
               if (logsTabPane.dataset.loaded) return;
               logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">Loading logs...`; // Keep search bar
-              const currentRunId = currentCollapse.dataset.runId; // Use runId from the current collapse scope
+              const runIdForLog = col.dataset.runId; // Corrected: Use 'col' to get runId
               try {
-                const logRes = await fetch(`/api/logs?id=${currentRunId}`);
+                const logRes = await fetch(`/api/logs?id=${runIdForLog}`);
                 if (!logRes.ok) throw new Error(`Failed to fetch logs: ${logRes.status}`);
                 const blob = await logRes.blob();
                 const zip = await JSZip.loadAsync(blob);
@@ -653,15 +654,16 @@
           }
 
           // Artifacts Tab Lazy Loading
-          const artifactsTabTrigger = currentCollapse.querySelector(`button[id^="artifacts-tab-${collapseIdSuffix}"]`);
-          const artifactsTabPane = currentCollapse.querySelector(`div[id^="artifacts-${collapseIdSuffix}"]`);
+          // Corrected: Use 'col' which is the .accordion-collapse element in this scope
+          const artifactsTabTrigger = col.querySelector(`button[id^="artifacts-tab-${collapseIdSuffix}"]`);
+          const artifactsTabPane = col.querySelector(`div[id^="artifacts-${collapseIdSuffix}"]`);
           if (artifactsTabTrigger && artifactsTabPane) {
             artifactsTabTrigger.addEventListener('shown.bs.tab', async () => {
               if (artifactsTabPane.dataset.loaded) return;
               artifactsTabPane.textContent = 'Loading artifacts...';
-              const currentRunId = currentCollapse.dataset.runId; // Use runId from the current collapse scope
+              const runIdForArtifact = col.dataset.runId; // Corrected: Use 'col' to get runId
               try {
-                 const r = await fetch(`/api/run?id=${currentRunId}`); // Need full run info for artifacts array
+                 const r = await fetch(`/api/run?id=${runIdForArtifact}`); // Need full run info for artifacts array
                  if (!r.ok) throw new Error(`Failed to fetch run details for artifacts: ${r.status}`);
                  const info = await r.json();
 
