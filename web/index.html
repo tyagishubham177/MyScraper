@@ -298,6 +298,31 @@
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
+
+    /* Carousel customizations */
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+    }
+    .carousel-control-prev-icon {
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http://www.w3.org/2000/svg'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'3'%20viewBox%3D'0%200%2016%2016'%3E%3Cpath%20d%3D'M11%201%203%208l8%207'/%3E%3C/svg%3E");
+    }
+    .carousel-control-next-icon {
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http://www.w3.org/2000/svg'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'3'%20viewBox%3D'0%200%2016%2016'%3E%3Cpath%20d%3D'M5%201l8%207-8%207'/%3E%3C/svg%3E");
+    }
+    .carousel-counter {
+      position: absolute;
+      right: 0.75rem;
+      bottom: 0.75rem;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body>
@@ -688,6 +713,7 @@
                   const carouselId = `carousel-${runIdForArtifact}`;
                   let itemsHtml = '';
                   let isFirstItem = true;
+                  let imageCount = 0;
                   for (const art of info.artifacts) {
                     const zipRes = await fetch(`/api/artifact?id=${art.id}`);
                     if (zipRes.ok) {
@@ -701,13 +727,14 @@
                               <img src="data:image/png;base64,${data}" class="d-block w-100">
                             </div>`;
                           isFirstItem = false;
+                          imageCount += 1;
                         }
                       }
                     }
                   }
                   if (itemsHtml) {
                     artifactsTabPane.innerHTML = `
-                      <div id="${carouselId}" class="carousel slide mt-3 fade-in-content">
+                      <div id="${carouselId}" class="carousel slide mt-3 fade-in-content" data-bs-touch="true">
                         <div class="carousel-inner">${itemsHtml}</div>
                         <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev">
                           <span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span>
@@ -715,7 +742,19 @@
                         <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next">
                           <span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span>
                         </button>
+                        <div class="carousel-counter"></div>
                       </div>`;
+
+                    const carouselEl = artifactsTabPane.querySelector(`#${carouselId}`);
+                    const counterEl = carouselEl.querySelector('.carousel-counter');
+                    const updateCounter = () => {
+                      const items = carouselEl.querySelectorAll('.carousel-item');
+                      const active = carouselEl.querySelector('.carousel-item.active');
+                      const index = Array.from(items).indexOf(active) + 1;
+                      counterEl.textContent = `${index}/${imageCount}`;
+                    };
+                    updateCounter();
+                    carouselEl.addEventListener('slid.bs.carousel', updateCounter);
                   } else {
                     artifactsTabPane.innerHTML = '<p class="fade-in-content">No PNG artifacts found.</p>';
                   }
