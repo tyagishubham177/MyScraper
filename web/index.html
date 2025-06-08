@@ -4,13 +4,34 @@
   <meta charset="utf-8">
   <title>Lassi Watchdog Control</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; }
-    button { margin: 0 5px 10px 0; padding: 10px 20px; }
-    #result { margin-top: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      text-align: center;
+    }
+    button {
+      margin: 0 5px 10px 0;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #status {
+      font-weight: bold;
+    }
+    #result {
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
   <h1>Lassi Watchdog Control</h1>
+  <p>
+    Workflow status:
+    <span id="status">Loading…</span>
+    <button id="refresh">Check status</button>
+  </p>
   <p>Use the buttons below to enable or disable the scheduled GitHub Action.</p>
   <button id="enable">Enable workflow</button>
   <button id="disable">Disable workflow</button>
@@ -18,12 +39,33 @@
   <script>
     async function call(path) {
       document.getElementById('result').textContent = 'Processing...';
-      const res = await fetch(path, {method: 'POST'});
+      const res = await fetch(path, { method: 'POST' });
       const text = await res.text();
       document.getElementById('result').textContent = text;
+      await fetchStatus();
     }
+
+    async function fetchStatus() {
+      const span = document.getElementById('status');
+      span.textContent = 'Loading…';
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) {
+          span.textContent = 'Error';
+          return;
+        }
+        const data = await res.json();
+        span.textContent = data.state;
+      } catch (e) {
+        span.textContent = 'Error';
+      }
+    }
+
     document.getElementById('enable').onclick = () => call('/api/enable');
     document.getElementById('disable').onclick = () => call('/api/disable');
+    document.getElementById('refresh').onclick = fetchStatus;
+
+    fetchStatus();
   </script>
 </body>
 </html>
