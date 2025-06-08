@@ -242,10 +242,11 @@
       background-color: #0b5ed7; /* Darker shade of primary blue */
       box-shadow: 0 6px 12px rgba(0,0,0,0.3);
     }
-    .fab i { /* Ensure icon is centered well if needed, Lucide default usually fine */
-      width: 24px; /* Adjust if needed */
-      height: 24px; /* Adjust if needed */
-      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5); /* Added for FAB icon */
+    .fab i,
+    .fab svg {
+      width: 24px;
+      height: 24px;
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5);
     }
     .card h1.text-primary {
         text-shadow: 0 0 4px rgba(0, 0, 0, 0.2); /* Subtle dark shadow for primary text */
@@ -553,9 +554,6 @@
                   <li class="nav-item" role="presentation">
                     <button class="nav-link" id="artifacts-tab-${idx}" data-bs-toggle="tab" data-bs-target="#artifacts-${idx}" type="button" role="tab" aria-controls="artifacts-${idx}" aria-selected="false">Artifacts</button>
                   </li>
-                  <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="performance-tab-${idx}" data-bs-toggle="tab" data-bs-target="#performance-${idx}" type="button" role="tab" aria-controls="performance-${idx}" aria-selected="false">Performance</button>
-                  </li>
                 </ul>
                 <div class="tab-content pt-2" id="runTabsContent-${idx}">
                   <div class="tab-pane fade show active p-2" id="overview-${idx}" role="tabpanel" aria-labelledby="overview-tab-${idx}">Loading overview...</div>
@@ -564,7 +562,6 @@
                     Loading logs...
                   </div>
                   <div class="tab-pane fade p-2" id="artifacts-${idx}" role="tabpanel" aria-labelledby="artifacts-tab-${idx}">Loading artifacts...</div>
-                  <div class="tab-pane fade p-2" id="performance-${idx}" role="tabpanel" aria-labelledby="performance-tab-${idx}">Loading performance...</div>
                 </div>
               </div>
             </div>
@@ -585,10 +582,8 @@
 
             // Use the derived numericalIndex for querying elements
             const overviewTabPane = currentCollapse.querySelector(`#overview-${numericalIndex}`);
-            const performanceTabPane = currentCollapse.querySelector(`#performance-${numericalIndex}`);
 
-            overviewTabPane.innerHTML = 'Loading overview...'; // Reset before fetch
-            if (performanceTabPane) performanceTabPane.textContent = 'Loading performance...';
+            overviewTabPane.innerHTML = 'Loading overview...';
 
             try {
               const r = await fetch(`/api/run?id=${runId}`);
@@ -598,31 +593,18 @@
               // Populate Overview Tab
               const githubLink = info.html_url || runUrl; // Use info.html_url if available
               let overviewHtml = `<p><a href="${githubLink}" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>`;
-              overviewHtml += `<p><strong>Status:</strong> ${info.status || 'N/A'}</p>`;
-              overviewHtml += `<p><strong>Conclusion:</strong> ${info.conclusion || 'N/A'}</p>`;
-              overviewHtml += `<p><strong>Started:</strong> ${info.started_at ? formatRunDate(info.started_at) : 'N/A'}</p>`;
-              overviewHtml += `<p><strong>Completed:</strong> ${info.completed_at ? formatRunDate(info.completed_at) : 'N/A'}</p>`;
-              if (info.step) {
-                overviewHtml += `<h6 class="mt-3">Step: Run stock checker</h6>`;
-                overviewHtml += `<p>Status: ${info.step.status}</p>`;
-                if (info.step.conclusion) overviewHtml += `<p>Conclusion: ${info.step.conclusion}</p>`;
-                if (info.step.started_at) overviewHtml += `<p>Started: ${new Date(info.step.started_at).toLocaleString()}</p>`;
-                if (info.step.completed_at) overviewHtml += `<p>Completed: ${new Date(info.step.completed_at).toLocaleString()}</p>`;
-              } else {
-                overviewHtml += '<p>No "Run stock checker" step found.</p>';
-              }
+              const statusText = info.status || (info.step ? info.step.status : 'N/A');
+              overviewHtml += `<p><strong>Status:</strong> ${statusText}</p>`;
+              const conclusionText = info.conclusion || (info.step ? info.step.conclusion : 'N/A');
+              overviewHtml += `<p><strong>Conclusion:</strong> ${conclusionText}</p>`;
+              const started = info.started_at || (info.step ? info.step.started_at : null);
+              overviewHtml += `<p><strong>Started:</strong> ${started ? formatRunDate(started) : 'N/A'}</p>`;
+              const completed = info.completed_at || (info.step ? info.step.completed_at : null);
+              overviewHtml += `<p><strong>Completed:</strong> ${completed ? formatRunDate(completed) : 'N/A'}</p>`;
               overviewTabPane.innerHTML = overviewHtml;
               overviewTabPane.classList.add('fade-in-content');
 
-              if (performanceTabPane) {
-                let perfHtml = 'Performance data not available.';
-                if (info.started_at && info.completed_at) {
-                  const durSec = (new Date(info.completed_at) - new Date(info.started_at)) / 1000;
-                  perfHtml = `<p>Duration: ${durSec.toFixed(1)}s</p>`;
-                }
-                performanceTabPane.innerHTML = perfHtml;
-                performanceTabPane.classList.add('fade-in-content');
-              }
+
 
               currentCollapse.dataset.overviewLoaded = 'true'; // Mark overview as loaded
 
@@ -913,7 +895,11 @@
   </script>
 
   <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History">
-    <i data-lucide="external-link"></i>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
   </a>
 
   <script>
