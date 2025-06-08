@@ -6,62 +6,157 @@
   <title>Lassi Watchdog Control</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://unpkg.com/lucide-static@latest/dist/lucide.min.js"></script>
   <style>
+    html {
+      height: 100%;
+      overflow-y: auto; /* Allow scrolling on html element */
+    }
     body {
       font-family: 'Inter', Arial, sans-serif;
       min-height: 100vh;
       display: flex;
-      animation: gradientAnimation 15s ease infinite;
-      background-size: 400% 400%; /* Needs to be large enough for smooth animation */
-      align-items: center;
+      align-items: center; /* This centers the card when content is short */
       justify-content: center;
+      position: relative; /* Needed for z-indexing of particles-js */
+      overflow-x: hidden; /* Prevent horizontal scrollbars */
+      overflow-y: auto;   /* Allow vertical scrolling for the body */
+      padding-top: 2rem; /* Add some padding if card is very tall */
+      padding-bottom: 2rem; /* Add some padding if card is very tall */
     }
+    /* Adjust alignment when body needs to scroll */
+    body.is-scrollable {
+      align-items: flex-start; /* Align card to top when scrollable */
+    }
+
 
     @keyframes gradientAnimation {
       0% {
-        background-image: linear-gradient(135deg, #ffecd2, #fcb69f);
+        background-image: linear-gradient(135deg, #89f7fe, #66a6ff); /* Light Blue to Blue */
         background-position: 0% 50%;
       }
-      33% {
-        background-image: linear-gradient(135deg, #fcb69f, #fbc2eb);
+      25% {
+        background-image: linear-gradient(135deg, #66a6ff, #ffb3ba); /* Blue to Pink */
+        background-position: 50% 50%;
+      }
+      50% {
+        background-image: linear-gradient(135deg, #ffb3ba, #ffdf7e); /* Pink to Yellow */
         background-position: 100% 50%;
       }
-      66% {
-        background-image: linear-gradient(135deg, #fbc2eb, #a18cd1);
-        background-position: 0% 50%;
+      75% {
+        background-image: linear-gradient(135deg, #ffdf7e, #b4f8c8); /* Yellow to Green */
+        background-position: 50% 50%;
       }
       100% {
-        background-image: linear-gradient(135deg, #a18cd1, #ffecd2);
-        background-position: 100% 50%;
+        background-image: linear-gradient(135deg, #b4f8c8, #89f7fe); /* Green to Light Blue */
+        background-position: 0% 50%;
       }
+    }
+
+    #particles-js-bg { /* Renamed to avoid conflict if particles-js creates its own with that ID */
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: -2; /* Behind particles-js canvas */
+      animation: gradientAnimation 20s ease infinite;
+      background-size: 400% 400%;
     }
 
     .card {
       max-width: 800px;
       width: 100%;
-      background-color: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px); /* For Safari */
+      background-color: rgba(255, 255, 255, 0.1); /* Adjusted opacity */
+      backdrop-filter: blur(20px); /* Increased blur */
+      -webkit-backdrop-filter: blur(20px); /* For Safari */
       border: 1px solid rgba(209, 213, 219, 0.3);
-      /* shadow-lg should still look okay, but might need adjustment if visible */
+      z-index: 1; /* Ensure card is above background elements */
+      animation: cardFadeIn 0.8s ease-out forwards;
+      opacity: 0; /* Start hidden for fade-in */
+      transform-style: preserve-3d; /* For vanilla-tilt.js */
     }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     #result {
       white-space: pre-wrap;
       /* Keeping bg-light on #result for readability, it will be less transparent */
     }
 
-    /* Button hover effects */
-    #enable, #disable, #refresh {
-      transition: all 0.2s ease-out;
+    /* Neumorphic Button Styling & Ripple Effect */
+    .btn-neumorphic {
+      border-radius: 20px !important; /* Softer corners, !important to override Bootstrap if needed */
+      background: rgba(224, 224, 224, 0.10) !important; /* Light background for neumorphic effect on darkish bg */
+      padding: 12px 20px !important;
+      font-weight: 600 !important;
+      transition: all 0.15s ease-in-out !important;
+      border: none !important; /* Remove bootstrap border */
+      box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2), -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
+      position: relative !important; /* For ripple */
+      overflow: hidden !important; /* To contain ripple */
+      color: #fff !important; /* Default text color for neumorphic buttons */
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5); /* Subtle shadow for readability */
     }
 
-    #enable:hover, #disable:hover, #refresh:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.175) !important; /* !important to ensure override if needed */
+    .btn-neumorphic:hover {
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2), -2px -2px 5px rgba(255, 255, 255, 0.05) !important;
+      transform: translateY(-1px) !important; /* Subtle lift */
     }
 
-    /* Status pulse animation */
+    .btn-neumorphic:active {
+      box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
+      transform: translateY(1px) !important; /* Press in */
+    }
+
+    /* Specific colors for icon and text if needed, but keeping text white by default for this bg */
+    #enable.btn-neumorphic { /* color: #28a745 !important; */ }
+    #disable.btn-neumorphic { /* color: #dc3545 !important; */ }
+    #refresh.btn-neumorphic { /* color: #6c757d !important; */ }
+
+    /* Make icons slightly more prominent on neumorphic buttons */
+    .btn-neumorphic i {
+      filter: brightness(1.2);
+    }
+
+    /* Ripple Effect */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3); /* Light ripple */
+      transform: scale(0);
+      animation: ripple-animation 0.6s linear;
+      pointer-events: none; /* So it doesn't interfere with button clicks */
+    }
+
+    @keyframes ripple-animation {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* Glowing/Pulsing Effects for Active States */
+    /* Base neumorphic shadow must be repeated here */
+    @keyframes glow-success {
+      0%, 100% { box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05), 0 0 5px #28a745, 0 0 10px #28a745 !important; }
+      50% { box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05), 0 0 15px #28a745, 0 0 20px #28a745 !important; }
+    }
+    .glow-success {
+      animation: glow-success 1.5s infinite ease-in-out;
+    }
+
+    @keyframes glow-danger {
+      0%, 100% { box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05), 0 0 5px #dc3545, 0 0 10px #dc3545 !important; }
+      50% { box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -4px -4px 8px rgba(255,255,255,0.05), 0 0 15px #dc3545, 0 0 20px #dc3545 !important; }
+    }
+    .glow-danger {
+      animation: glow-danger 1.5s infinite ease-in-out;
+    }
+
+    /* Status pulse animation - existing */
     @keyframes pulse {
       0%, 100% {
         transform: scale(1);
@@ -124,10 +219,63 @@
     .fab i { /* Ensure icon is centered well if needed, Lucide default usually fine */
       width: 24px; /* Adjust if needed */
       height: 24px; /* Adjust if needed */
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5); /* Added for FAB icon */
+    }
+    .card h1.text-primary {
+        text-shadow: 0 0 4px rgba(0, 0, 0, 0.2); /* Subtle dark shadow for primary text */
+    }
+    .card p { /* For general paragraph text inside the card */
+        text-shadow: 0 0 2px rgba(0,0,0,0.1); /* Very subtle shadow for general text if needed */
+    }
+
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .spin-icon {
+      animation: spin 1s linear infinite;
+      display: inline-block; /* Ensures transform is applied correctly */
+    }
+
+    .skeleton-loader {
+      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+      border-radius: .25rem; /* Standard Bootstrap border-radius */
+      height: 1em; /* Default height, can be overridden */
+    }
+    .skeleton-loader.skeleton-text { /* For text lines */
+      width: 75%;
+      margin-bottom: .5rem;
+    }
+    .skeleton-loader.skeleton-text-full { /* For full width text lines */
+      width: 100%;
+      margin-bottom: .5rem;
+    }
+    .skeleton-loader.skeleton-badge { /* For badge like elements */
+      width: 30%;
+      height: 1.5em; /* Taller for badge */
+    }
+    .accordion-button.skeleton-item .skeleton-loader {
+       margin-right: 1rem; /* Space between icon and text */
+    }
+     .accordion-button.skeleton-item .skeleton-icon-placeholder {
+      width: 24px; /* Lucide icon size */
+      height: 24px;
+      margin-right: 0.5rem; /* Bootstrap's default me-2 for icons */
+    }
+
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
   </style>
 </head>
 <body>
+  <div id="particles-js" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0;"></div>
+  <div id="particles-js-bg"></div> <!-- Div for animated gradient background -->
   <div class="container py-4 d-flex justify-content-center">
     <div class="card shadow-lg mx-auto">
       <div class="card-body text-center">
@@ -136,12 +284,12 @@
           Workflow status:
           <span id="status" class="fw-bold">Loading…</span><i data-lucide="info" class="ms-1"></i>
           <div id="loader" class="spinner-border text-info ms-2" role="status" style="display:none;width:1.5rem;height:1.5rem;"><span class="visually-hidden">Loading...</span></div>
-          <button id="refresh" class="btn btn-sm btn-secondary ms-2"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
+          <button id="refresh" class="btn btn-sm btn-secondary ms-2 btn-neumorphic" data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh workflow status and run list"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
         </p>
         <p>Use the buttons below to enable or disable the scheduled GitHub Action.</p>
         <div class="mb-3">
-          <button id="enable" class="btn btn-success me-2"><i data-lucide="play-circle" class="me-1"></i>Enable workflow</button>
-          <button id="disable" class="btn btn-danger"><i data-lucide="stop-circle" class="me-1"></i>Disable workflow</button>
+          <button id="enable" class="btn btn-success me-2 btn-neumorphic" data-bs-toggle="tooltip" data-bs-placement="top" title="Enable the scheduled GitHub Action workflow"><i data-lucide="play-circle" class="me-1"></i>Enable workflow</button>
+          <button id="disable" class="btn btn-danger btn-neumorphic" data-bs-toggle="tooltip" data-bs-placement="top" title="Disable the scheduled GitHub Action workflow"><i data-lucide="stop-circle" class="me-1"></i>Disable workflow</button>
         </div>
         <pre id="result" class="bg-light p-2 rounded"></pre>
         <h2 class="mt-4">Recent runs</h2>
@@ -154,6 +302,8 @@
   <script>
     const loader = document.getElementById('loader');
     const statusSpan = document.getElementById('status');
+    const enableButton = document.getElementById('enable');
+    const disableButton = document.getElementById('disable');
 
     const showLoader = () => {
       loader.style.display = 'inline-block';
@@ -166,28 +316,42 @@
 
     async function call(path) {
       showLoader();
-      document.getElementById('result').textContent = 'Processing...';
-      const res = await fetch(path, { method: 'POST' });
-      const text = await res.text();
-      // hideLoader(); // fetchStatus will handle loader and pulse
-      document.getElementById('result').textContent = text;
-      await fetchStatus();
+      const resultEl = document.getElementById('result');
+      resultEl.textContent = 'Processing...';
+      try {
+        const res = await fetch(path, { method: 'POST' });
+        if (res.ok) {
+          // Optionally, could use res.text() if the API sometimes returns useful non-error messages
+          // For now, a generic success message is fine since fetchStatus updates the primary status.
+          resultEl.textContent = 'Action processed successfully. New status reflected above.';
+          resultEl.className = 'bg-light p-2 rounded text-success-emphasis'; // Use Bootstrap text color
+        } else {
+          const errorText = await res.text();
+          resultEl.textContent = `Error: ${errorText || res.statusText}`;
+          resultEl.className = 'bg-light p-2 rounded text-danger-emphasis'; // Use Bootstrap text color
+        }
+      } catch (error) {
+        resultEl.textContent = `Network or client-side error: ${error.message}`;
+        resultEl.className = 'bg-light p-2 rounded text-danger-emphasis';
+      }
+      await fetchStatus(); // This will update the main status badge and hide loader
     }
 
     async function fetchStatus() {
       statusSpan.textContent = 'Loading…';
-      // Reset classes: remove all except fw-bold, then add new ones.
-      statusSpan.className = 'fw-bold';
-      statusSpan.classList.add('badge', 'bg-info-subtle', 'text-info-emphasis', 'rounded-pill', 'status-loading-pulse');
+      statusSpan.className = 'fw-bold badge bg-info-subtle text-info-emphasis rounded-pill status-loading-pulse';
+
+      // Clear previous glow effects
+      enableButton.classList.remove('glow-success', 'glow-danger'); // Remove both, just in case
+      disableButton.classList.remove('glow-success', 'glow-danger'); // Remove both, just in case
+
 
       try {
         const res = await fetch('/api/status');
         if (!res.ok) {
           statusSpan.textContent = 'Error';
-          statusSpan.className = 'fw-bold';
-          statusSpan.classList.add('badge', 'bg-warning-subtle', 'text-warning-emphasis', 'rounded-pill');
-          statusSpan.classList.remove('status-loading-pulse');
-          hideLoader(); // Hide loader explicitly on error here
+          statusSpan.className = 'fw-bold badge bg-warning-subtle text-warning-emphasis rounded-pill';
+          hideLoader();
           return;
         }
         const data = await res.json();
@@ -197,175 +361,538 @@
 
         if (data.state && data.state.toLowerCase() === 'enabled') {
           statusSpan.classList.add('badge', 'bg-success-subtle', 'text-success-emphasis', 'rounded-pill');
+          enableButton.classList.add('glow-success');
         } else if (data.state && data.state.toLowerCase() === 'disabled') {
           statusSpan.classList.add('badge', 'bg-danger-subtle', 'text-danger-emphasis', 'rounded-pill');
+          disableButton.classList.add('glow-danger');
         } else {
-          // Default for any other states like 'unknown' or if state is not what we expect
           statusSpan.classList.add('badge', 'bg-secondary-subtle', 'text-secondary-emphasis', 'rounded-pill');
         }
       } catch (e) {
         statusSpan.textContent = 'Error';
-        statusSpan.className = 'fw-bold';
-        statusSpan.classList.add('badge', 'bg-warning-subtle', 'text-warning-emphasis', 'rounded-pill');
-        statusSpan.classList.remove('status-loading-pulse');
+        statusSpan.className = 'fw-bold badge bg-warning-subtle text-warning-emphasis rounded-pill';
       }
-      // Ensure loader is hidden regardless of path, as pulse is also removed.
-      // If call() initiated this, its hideLoader was commented out.
-      // If refresh button initiated, this hideLoader is appropriate.
       hideLoader();
     }
 
-    document.getElementById('enable').onclick = () => call('/api/enable');
-    document.getElementById('disable').onclick = () => call('/api/disable');
+    // Add ripple effect to buttons
+    function createRipple(event) {
+      const button = event.currentTarget;
+      const circle = document.createElement("span");
+      const diameter = Math.max(button.clientWidth, button.clientHeight);
+      const radius = diameter / 2;
+
+      circle.style.width = circle.style.height = `${diameter}px`;
+      // Calculate position relative to button, not viewport
+      const rect = button.getBoundingClientRect();
+      circle.style.left = `${event.clientX - rect.left - radius}px`;
+      circle.style.top = `${event.clientY - rect.top - radius}px`;
+      circle.classList.add("ripple");
+
+      const existingRipple = button.getElementsByClassName("ripple")[0];
+      if (existingRipple) {
+        existingRipple.remove();
+      }
+      button.appendChild(circle);
+    }
+
+    const neumorphicButtons = document.querySelectorAll(".btn-neumorphic");
+    neumorphicButtons.forEach(button => {
+      button.addEventListener("click", createRipple);
+    });
+
+    enableButton.onclick = () => {
+      if (confirm("Are you sure you want to enable the workflow?")) {
+        call('/api/enable');
+      }
+    };
+    disableButton.onclick = () => {
+      if (confirm("Are you sure you want to disable the workflow?")) {
+        call('/api/disable');
+      }
+    };
     document.getElementById('refresh').onclick = () => {
       fetchStatus();
       fetchRuns();
     };
 
+    function cleanLogText(logText) {
+      if (!logText) return '';
+      const lines = logText.split('\\n');
+      const cleanedLines = lines.map(line => {
+        // Remove ISO 8601-like timestamps (e.g., 2024-07-15T10:30:00.123Z)
+        let cleanedLine = line.replace(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z\s*/, '');
+        // Remove GitHub Actions specific timestamps (e.g., ##[debug]2024-07-15T10:30:00.1234567Z )
+        cleanedLine = cleanedLine.replace(/^##\[debug\]\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z\s*/, '');
+        cleanedLine = cleanedLine.replace(/^##\[command\]\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z\s*/, '');
+        cleanedLine = cleanedLine.replace(/^##\[warning\]\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z\s*/, '');
+        cleanedLine = cleanedLine.replace(/^##\[error\]\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z\s*/, '');
+         // Generic ##[...] prefix, often followed by a timestamp or command details
+        cleanedLine = cleanedLine.replace(/^##\[.*?\]\s*/, '');
+        // Remove lines that are just "##[endgroup]" or similar action logger commands if they are alone
+        if (cleanedLine.trim() === "##[endgroup]") return null; // Mark for removal
+        return cleanedLine;
+      }).filter(line => line !== null && line.trim() !== ''); // Filter out null (marked for removal) and empty lines
+
+      return cleanedLines.join('\\n');
+    }
+
+    function formatRunDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = monthNames[date.getMonth()];
+      const year = String(date.getFullYear()).slice(-2);
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // the hour '0' should be '12'
+      const formattedHours = String(hours).padStart(2, '0');
+      return `${day}-${month}-${year}, ${formattedHours}:${minutes} ${ampm}`;
+    }
+
+    function getStatusBadge(status, conclusion) {
+      let icon = '<i data-lucide="help-circle" class="me-1"></i>';
+      let badgeClass = 'bg-secondary-subtle text-secondary-emphasis';
+      let statusText = conclusion || status || 'Unknown';
+      statusText = statusText.charAt(0).toUpperCase() + statusText.slice(1).replace(/_/g, ' ');
+
+
+      if (conclusion === 'success') {
+        icon = '<i data-lucide="check-circle" class="me-1"></i>';
+        badgeClass = 'bg-success-subtle text-success-emphasis';
+      } else if (conclusion === 'failure' || conclusion === 'cancelled' || conclusion === 'timed_out') {
+        icon = '<i data-lucide="x-circle" class="me-1"></i>';
+        badgeClass = 'bg-danger-subtle text-danger-emphasis';
+      } else if (status === 'in_progress' || status === 'queued' || status === 'pending') {
+        icon = '<i data-lucide="loader-2" class="me-1 spin-icon"></i>';
+        badgeClass = 'bg-info-subtle text-info-emphasis';
+      }
+      // You can add more specific conditions for other statuses if needed
+      // e.g. 'skipped', 'action_required'
+
+      return `<span class="badge ${badgeClass} rounded-pill">${icon}${statusText}</span>`;
+    }
+
+
     async function fetchRuns() {
       const acc = document.getElementById('runsAccordion');
-      acc.innerHTML = '<div class="text-center py-2">Loading…</div>';
+      // console.log('fetchRuns: Starting, preparing skeleton loaders.'); // Simulated log
+      // Skeleton Loading
+      let skeletonHTML = '';
+      for (let i = 0; i < 3; i++) {
+        skeletonHTML += `
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed skeleton-item" type="button" disabled>
+                <span class="skeleton-loader skeleton-icon-placeholder"></span>
+                <span class="skeleton-loader skeleton-text" style="width: 40%;"></span>
+                <span class="ms-auto skeleton-loader skeleton-badge" style="width: 20%;"></span>
+              </button>
+            </h2>
+          </div>
+        `;
+      }
+      acc.innerHTML = skeletonHTML;
+      // Ensure Lucide icons in skeleton are rendered if any were used (not in this example)
+      // If skeleton items had data-lucide attributes, you'd call lucide.createIcons() here.
+
       try {
+        // console.log('fetchRuns: Fetching /api/runs...'); // Simulated log
         const res = await fetch('/api/runs');
+        // console.log('fetchRuns: Response received from /api/runs', res); // Simulated log
         if (!res.ok) {
-          acc.innerHTML = '<div class="text-danger">Error</div>';
+          // console.error('fetchRuns: API response not OK', res.status, res.statusText); // Simulated log
+          acc.innerHTML = `<div class="text-danger">Error fetching runs: ${res.status} ${res.statusText}</div>`;
           return;
         }
+        // console.log('fetchRuns: Attempting to parse JSON response...'); // Simulated log
         const data = await res.json();
+        // console.log('fetchRuns: JSON data parsed:', data); // Simulated log
+
         if (!data.runs || !data.runs.length) {
+          // console.log('fetchRuns: No runs data found or empty runs array.'); // Simulated log
           acc.innerHTML = '<div class="text-muted">No data</div>';
           return;
         }
-        acc.innerHTML = '';
+        acc.innerHTML = ''; // Clear loading message
         data.runs.forEach((r, idx) => {
           const item = document.createElement('div');
           item.className = 'accordion-item';
           const headingId = `heading${idx}`;
           const collapseId = `collapse${idx}`;
+
+          const formattedDate = formatRunDate(r.created_at);
+          const statusBadgeHTML = getStatusBadge(r.status, r.conclusion);
+
           item.innerHTML = `
             <h2 class="accordion-header" id="${headingId}">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
-                ${new Date(r.created_at).toLocaleString()} - ${r.conclusion || r.status}
+                <i data-lucide="calendar-days" class="me-2"></i> ${formattedDate} - ${statusBadgeHTML}
               </button>
             </h2>
-            <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-id="${r.id}" data-url="${r.url}">
-              <div class="accordion-body">Loading…</div>
+            <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-run-id="${r.id}" data-run-url="${r.url}" data-run-created-at="${r.created_at}" data-run-conclusion="${r.conclusion || r.status}">
+              <div class="accordion-body">
+                <ul class="nav nav-tabs" id="runTabs-${idx}" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="overview-tab-${idx}" data-bs-toggle="tab" data-bs-target="#overview-${idx}" type="button" role="tab" aria-controls="overview-${idx}" aria-selected="true">Overview</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="execution-tab-${idx}" data-bs-toggle="tab" data-bs-target="#execution-${idx}" type="button" role="tab" aria-controls="execution-${idx}" aria-selected="false">Execution</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="logs-tab-${idx}" data-bs-toggle="tab" data-bs-target="#logs-${idx}" type="button" role="tab" aria-controls="logs-${idx}" aria-selected="false">Logs</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="artifacts-tab-${idx}" data-bs-toggle="tab" data-bs-target="#artifacts-${idx}" type="button" role="tab" aria-controls="artifacts-${idx}" aria-selected="false">Artifacts</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="performance-tab-${idx}" data-bs-toggle="tab" data-bs-target="#performance-${idx}" type="button" role="tab" aria-controls="performance-${idx}" aria-selected="false">Performance</button>
+                  </li>
+                </ul>
+                <div class="tab-content pt-2" id="runTabsContent-${idx}">
+                  <div class="tab-pane fade show active p-2" id="overview-${idx}" role="tabpanel" aria-labelledby="overview-tab-${idx}">Loading overview...</div>
+                  <div class="tab-pane fade p-2" id="execution-${idx}" role="tabpanel" aria-labelledby="execution-tab-${idx}">Loading execution details...</div>
+                  <div class="tab-pane fade p-2" id="logs-${idx}" role="tabpanel" aria-labelledby="logs-tab-${idx}">
+                    <input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">
+                    Loading logs...
+                  </div>
+                  <div class="tab-pane fade p-2" id="artifacts-${idx}" role="tabpanel" aria-labelledby="artifacts-tab-${idx}">Loading artifacts...</div>
+                  <div class="tab-pane fade p-2" id="performance-${idx}" role="tabpanel" aria-labelledby="performance-tab-${idx}">Performance data not available for this run.</div>
+                </div>
+              </div>
             </div>
           `;
           acc.appendChild(item);
         });
 
         acc.querySelectorAll('.accordion-collapse').forEach(col => {
-          col.addEventListener('show.bs.collapse', async () => {
-            if (col.dataset.loaded) return;
-            const id = col.dataset.id;
-            const url = col.dataset.url;
-            const body = col.querySelector('.accordion-body');
-            body.textContent = 'Loading…';
-            const r = await fetch(`/api/run?id=${id}`);
-            if (r.ok) {
-              const info = await r.json();
-              let html = '';
-              html += `<p><a href="${url}" target="_blank">View on GitHub</a></p>`;
-              if (info.step) {
-                html += `<p><strong>Run stock checker</strong><br>`;
-                html += `Status: ${info.step.status}`;
-                if (info.step.conclusion) {
-                  html += `, Conclusion: ${info.step.conclusion}`;
-                }
-                if (info.step.started_at) {
-                  const st = new Date(info.step.started_at).toLocaleString();
-                  html += `<br>Started: ${st}`;
-                }
-                if (info.step.completed_at) {
-                  const ct = new Date(info.step.completed_at).toLocaleString();
-                  html += `<br>Completed: ${ct}`;
-                }
-                html += `</p>`;
-              } else {
-                html += '<p>No "Run stock checker" step found.</p>';
-              }
-              body.innerHTML = html;
+          // Extract the numerical index from the collapse element's ID (e.g., "collapse0" -> "0")
+          const numericalIndex = col.id.replace('collapse', '');
 
-              const logRes = await fetch(`/api/logs?id=${id}`);
-              if (logRes.ok) {
+          col.addEventListener('show.bs.collapse', async (event) => {
+            const currentCollapse = event.target; // This is 'col'
+            if (currentCollapse.dataset.overviewLoaded) return;
+
+            const runId = currentCollapse.dataset.runId;
+            const runUrl = currentCollapse.dataset.runUrl;
+
+            // Use the derived numericalIndex for querying elements
+            const overviewTabPane = currentCollapse.querySelector(`#overview-${numericalIndex}`);
+            const executionTabPane = currentCollapse.querySelector(`#execution-${numericalIndex}`);
+
+            overviewTabPane.innerHTML = 'Loading overview...'; // Reset before fetch
+            executionTabPane.innerHTML = 'Loading execution details...'; // Reset before fetch
+
+            try {
+              const r = await fetch(`/api/run?id=${runId}`);
+              if (!r.ok) throw new Error(`Failed to fetch run details: ${r.status}`);
+              const info = await r.json();
+
+              // Populate Overview Tab
+              let overviewHtml = `<p><a href="${runUrl}" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>`; // Added rel attribute
+              overviewHtml += `<p><strong>Status:</strong> ${info.status || 'N/A'}</p>`;
+              overviewHtml += `<p><strong>Conclusion:</strong> ${info.conclusion || 'N/A'}</p>`;
+              if (info.started_at) overviewHtml += `<p><strong>Started:</strong> ${formatRunDate(info.started_at)}</p>`; // Using formatRunDate
+              if (info.completed_at) overviewHtml += `<p><strong>Completed:</strong> ${formatRunDate(info.completed_at)}</p>`; // Using formatRunDate
+              overviewTabPane.innerHTML = overviewHtml;
+              overviewTabPane.classList.add('fade-in-content');
+
+              // Populate Execution Details Tab
+              let executionHtml = '';
+              if (info.step) {
+                executionHtml += `<p><strong>Step: Run stock checker</strong></p>`;
+                executionHtml += `<p>Status: ${info.step.status}</p>`;
+                if (info.step.conclusion) executionHtml += `<p>Conclusion: ${info.step.conclusion}</p>`;
+                if (info.step.started_at) executionHtml += `<p>Started: ${new Date(info.step.started_at).toLocaleString()}</p>`;
+                if (info.step.completed_at) executionHtml += `<p>Completed: ${new Date(info.step.completed_at).toLocaleString()}</p>`;
+              } else {
+                executionHtml = '<p>No "Run stock checker" step found.</p>';
+              }
+              executionTabPane.innerHTML = executionHtml;
+              executionTabPane.classList.add('fade-in-content');
+
+              currentCollapse.dataset.overviewLoaded = 'true'; // Mark overview/execution as loaded
+
+            } catch (err) {
+              overviewTabPane.innerHTML = `<div class="text-danger">Error loading overview: ${err.message}</div>`;
+              executionTabPane.innerHTML = `<div class="text-danger">Error loading execution details.</div>`;
+            }
+          });
+
+          // Logs Tab Lazy Loading
+          // Use the derived numericalIndex for querying elements
+          const logsTabTrigger = col.querySelector(`#logs-tab-${numericalIndex}`);
+          const logsTabPane = col.querySelector(`#logs-${numericalIndex}`);
+          if (logsTabTrigger && logsTabPane) {
+            logsTabTrigger.addEventListener('shown.bs.tab', async () => {
+              if (logsTabPane.dataset.loaded) return;
+              logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">Loading logs...`; // Keep search bar
+              const runIdForLog = col.dataset.runId;
+              try {
+                const logRes = await fetch(`/api/logs?id=${runIdForLog}`);
+                if (!logRes.ok) throw new Error(`Failed to fetch logs: ${logRes.status}`);
                 const blob = await logRes.blob();
                 const zip = await JSZip.loadAsync(blob);
+                let rawLogText = "No relevant log file found.";
                 for (const fname of Object.keys(zip.files)) {
                   const lower = fname.toLowerCase();
                   if (lower.includes('run_stock_checker') || lower.includes('stock checker')) {
-                    const text = await zip.files[fname].async('string');
-                    body.innerHTML += `<pre class="bg-light border mt-2 p-2 small">${text}</pre>`;
+                    rawLogText = await zip.files[fname].async('string');
                     break;
                   }
                 }
+                const cleanedLogText = cleanLogText(rawLogText);
+                logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs..."><pre class="bg-light border mt-2 p-2 small fade-in-content">${cleanedLogText}</pre>`;
+                logsTabPane.dataset.loaded = 'true';
+              } catch (err) {
+                logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs..."><div class="text-danger">Error loading logs: ${err.message}</div>`;
               }
+            }, { once: true });
+          }
 
-              if (info.artifacts && info.artifacts.length) {
-                const carouselId = `carousel${id}`;
-                let items = '';
-                let first = true;
-                for (const art of info.artifacts) {
-                  const zipRes = await fetch(`/api/artifact?id=${art.id}`);
-                  if (zipRes.ok) {
-                    const blob = await zipRes.blob();
-                    const zip = await JSZip.loadAsync(blob);
-                    for (const fname of Object.keys(zip.files)) {
-                      if (fname.toLowerCase().endsWith('.png')) {
-                        const data = await zip.files[fname].async('base64');
-                        items += `
-                          <div class="carousel-item ${first ? 'active' : ''}">
-                            <img src="data:image/png;base64,${data}" class="d-block w-100">
-                          </div>
-                        `;
-                        first = false;
+          // Artifacts Tab Lazy Loading
+          // Use the derived numericalIndex for querying elements
+          const artifactsTabTrigger = col.querySelector(`#artifacts-tab-${numericalIndex}`);
+          const artifactsTabPane = col.querySelector(`#artifacts-${numericalIndex}`);
+          if (artifactsTabTrigger && artifactsTabPane) {
+            artifactsTabTrigger.addEventListener('shown.bs.tab', async () => {
+              if (artifactsTabPane.dataset.loaded) return;
+              artifactsTabPane.textContent = 'Loading artifacts...';
+              const runIdForArtifact = col.dataset.runId;
+              try {
+                 const r = await fetch(`/api/run?id=${runIdForArtifact}`); // Need full run info for artifacts array
+                 if (!r.ok) throw new Error(`Failed to fetch run details for artifacts: ${r.status}`);
+                 const info = await r.json();
+
+                if (info.artifacts && info.artifacts.length) {
+                  const carouselId = `carousel-${runId}`;
+                  let itemsHtml = '';
+                  let isFirstItem = true;
+                  for (const art of info.artifacts) {
+                    const zipRes = await fetch(`/api/artifact?id=${art.id}`);
+                    if (zipRes.ok) {
+                      const blob = await zipRes.blob();
+                      const zip = await JSZip.loadAsync(blob);
+                      for (const fname of Object.keys(zip.files)) {
+                        if (fname.toLowerCase().endsWith('.png')) {
+                          const data = await zip.files[fname].async('base64');
+                          itemsHtml += `
+                            <div class="carousel-item ${isFirstItem ? 'active' : ''}">
+                              <img src="data:image/png;base64,${data}" class="d-block w-100">
+                            </div>`;
+                          isFirstItem = false;
+                        }
                       }
                     }
                   }
+                  if (itemsHtml) {
+                    artifactsTabPane.innerHTML = `
+                      <div id="${carouselId}" class="carousel slide mt-3 fade-in-content">
+                        <div class="carousel-inner">${itemsHtml}</div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev">
+                          <span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next">
+                          <span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span>
+                        </button>
+                      </div>`;
+                  } else {
+                    artifactsTabPane.innerHTML = '<p class="fade-in-content">No PNG artifacts found.</p>';
+                  }
+                } else {
+                  artifactsTabPane.innerHTML = '<p class="fade-in-content">No artifacts associated with this run.</p>';
                 }
-                if (items) {
-                  body.innerHTML += `
-                    <div id="${carouselId}" class="carousel slide mt-3">
-                      <div class="carousel-inner">
-                        ${items}
-                      </div>
-                      <button class="carousel-control-prev" type="button" data-bs-target="#${carouselId}" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon"></span>
-                        <span class="visually-hidden">Previous</span>
-                      </button>
-                      <button class="carousel-control-next" type="button" data-bs-target="#${carouselId}" data-bs-slide="next">
-                        <span class="carousel-control-next-icon"></span>
-                        <span class="visually-hidden">Next</span>
-                      </button>
-                    </div>
-                  `;
-                }
+                artifactsTabPane.dataset.loaded = 'true';
+              } catch (err) {
+                artifactsTabPane.innerHTML = `<div class="text-danger">Error loading artifacts: ${err.message}</div>`;
               }
-              // Apply fade-in animation to the loaded content
-              body.classList.add('fade-in-content');
-              col.dataset.loaded = 'true';
-            } else {
-              body.textContent = 'Error loading details';
-              // Optionally, apply fade-in to error message too
-              body.classList.add('fade-in-content');
-            }
-          }, { once: true });
+            }, { once: true });
+          }
         });
       } catch (e) {
-        acc.innerHTML = '<div class="text-danger">Error</div>';
+        // console.error('fetchRuns: Error caught during fetch or processing:', e); // Simulated log
+        acc.innerHTML = `<div class="text-danger">Error loading runs. Details: ${e.message}</div>`;
       }
     }
 
     fetchStatus();
     fetchRuns();
+
+    // Initialize VanillaTilt.js for the card
+    // Ensure this runs after the card element is in the DOM.
+    document.addEventListener('DOMContentLoaded', (event) => {
+      const cardElement = document.querySelector('.card');
+      if (cardElement) {
+        VanillaTilt.init(cardElement, {
+          max: 8, // Max tilt rotation (degrees) - reduced for subtlety
+          speed: 400, // Speed of the enter/exit transition
+          glare: true, // If you want glare effect
+          "max-glare": 0.15, // Glare opacity (0 = no glare, 1 = full glare) - reduced
+          scale: 1.03 // Slight scale on hover
+        });
+      }
+    });
+  </script>
+  <script src="particles.js"></script>
+  <script src="vanilla-tilt.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/lucide.min.js"></script>
+  <script>
+    particlesJS("particles-js", {
+      "particles": {
+        "number": {
+          "value": 80, // Reduced particle count
+          "density": {
+            "enable": true,
+            "value_area": 800
+          }
+        },
+        "color": {
+          "value": "#ffffff"
+        },
+        "shape": {
+          "type": "circle",
+          "stroke": {
+            "width": 0,
+            "color": "#000000"
+          },
+          "polygon": {
+            "nb_sides": 5
+          }
+        },
+        "opacity": {
+          "value": 0.5, // Reduced opacity
+          "random": true, // Random opacity for variation
+          "anim": {
+            "enable": true,
+            "speed": 0.5, // Slower animation
+            "opacity_min": 0.1,
+            "sync": false
+          }
+        },
+        "size": {
+          "value": 3, // Smaller particle size
+          "random": true,
+          "anim": {
+            "enable": false, // Disable size animation for subtlety
+            "speed": 40,
+            "size_min": 0.1,
+            "sync": false
+          }
+        },
+        "line_linked": {
+          "enable": false, // Disabled lines for a cleaner look
+          "distance": 150,
+          "color": "#ffffff",
+          "opacity": 0.4,
+          "width": 1
+        },
+        "move": {
+          "enable": true,
+          "speed": 1, // Slower particle movement
+          "direction": "none",
+          "random": true,
+          "straight": false,
+          "out_mode": "out",
+          "bounce": false,
+          "attract": {
+            "enable": false,
+            "rotateX": 600,
+            "rotateY": 1200
+          }
+        }
+      },
+      "interactivity": {
+        "detect_on": "canvas",
+        "events": {
+          "onhover": {
+            "enable": false, // Disable hover interactivity
+            "mode": "repulse"
+          },
+          "onclick": {
+            "enable": false, // Disable click interactivity
+            "mode": "push"
+          },
+          "resize": true
+        },
+        "modes": {
+          "grab": {
+            "distance": 400,
+            "line_linked": {
+              "opacity": 1
+            }
+          },
+          "bubble": {
+            "distance": 400,
+            "size": 40,
+            "duration": 2,
+            "opacity": 8,
+            "speed": 3
+          },
+          "repulse": {
+            "distance": 200,
+            "duration": 0.4
+          },
+          "push": {
+            "particles_nb": 4
+          },
+          "remove": {
+            "particles_nb": 2
+          }
+        }
+      },
+      "retina_detect": true
+    });
   </script>
 
-  <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History">
+  <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History" data-bs-toggle="tooltip" data-bs-placement="left" title="Open Fast2SMS Transactional History">
     <i data-lucide="external-link"></i>
   </a>
 
   <script>
-    lucide.createIcons();
+    document.addEventListener('DOMContentLoaded', function() {
+      function initLucideIcons(retries = 5) {
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          try {
+            lucide.createIcons();
+            // console.log('Lucide icons initialized successfully.'); // Optional: for debugging in browser
+          } catch (e) {
+            // console.error('Error calling lucide.createIcons():', e); // Optional: for debugging
+          }
+        } else if (retries > 0) {
+          // console.log('Lucide object not available, retrying... Retries left: ' + (retries - 1)); // Optional
+          setTimeout(() => initLucideIcons(retries - 1), 200); // Wait 200ms and retry
+        } else {
+          // console.error('Lucide library failed to load after multiple retries. Icons may not render.'); // Optional
+        }
+      }
+      initLucideIcons(); // Initial call to initialize Lucide icons
+
+      // Initialize Bootstrap Tooltips
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+      })
+
+      // Check if body needs to be scrollable and adjust alignment
+      function checkBodyScrollable() {
+        if (document.body.scrollHeight > window.innerHeight) {
+          document.body.classList.add('is-scrollable');
+        } else {
+          document.body.classList.remove('is-scrollable');
+        }
+      }
+      // Check on load and on window resize
+      window.addEventListener('load', checkBodyScrollable); // load is fine here as it's for initial check
+      window.addEventListener('resize', checkBodyScrollable);
+      // Also check after accordion items are shown/hidden as this changes body height
+      document.querySelectorAll('.accordion-collapse').forEach(item => {
+        item.addEventListener('shown.bs.collapse', checkBodyScrollable);
+        item.addEventListener('hidden.bs.collapse', checkBodyScrollable);
+      });
+    });
   </script>
 </body>
 </html>
