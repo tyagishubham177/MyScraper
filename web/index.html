@@ -36,6 +36,18 @@
   <button id="enable">Enable workflow</button>
   <button id="disable">Disable workflow</button>
   <pre id="result"></pre>
+  <h2>Recent runs</h2>
+  <table id="runs" style="margin:auto; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th style="border-bottom:1px solid #ccc;padding:4px;">Time</th>
+        <th style="border-bottom:1px solid #ccc;padding:4px;">Status</th>
+        <th style="border-bottom:1px solid #ccc;padding:4px;">Details</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js"></script>
   <script>
     async function call(path) {
       document.getElementById('result').textContent = 'Processing...';
@@ -63,9 +75,110 @@
 
     document.getElementById('enable').onclick = () => call('/api/enable');
     document.getElementById('disable').onclick = () => call('/api/disable');
-    document.getElementById('refresh').onclick = fetchStatus;
+    document.getElementById('refresh').onclick = () => {
+      fetchStatus();
+      fetchRuns();
+    };
+
+    async function fetchRuns() {
+      const table = document.getElementById('runs').querySelector('tbody');
+      table.innerHTML = '<tr><td colspan="3">Loading…</td></tr>';
+      try {
+        const res = await fetch('/api/runs');
+        if (!res.ok) {
+          table.innerHTML = '<tr><td colspan="3">Error</td></tr>';
+          return;
+        }
+        const data = await res.json();
+        if (!data.runs || !data.runs.length) {
+          table.innerHTML = '<tr><td colspan="3">No data</td></tr>';
+          return;
+        }
+        table.innerHTML = data.runs.map(r =>
+          `<tr class="run" data-id="${r.id}">`+
+          `<td style="padding:4px;border-bottom:1px solid #eee;">${new Date(r.created_at).toLocaleString()}</td>`+
+          `<td style="padding:4px;border-bottom:1px solid #eee;">${r.conclusion || r.status}</td>`+
+          `<td style="padding:4px;border-bottom:1px solid #eee;">`+
+          `<button class="toggle">Show</button> `+
+          `<a href="${r.url}" target="_blank">View</a>`+
+          `</td>`+
+          `</tr>`+
+          `<tr class="details" style="display:none;">`+
+          `<td colspan="3" style="padding:4px;border-bottom:1px solid #eee;">Loading…</td>`+
+          `</tr>`
+        ).join('');
+
+        table.querySelectorAll('button.toggle').forEach(btn => {
+          btn.onclick = async () => {
+            const row = btn.closest('tr');
+            const detailsRow = row.nextElementSibling;
+            if (detailsRow.style.display === 'none') {
+              if (!detailsRow.dataset.loaded) {
+                const id = row.dataset.id;
+                const r = await fetch(`/api/run?id=${id}`);
+                if (r.ok) {
+                  const info = await r.json();
+                  let html = '';
+                  if (info.step) {
+                    html += `<p><strong>Run stock checker</strong><br>`;
+                    html += `Status: ${info.step.status}`;
+                    if (info.step.conclusion) {
+                      html += `, Conclusion: ${info.step.conclusion}`;
+                    }
+                    if (info.step.started_at) {
+                      const st = new Date(info.step.started_at).toLocaleString();
+                      html += `<br>Started: ${st}`;
+                    }
+                    if (info.step.completed_at) {
+                      const ct = new Date(info.step.completed_at).toLocaleString();
+                      html += `<br>Completed: ${ct}`;
+                    }
+                    html += `</p>`;
+                  } else {
+                    html += '<p>No "Run stock checker" step found.</p>';
+                  }
+                  detailsRow.firstElementChild.innerHTML = html;
+                  if (info.artifacts && info.artifacts.length) {
+                    const div = document.createElement('div');
+                    detailsRow.firstElementChild.appendChild(div);
+                    for (const art of info.artifacts) {
+                      const zipRes = await fetch(`/api/artifact?id=${art.id}`);
+                      if (zipRes.ok) {
+                        const blob = await zipRes.blob();
+                        const zip = await JSZip.loadAsync(blob);
+                        for (const fname of Object.keys(zip.files)) {
+                          if (fname.toLowerCase().endsWith('.png')) {
+                            const data = await zip.files[fname].async('base64');
+                            const img = document.createElement('img');
+                            img.src = 'data:image/png;base64,' + data;
+                            img.style.maxWidth = '100%';
+                            img.style.margin = '2px 0';
+                            div.appendChild(img);
+                          }
+                        }
+                      }
+                    }
+                  }
+                  detailsRow.dataset.loaded = 'true';
+                } else {
+                  detailsRow.firstElementChild.textContent = 'Error loading details';
+                }
+              }
+              detailsRow.style.display = '';
+              btn.textContent = 'Hide';
+            } else {
+              detailsRow.style.display = 'none';
+              btn.textContent = 'Show';
+            }
+          };
+        });
+      } catch (e) {
+        table.innerHTML = '<tr><td colspan="3">Error</td></tr>';
+      }
+    }
 
     fetchStatus();
+    fetchRuns();
   </script>
 </body>
 </html>
