@@ -111,7 +111,7 @@
                 ${new Date(r.created_at).toLocaleString()} - ${r.conclusion || r.status}
               </button>
             </h2>
-            <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-id="${r.id}">
+            <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-id="${r.id}" data-url="${r.url}">
               <div class="accordion-body">Loading…</div>
             </div>
           `;
@@ -122,12 +122,14 @@
           col.addEventListener('show.bs.collapse', async () => {
             if (col.dataset.loaded) return;
             const id = col.dataset.id;
+            const url = col.dataset.url;
             const body = col.querySelector('.accordion-body');
             body.textContent = 'Loading…';
             const r = await fetch(`/api/run?id=${id}`);
             if (r.ok) {
               const info = await r.json();
               let html = '';
+              html += `<p><a href="${url}" target="_blank">View on GitHub</a></p>`;
               if (info.step) {
                 html += `<p><strong>Run stock checker</strong><br>`;
                 html += `Status: ${info.step.status}`;
@@ -147,6 +149,20 @@
                 html += '<p>No "Run stock checker" step found.</p>';
               }
               body.innerHTML = html;
+
+              const logRes = await fetch(`/api/logs?id=${id}`);
+              if (logRes.ok) {
+                const blob = await logRes.blob();
+                const zip = await JSZip.loadAsync(blob);
+                for (const fname of Object.keys(zip.files)) {
+                  const lower = fname.toLowerCase();
+                  if (lower.includes('run_stock_checker') || lower.includes('stock checker')) {
+                    const text = await zip.files[fname].async('string');
+                    body.innerHTML += `<pre class="bg-light border mt-2 p-2 small">${text}</pre>`;
+                    break;
+                  }
+                }
+              }
 
               if (info.artifacts && info.artifacts.length) {
                 const carouselId = `carousel${id}`;
