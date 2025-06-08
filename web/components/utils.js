@@ -66,13 +66,15 @@ export function getStatusBadge(status, conclusion) {
 // by trimming everything before the script begins outputting.
 export function extractCheckStockLog(logText) {
   if (!logText) return '';
-  const launchIdx = logText.search(/Launching browser/i);
-  if (launchIdx !== -1) {
-    return logText.slice(launchIdx);
+  let startIdx = logText.search(/Launching browser/i);
+  if (startIdx === -1) {
+    startIdx = logText.search(/check_stock\.py/i);
   }
-  const cmdIdx = logText.search(/check_stock\.py/i);
-  if (cmdIdx !== -1) {
-    return logText.slice(cmdIdx);
+  let trimmed = startIdx !== -1 ? logText.slice(startIdx) : logText;
+
+  const endIdx = trimmed.search(/Run actions\/upload-artifact@v4/i);
+  if (endIdx !== -1) {
+    trimmed = trimmed.slice(0, endIdx);
   }
-  return logText;
+  return trimmed;
 }
