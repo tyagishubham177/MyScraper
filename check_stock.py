@@ -19,6 +19,12 @@ EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_RECIPIENTS = os.getenv("EMAIL_RECIPIENTS")
 # ——————————————————————————————————————————
 
+def format_long_message(product_name: str, url: str) -> str:
+    return f"🚨 {product_name.strip()} is IN STOCK! Check it out: {url}"
+
+def format_short_message(product_name: str) -> str:
+    return f"ALERT: {product_name.strip()} is back in stock!"
+
 def send_email_notification(subject: str, body: str, sender: str, recipients: list[str], host: str, port: int, username: str = None, password: str = None):
     """Sends an email notification."""
     if not (host and sender and recipients and all(recipients)): # Also check if recipients list is not empty or contains empty strings
@@ -95,6 +101,16 @@ async def main():
         await page.goto(URL, timeout=60000)
         await asyncio.sleep(5)
         await log("Page loaded")
+
+        # Extract product name
+        product_name_element = await page.query_selector("h1.product-name")
+        if product_name_element:
+            product_name = await product_name_element.text_content()
+            product_name = product_name.strip()
+            await log("Extracted product name:", product_name)
+        else:
+            product_name = "The Product" # Fallback
+            await log("Product name element (h1.product-name) not found. Using default.")
 
         modal = await page.query_selector("div.modal-content.bg-transparent")
         if modal:
@@ -177,11 +193,13 @@ async def main():
         if in_stock:
             reasons.append("button enabled")
             await log("Sending Fast2SMS notification…")
-            # send_fast2sms(f"🚨 Amul Rose Lassi is IN STOCK!")
+            # send_fast2sms(format_short_message(product_name))
             if EMAIL_HOST and EMAIL_SENDER and EMAIL_RECIPIENTS and all(EMAIL_RECIPIENTS.split(',')):
+                email_subject = f"{product_name.strip()} In Stock Alert!"
+                email_body = format_long_message(product_name, URL)
                 send_email_notification(
-                    subject="Product In Stock Alert!",
-                    body=f"🚨 Amul Rose Lassi is IN STOCK! Check it out: {URL}",
+                    subject=email_subject,
+                    body=email_body,
                     sender=EMAIL_SENDER,
                     recipients=EMAIL_RECIPIENTS.split(','),
                     host=EMAIL_HOST,
