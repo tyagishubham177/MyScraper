@@ -29,7 +29,7 @@ function renderSubscriptionProducts(allProducts, recipientSubscriptions, recipie
     const label = document.createElement('label');
     label.className = 'form-check-label';
     label.setAttribute('for', `sub-check-${product.id}`);
-    label.textContent = `${product.name} (${product.url})`;
+    label.textContent = product.name; // Display only product name
 
     listItem.appendChild(checkbox);
     listItem.appendChild(label);

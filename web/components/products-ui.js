@@ -23,18 +23,37 @@ function renderProductsList(products) {
     productName.textContent = product.name;
     const productUrl = document.createElement('small');
     productUrl.className = 'd-block text-muted';
-    productUrl.textContent = product.url;
+    // Display URL as a snippet with an external link icon
+    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
+    productUrl.innerHTML = `<a href="${product.url}" target="_blank" title="${product.url}">${displayUrl} <i data-lucide="external-link" class="lucide-small"></i></a>`;
 
     productInfoDiv.appendChild(productName);
     productInfoDiv.appendChild(productUrl);
 
+    const buttonsDiv = document.createElement('div'); // Create a div for buttons for consistent spacing
+    buttonsDiv.className = 'buttons-div';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-sm btn-outline-secondary me-2 btn-edit-icon'; // Added me-2 for spacing from delete
+    editBtn.innerHTML = '<i data-lucide="edit"></i>';
+    editBtn.title = 'Edit Product';
+    editBtn.setAttribute('data-product-id', product.id);
+    editBtn.setAttribute('data-product-name', product.name);
+    editBtn.setAttribute('data-product-url', product.url);
+    editBtn.setAttribute('data-bs-toggle', 'modal');
+    editBtn.setAttribute('data-bs-target', '#editProductModal');
+
     const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn btn-sm btn-outline-danger delete-product-btn';
-    deleteBtn.innerHTML = '<i class="lucide lucide-trash-2" data-lucide="trash-2"></i> Delete';
+    deleteBtn.className = 'btn btn-sm btn-outline-danger delete-product-btn btn-delete-icon'; // Added icon class
+    deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>'; // Icon only
+    deleteBtn.title = 'Delete Product'; // Add title for accessibility
     deleteBtn.setAttribute('data-product-id', product.id);
 
+    buttonsDiv.appendChild(editBtn); // Add edit button
+    buttonsDiv.appendChild(deleteBtn); // Add delete button
+
     listItem.appendChild(productInfoDiv);
-    listItem.appendChild(deleteBtn);
+    listItem.appendChild(buttonsDiv); // Add div to list item
     productsListEl.appendChild(listItem);
   });
   if (window.lucide) {
@@ -140,6 +159,78 @@ export function initProductsUI() {
   }
 
   fetchProducts(); // Load initial list
+
+  // Event listener for Edit Product Modal
+  const editProductModalEl = document.getElementById('editProductModal');
+  if (editProductModalEl) {
+    editProductModalEl.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget; // Button that triggered the modal
+      if (!button) return; // Exit if no related target (e.g. modal shown via JS)
+
+      const productId = button.getAttribute('data-product-id');
+      const productName = button.getAttribute('data-product-name');
+      const productUrl = button.getAttribute('data-product-url');
+
+      const modalProductIdInput = editProductModalEl.querySelector('#edit-product-id');
+      const modalProductNameInput = editProductModalEl.querySelector('#edit-product-name');
+      const modalProductUrlInput = editProductModalEl.querySelector('#edit-product-url');
+
+      if (modalProductIdInput) modalProductIdInput.value = productId;
+      if (modalProductNameInput) modalProductNameInput.value = productName;
+      if (modalProductUrlInput) modalProductUrlInput.value = productUrl;
+    });
+  }
+
+  // Event listener for "Save Changes" button in Edit Product Modal
+  const saveChangesBtn = document.getElementById('save-product-changes-btn');
+  if (saveChangesBtn) {
+    saveChangesBtn.addEventListener('click', async function () {
+      const editProductModalEl = document.getElementById('editProductModal'); // Get modal element for hiding
+      const productId = document.getElementById('edit-product-id').value;
+      const name = document.getElementById('edit-product-name').value.trim();
+      const url = document.getElementById('edit-product-url').value.trim();
+
+      if (!name || !url) {
+        alert('Please enter both product name and URL.');
+        return;
+      }
+      try {
+        new URL(url); // Basic URL validation
+      } catch (_) {
+        alert('Please enter a valid URL.');
+        return;
+      }
+
+      try {
+        await window.fetchAPI(`/api/products?id=${productId}`, {
+          method: 'PUT', // Assuming PUT for updates
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, url }),
+        });
+
+        fetchProducts(); // Refresh the product list to show updated data
+
+        if (editProductModalEl) {
+          const modalInstance = bootstrap.Modal.getInstance(editProductModalEl);
+          if (modalInstance) {
+            modalInstance.hide();
+          } else {
+            // Fallback if modal instance is not found, though less ideal.
+            // This might indicate an issue with Bootstrap's initialization or timing.
+            // For robustness, one might try to re-initialize and hide.
+            // However, if Bootstrap is loaded and initialized correctly, getInstance should work.
+            console.warn('Modal instance not found for #editProductModal, attempting to hide via new instance.');
+            new bootstrap.Modal(editProductModalEl).hide();
+          }
+        }
+
+      } catch (error) {
+        console.error('Error updating product:', error);
+        alert(`Failed to update product: ${error.message}`);
+        // Optionally, do not hide the modal on error, so the user can retry or correct.
+      }
+    });
+  }
 }
 
 // A basic fetchAPI function, assuming it's not globally available from recipients-ui.js

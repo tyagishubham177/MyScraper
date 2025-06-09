@@ -531,3 +531,120 @@
     font-size: 0.75rem !important;
   }
 }
+
+/* Styling for new icon buttons in lists */
+.list-group-item .btn-manage-icon,
+.list-group-item .btn-delete-icon {
+  padding: 0.35rem 0.5rem; /* Comfortable tap target */
+  line-height: 1; /* Ensure icon is centered */
+  vertical-align: middle; /* Align button with other elements if needed */
+}
+
+.list-group-item .btn-manage-icon .lucide,
+.list-group-item .btn-delete-icon .lucide {
+  width: 1em; /* Icon size relative to button's font size */
+  height: 1em;
+  vertical-align: middle; /* Better icon alignment within button */
+}
+
+/* Specific color for Manage button icon (using Bootstrap's outline-primary by default now) */
+/* .list-group-item .btn-manage-icon { */
+  /* color: var(--bs-primary); */ /* Already handled by btn-outline-primary */
+  /* border-color: var(--bs-primary); */ /* Already handled by btn-outline-primary */
+/* } */
+/* .list-group-item .btn-manage-icon:hover { */
+  /* background-color: var(--bs-primary-bg-subtle); */ /* Bootstrap handles hover for outline buttons */
+/* } */
+
+/* Ensure delete button is styled as danger (using Bootstrap's outline-danger by default now) */
+/* .list-group-item .btn-delete-icon { */
+  /* color: var(--bs-danger); */ /* Already handled by btn-outline-danger */
+  /* border-color: var(--bs-danger); */ /* Already handled by btn-outline-danger */
+/* } */
+/* .list-group-item .btn-delete-icon:hover { */
+  /* background-color: var(--bs-danger-bg-subtle); */ /* Bootstrap handles hover for outline buttons */
+/* } */
+
+/* Adjust spacing between icon buttons */
+.list-group-item .buttons-div .btn + .btn { /* Targets subsequent buttons within .buttons-div */
+    margin-left: 0.35rem; /* Ensure spacing, me-2 is 0.5rem, this is slightly less for icon buttons */
+}
+
+/* Override default .btn .lucide margin if it's too large for icon-only buttons */
+.list-group-item .btn-manage-icon .lucide,
+.list-group-item .btn-delete-icon .lucide {
+    margin-right: 0 !important; /* Remove margin for icon-only buttons */
+}
+
+/* Ensure .buttons-div itself is aligned correctly since list-group-item is d-flex justify-content-between */
+.list-group-item > .buttons-div {
+    /* align-self: center; */ /* Example: if vertical centering is needed */
+    /* margin-left: auto; */ /* This would push to the far right, but justify-content-between already handles separation */
+}
+
+/* Styling for Edit Product icon button */
+.list-group-item .btn-edit-icon {
+  padding: 0.35rem 0.5rem;
+  line-height: 1;
+  /* color: var(--bs-secondary); -- Already set by btn-outline-secondary */
+  /* border-color: var(--bs-secondary); -- Already set by btn-outline-secondary */
+}
+.list-group-item .btn-edit-icon .lucide {
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+  margin-right: 0 !important; /* Override default if any */
+}
+/* .list-group-item .btn-edit-icon:hover { */
+  /* background-color: var(--bs-gray-200); -- Bootstrap handles this for outline buttons */
+/* } */
+
+/* Styling for product URL snippet */
+.list-group-item small.text-muted a {
+  text-decoration: none; /* Remove underline from link snippet */
+  color: inherit; /* Inherit color from .text-muted */
+}
+.list-group-item small.text-muted a:hover {
+  text-decoration: underline;
+  color: var(--bs-primary); /* Highlight link on hover */
+}
+.lucide-small { /* For smaller icons like external-link in text */
+   width: 0.8em;
+   height: 0.8em;
+   margin-left: 0.2em;
+   vertical-align: baseline; /* Align better with text */
+}
+
+/* Ensure modal text is dark */
+.modal-content {
+   color: #333333; /* Default dark text color */
+}
+.modal-content .form-label { /* Specifically for labels within modal */
+   color: #333333;
+}
+/* Ensure modal inputs also have dark text if not inheriting */
+.modal-content .form-control {
+    color: #333333;
+}
+.modal-content .form-control::placeholder {
+    color: rgba(0, 0, 0, 0.5); /* Darker placeholder text for modal inputs */
+}
+
+/* Refinements for Subscription Product List Checkboxes */
+#subscription-product-list .list-group-item.form-check {
+  display: flex; /* Use flexbox for alignment */
+  align-items: center; /* Vertically center checkbox and label text */
+  /* padding-top: 0.5rem; */ /* Retain existing padding or adjust if needed */
+  /* padding-bottom: 0.5rem; */
+}
+
+#subscription-product-list .form-check-input {
+  margin-top: 0; /* Reset Bootstrap's default margin-top for form-check-input if it misaligns */
+  /* The align-items: center on the parent should handle most vertical alignment needs.
+     If specific pixel adjustments are needed, they can be added here, but flex alignment is preferred. */
+}
+
+#subscription-product-list .form-check-label {
+  /* margin-left: 0.5rem; */ /* Retain existing margin or adjust if needed */
+  /* No specific changes usually needed here if parent uses flex align-items: center */
+}
