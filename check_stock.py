@@ -103,14 +103,14 @@ async def main():
         await log("Page loaded")
 
         # Extract product name
-        product_name_element = await page.query_selector("h1.product-name")
+        product_name_element = await page.query_selector("h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4")
         if product_name_element:
             product_name = await product_name_element.text_content()
             product_name = product_name.strip()
             await log("Extracted product name:", product_name)
         else:
             product_name = "The Product" # Fallback
-            await log("Product name element (h1.product-name) not found. Using default.")
+            await log("Product name element (h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4) not found. Using default.")
 
         modal = await page.query_selector("div.modal-content.bg-transparent")
         if modal:
