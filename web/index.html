@@ -11,10 +11,12 @@
 <body>
   <div id="particles-js" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0;"></div>
   <div id="particles-js-bg"></div> <!-- Div for animated gradient background -->
-  <div class="container py-4 d-flex justify-content-center">
-    <div class="card shadow-lg mx-auto">
-      <div class="card-body text-center">
-        <h1 class="text-primary mb-4">Amul Watchdog Control</h1>
+  <div class="container py-4">
+    <div class="row">
+      <div class="col-12 mb-4">
+        <div class="card shadow-lg">
+          <div class="card-body text-center">
+            <h1 class="text-primary mb-4">Amul Watchdog Control</h1>
         <p>
           Workflow status:
           <span id="status" class="fw-bold">Loading…</span><i data-lucide="info" class="ms-1"></i>
@@ -28,13 +30,17 @@
         </div>
         <h2 class="mt-4">Recent runs</h2>
         <div id="runsAccordion" class="accordion"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Recipient Management Card -->
-    <div class="card shadow-lg mx-auto mt-4">
-      <div class="card-body">
-        <h2 class="text-primary mb-3 text-center">Recipient Management</h2>
+    <div class="row">
+      <div class="col-md-6 mb-4">
+        <!-- Recipient Management Card -->
+        <div class="card shadow-lg">
+          <div class="card-body">
+            <h2 class="text-primary mb-3 text-center">Recipient Management</h2>
         <form id="recipient-form" class="mb-3">
           <div class="input-group">
             <input type="email" class="form-control" id="recipient-email" placeholder="Enter recipient email" required>
@@ -58,13 +64,15 @@
             <!-- Available products with checkboxes will be listed here -->
           </div>
         </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Product Management Card -->
-    <div class="card shadow-lg mx-auto mt-4">
-      <div class="card-body">
-        <h2 class="text-primary mb-3 text-center">Product Management</h2>
+      <div class="col-md-6 mb-4">
+        <!-- Product Management Card -->
+        <div class="card shadow-lg">
+          <div class="card-body">
+            <h2 class="text-primary mb-3 text-center">Product Management</h2>
         <form id="product-form" class="mb-3">
           <div class="mb-2">
             <label for="product-name" class="form-label">Product Name</label>
@@ -86,6 +94,7 @@
                 No products yet.
             </li>
           </ul>
+          </div>
         </div>
       </div>
     </div>
