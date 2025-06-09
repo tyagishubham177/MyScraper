@@ -1,46 +1,59 @@
-const fs = require('fs');
-const path = require('path');
+import { kv } from '@vercel/kv';
 
-const dbPath = path.resolve(process.cwd(), 'web/data/db.json');
-
-// Helper function to read the database
-function readDb() {
+// KV Helper functions for Recipients
+async function getRecipientsFromKV() {
   try {
-    if (fs.existsSync(dbPath)) {
-      const dbJson = fs.readFileSync(dbPath, 'utf8');
-      return JSON.parse(dbJson);
-    }
+    const recipientsData = await kv.get('recipients');
+    return recipientsData ? recipientsData : []; // KV returns the object directly if stored as such
   } catch (error) {
-    console.error("Error reading or parsing db.json:", error);
+    console.error('Error fetching recipients from KV:', error);
+    // Fallback to empty array or throw, depending on desired error handling
+    // For this API, returning empty array and letting handler decide on 500 is fine
+    return [];
   }
-  return { recipients: [], products: [], subscriptions: [] };
 }
 
-// Helper function to write to the database
-function writeDb(data) {
+async function saveRecipientsToKV(recipientsArray) {
   try {
-    const dataDir = path.dirname(dbPath);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+    await kv.set('recipients', recipientsArray);
   } catch (error) {
-    console.error("Error writing db.json:", error);
-    throw new Error('Could not write to database.'); // Re-throw to indicate failure
+    console.error('Error saving recipients to KV:', error);
+    throw new Error('Could not save recipients to KV.');
+  }
+}
+
+// KV Helper functions for Subscriptions (needed for cascading delete)
+async function getSubscriptionsFromKV() {
+  try {
+    const subscriptionsData = await kv.get('subscriptions');
+    return subscriptionsData ? subscriptionsData : [];
+  } catch (error) {
+    console.error('Error fetching subscriptions from KV:', error);
+    return [];
+  }
+}
+
+async function saveSubscriptionsToKV(subscriptionsArray) {
+  try {
+    await kv.set('subscriptions', subscriptionsArray);
+  } catch (error) {
+    console.error('Error saving subscriptions to KV:', error);
+    throw new Error('Could not save subscriptions to KV.');
   }
 }
 
 // Main request handler
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const { method } = req;
-  const db = readDb();
 
   switch (method) {
     case 'GET':
       try {
-        res.status(200).json(db.recipients);
+        const recipients = await getRecipientsFromKV();
+        res.status(200).json(recipients);
       } catch (error) {
-        res.status(500).json({ message: 'Error retrieving recipients', error: error.message });
+        console.error("Error in GET /api/recipients:", error);
+        res.status(500).json({ message: 'Error retrieving recipients from KV', error: error.message });
       }
       break;
 
@@ -52,52 +65,57 @@ module.exports = async (req, res) => {
           return res.status(400).json({ message: 'Invalid email address' });
         }
 
-        if (db.recipients.find(r => r.email === email)) {
+        const currentRecipients = await getRecipientsFromKV();
+        if (currentRecipients.find(r => r.email === email)) {
           return res.status(409).json({ message: 'Email already exists' });
         }
 
         const newRecipient = {
-          id: String(Date.now()),
+          id: String(Date.now()), // Simple ID generation
           email: email,
         };
 
-        db.recipients.push(newRecipient);
-        writeDb(db);
+        currentRecipients.push(newRecipient);
+        await saveRecipientsToKV(currentRecipients);
         res.status(201).json(newRecipient);
       } catch (error) {
         console.error("Error in POST /api/recipients:", error);
-        if (error.message === 'Could not write to database.') {
-            return res.status(500).json({ message: 'Error saving recipient: Could not write to database.' });
-        }
-        res.status(500).json({ message: 'Error saving recipient', error: error.message });
+        res.status(500).json({ message: 'Error saving recipient to KV', error: error.message });
       }
       break;
 
     case 'DELETE':
       try {
-        const { id } = req.query;
+        const { id: recipientIdToDelete } = req.query;
 
-        if (!id) {
+        if (!recipientIdToDelete) {
           return res.status(400).json({ message: 'Recipient ID is required' });
         }
 
-        const recipientExists = db.recipients.some(r => r.id === id);
-        if (!recipientExists) {
+        let currentRecipients = await getRecipientsFromKV();
+        const recipientIndex = currentRecipients.findIndex(r => r.id === recipientIdToDelete);
+
+        if (recipientIndex === -1) {
           return res.status(404).json({ message: 'Recipient not found' });
         }
 
-        db.recipients = db.recipients.filter(r => r.id !== id);
-        // Also remove associated subscriptions
-        db.subscriptions = db.subscriptions.filter(s => s.recipientId !== id);
+        // Filter out the recipient
+        const updatedRecipients = currentRecipients.filter(r => r.id !== recipientIdToDelete);
+        await saveRecipientsToKV(updatedRecipients);
 
-        writeDb(db);
-        res.status(200).json({ message: 'Recipient deleted successfully' });
+        // Remove associated subscriptions
+        let currentSubscriptions = await getSubscriptionsFromKV();
+        const updatedSubscriptions = currentSubscriptions.filter(s => s.recipientId !== recipientIdToDelete);
+
+        // Save subscriptions only if they changed
+        if (updatedSubscriptions.length < currentSubscriptions.length) {
+            await saveSubscriptionsToKV(updatedSubscriptions);
+        }
+
+        res.status(200).json({ message: 'Recipient and associated subscriptions deleted successfully' });
       } catch (error) {
         console.error("Error in DELETE /api/recipients:", error);
-         if (error.message === 'Could not write to database.') {
-            return res.status(500).json({ message: 'Error deleting recipient: Could not write to database.' });
-        }
-        res.status(500).json({ message: 'Error deleting recipient', error: error.message });
+        res.status(500).json({ message: 'Error deleting recipient from KV', error: error.message });
       }
       break;
 
@@ -105,4 +123,4 @@ module.exports = async (req, res) => {
       res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
       res.status(405).json({ message: `Method ${method} Not Allowed` });
   }
-};
+}

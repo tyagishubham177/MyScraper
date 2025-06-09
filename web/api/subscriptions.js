@@ -1,39 +1,28 @@
-const fs = require('fs');
-const path = require('path');
+import { kv } from '@vercel/kv';
 
-const dbPath = path.resolve(process.cwd(), 'web/data/db.json');
-
-// Helper function to read the database
-function readDb() {
+// KV Helper functions
+async function getFromKV(key) {
   try {
-    if (fs.existsSync(dbPath)) {
-      const dbJson = fs.readFileSync(dbPath, 'utf8');
-      return JSON.parse(dbJson);
-    }
+    const data = await kv.get(key);
+    return data ? data : [];
   } catch (error) {
-    console.error("Error reading or parsing db.json:", error);
+    console.error(`Error fetching ${key} from KV:`, error);
+    return []; // Return empty array on error to prevent breaking main logic
   }
-  return { recipients: [], products: [], subscriptions: [] };
 }
 
-// Helper function to write to the database
-function writeDb(data) {
+async function saveToKV(key, dataArray) {
   try {
-    const dataDir = path.dirname(dbPath);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+    await kv.set(key, dataArray);
   } catch (error) {
-    console.error("Error writing db.json:", error);
-    throw new Error('Could not write to database.');
+    console.error(`Error saving ${key} to KV:`, error);
+    throw new Error(`Could not save ${key} to KV.`);
   }
 }
 
 // Main request handler
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const { method } = req;
-  const db = readDb();
 
   switch (method) {
     case 'POST':
@@ -44,17 +33,19 @@ module.exports = async (req, res) => {
           return res.status(400).json({ message: 'Recipient ID and Product ID are required' });
         }
 
-        const recipientExists = db.recipients.some(r => r.id === recipient_id);
-        if (!recipientExists) {
+        // Validate recipient and product existence
+        const recipients = await getFromKV('recipients');
+        if (!recipients.some(r => r.id === recipient_id)) {
           return res.status(404).json({ message: 'Recipient not found' });
         }
 
-        const productExists = db.products.some(p => p.id === product_id);
-        if (!productExists) {
+        const products = await getFromKV('products');
+        if (!products.some(p => p.id === product_id)) {
           return res.status(404).json({ message: 'Product not found' });
         }
 
-        const existingSubscription = db.subscriptions.find(
+        const currentSubscriptions = await getFromKV('subscriptions');
+        const existingSubscription = currentSubscriptions.find(
           s => s.recipient_id === recipient_id && s.product_id === product_id
         );
 
@@ -63,73 +54,72 @@ module.exports = async (req, res) => {
         }
 
         const newSubscription = {
-          id: String(Date.now()),
+          id: String(Date.now()), // Simple ID generation
           recipient_id: recipient_id,
           product_id: product_id,
         };
 
-        db.subscriptions.push(newSubscription);
-        writeDb(db);
+        currentSubscriptions.push(newSubscription);
+        await saveToKV('subscriptions', currentSubscriptions);
         res.status(201).json(newSubscription);
       } catch (error) {
         console.error("Error in POST /api/subscriptions:", error);
-        if (error.message === 'Could not write to database.') {
-            return res.status(500).json({ message: 'Error creating subscription: Could not write to database.' });
-        }
-        res.status(500).json({ message: 'Error creating subscription', error: error.message });
+        res.status(500).json({ message: 'Error creating subscription in KV', error: error.message });
       }
       break;
 
     case 'DELETE':
       try {
-        const { recipient_id, product_id } = req.body; // Vercel uses req.body for DELETE by default
+        // Vercel KV and serverless functions typically expect DELETE body for complex identifiers
+        const { recipient_id, product_id } = req.body;
 
         if (!recipient_id || !product_id) {
           return res.status(400).json({ message: 'Recipient ID and Product ID are required in the request body' });
         }
 
-        const initialSubscriptionsCount = db.subscriptions.length;
-        db.subscriptions = db.subscriptions.filter(
+        let currentSubscriptions = await getFromKV('subscriptions');
+        const initialCount = currentSubscriptions.length;
+
+        const updatedSubscriptions = currentSubscriptions.filter(
           s => !(s.recipient_id === recipient_id && s.product_id === product_id)
         );
 
-        if (db.subscriptions.length === initialSubscriptionsCount) {
+        if (updatedSubscriptions.length === initialCount) {
           return res.status(404).json({ message: 'Subscription not found' });
         }
 
-        writeDb(db);
+        await saveToKV('subscriptions', updatedSubscriptions);
         res.status(200).json({ message: 'Subscription deleted successfully' });
       } catch (error) {
         console.error("Error in DELETE /api/subscriptions:", error);
-        if (error.message === 'Could not write to database.') {
-            return res.status(500).json({ message: 'Error deleting subscription: Could not write to database.' });
-        }
-        res.status(500).json({ message: 'Error deleting subscription', error: error.message });
+        res.status(500).json({ message: 'Error deleting subscription from KV', error: error.message });
       }
       break;
 
     case 'GET':
       try {
         const { recipient_id, product_id } = req.query;
+        const subscriptions = await getFromKV('subscriptions');
 
         if (recipient_id && product_id) {
           return res.status(400).json({ message: 'Provide either recipient_id OR product_id, not both.' });
         }
 
         if (recipient_id) {
-          const recipientSubscriptions = db.subscriptions.filter(s => s.recipient_id === recipient_id);
+          const recipientSubscriptions = subscriptions.filter(s => s.recipient_id === recipient_id);
           res.status(200).json(recipientSubscriptions);
         } else if (product_id) {
-          const productSubscriptions = db.subscriptions.filter(s => s.product_id === product_id);
+          const productSubscriptions = subscriptions.filter(s => s.product_id === product_id);
           res.status(200).json(productSubscriptions);
         } else {
-          // No parameters: return all subscriptions or an error/empty array.
-          // For now, let's return all subscriptions, could be changed to an error.
-          // res.status(200).json(db.subscriptions);
+          // As per original logic, require a query parameter
           return res.status(400).json({ message: 'Missing recipient_id or product_id query parameter.' });
+          // Alternatively, to return all subscriptions:
+          // res.status(200).json(subscriptions);
         }
       } catch (error) {
-        res.status(500).json({ message: 'Error retrieving subscriptions', error: error.message });
+        console.error("Error in GET /api/subscriptions:", error);
+        res.status(500).json({ message: 'Error retrieving subscriptions from KV', error: error.message });
       }
       break;
 
@@ -137,4 +127,4 @@ module.exports = async (req, res) => {
       res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
       res.status(405).json({ message: `Method ${method} Not Allowed` });
   }
-};
+}
