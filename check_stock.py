@@ -17,9 +17,6 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_RECIPIENTS = os.getenv("EMAIL_RECIPIENTS")
-print(f"DEBUG: EMAIL_HOST='{EMAIL_HOST}'")
-print(f"DEBUG: EMAIL_SENDER='{EMAIL_SENDER}'")
-print(f"DEBUG: EMAIL_RECIPIENTS='{EMAIL_RECIPIENTS}'")
 # ——————————————————————————————————————————
 
 def send_email_notification(subject: str, body: str, sender: str, recipients: list[str], host: str, port: int, username: str = None, password: str = None):
