@@ -533,6 +533,56 @@
 }
 
 /* Styling for new icon buttons in lists */
+
+/* This rule was for the general collapse button, will be replaced by a more specific one below. */
+/* .btn[data-bs-toggle="collapse"] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+} */
+
+/* Collapsible Section Trigger Buttons in Management Accordion */
+#managementAccordion > .btn[data-bs-toggle="collapse"] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #e9ecef; /* Slightly darker, more like an active header */
+  color: #212529; /* Standard dark text */
+  border: 1px solid #ced4da; /* Slightly darker border */
+  text-align: left;
+  box-shadow: none !important;
+  font-weight: 600; /* A bit bolder for header feel */
+  width: 100%;
+  padding: 0.75rem 1.25rem; /* More like card-header padding */
+  border-radius: .375rem; /* Standard Bootstrap card/button radius */
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  /* margin-bottom is handled by Bootstrap's .mb-2 class on the button in HTML */
+}
+
+#managementAccordion > .btn[data-bs-toggle="collapse"]:hover {
+  background-color: #dee2e6; /* Lighten slightly on hover, or darken if preferred */
+  border-color: #adb5bd;
+}
+
+#managementAccordion > .btn[data-bs-toggle="collapse"]:focus,
+#managementAccordion > .btn[data-bs-toggle="collapse"].focus { /* .focus class for JS-triggered focus */
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Standard Bootstrap focus shadow */
+}
+
+
+#managementAccordion > .btn[data-bs-toggle="collapse"] .lucide {
+  color: #212529; /* Match text color */
+  /* transition: transform 0.2s ease-in-out; -- For rotating icon, not used with data-lucide swap */
+}
+
+/* Hide H2 titles inside the collapsible cards as buttons serve as headers */
+/* This rule should remain as it is */
+#recipientManagementCollapse .card-body h2.text-primary,
+#productManagementCollapse .card-body h2.text-primary {
+  display: none;
+}
+
 .list-group-item .btn-manage-icon,
 .list-group-item .btn-delete-icon {
   padding: 0.35rem 0.5rem; /* Comfortable tap target */

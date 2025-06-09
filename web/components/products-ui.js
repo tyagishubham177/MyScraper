@@ -202,6 +202,11 @@ export function initProductsUI() {
       }
 
       try {
+        // SERVER-SIDE REQUIREMENT:
+        // The backend API endpoint '/api/products' (or '/api/products?id=:id')
+        // must be configured to accept HTTP PUT requests to update product details.
+        // If it currently returns a "405 Method Not Allowed" error for PUT,
+        // the backend route/handler needs to be updated accordingly.
         await window.fetchAPI(`/api/products?id=${productId}`, {
           method: 'PUT', // Assuming PUT for updates
           headers: { 'Content-Type': 'application/json' },
