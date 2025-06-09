@@ -21,9 +21,13 @@ jobs:
 
       - name: Run stock checker
         env:
-          PINCODE:      ${{ secrets.PINCODE }}
-          F2S_API_KEY:  ${{ secrets.F2S_API_KEY }}
-          F2S_NUMBERS:  ${{ secrets.F2S_NUMBERS }}
+          PINCODE:    ${{ secrets.PINCODE }}
+          MAIL_HOST:  ${{ secrets.MAIL_HOST }}
+          MAIL_PORT:  ${{ secrets.MAIL_PORT }}
+          MAIL_USER:  ${{ secrets.MAIL_USER }}
+          MAIL_PASS:  ${{ secrets.MAIL_PASS }}
+          MAIL_FROM:  ${{ secrets.MAIL_FROM }}
+          MAIL_TO:    ${{ secrets.MAIL_TO }}
         run: python check_stock.py
 
       - name: Upload screenshots

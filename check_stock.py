@@ -7,12 +7,19 @@ from playwright.async_api import async_playwright
 URL       = ("https://shop.amul.com/en/product/"
              "amul-high-protein-rose-lassi-200-ml-or-pack-of-30")
 PINCODE   = os.getenv("PINCODE",  "110001")
-F2S_KEY   = os.getenv("F2S_API_KEY")             # Fast2SMS auth key
+F2S_KEY   = os.getenv("F2S_API_KEY")             # Fast2SMS auth key (unused)
 F2S_TO    = os.getenv("F2S_NUMBERS")             # Comma-separated numbers (e.g. 91xxxxxxxxxx)
+
+SMTP_HOST = os.getenv("MAIL_HOST")                # SMTP server hostname
+SMTP_PORT = int(os.getenv("MAIL_PORT", "587"))    # SMTP port
+SMTP_USER = os.getenv("MAIL_USER")
+SMTP_PASS = os.getenv("MAIL_PASS")
+MAIL_FROM = os.getenv("MAIL_FROM", SMTP_USER)
+MAIL_TO   = os.getenv("MAIL_TO")                  # Comma-separated recipients
 # ——————————————————————————————————————————
 
 def send_fast2sms(msg: str):
-    """POST a Quick SMS via Fast2SMS API."""
+    """POST a Quick SMS via Fast2SMS API (currently unused)."""
     if not (F2S_KEY and F2S_TO):
         print("⚠️  Fast2SMS credentials missing")
         return
@@ -40,8 +47,33 @@ def send_fast2sms(msg: str):
     print("Fast2SMS:", r.status_code, r.text)
 
 
+def send_email(subject: str, body: str) -> None:
+    """Send a notification email via SMTP."""
+    if not (SMTP_HOST and SMTP_USER and SMTP_PASS and MAIL_TO):
+        print("⚠️  Email credentials missing")
+        return
+    from email.message import EmailMessage
+    import smtplib
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = MAIL_FROM
+    msg["To"] = MAIL_TO.split(",")
+    msg.set_content(body)
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
+            s.starttls()
+            s.login(SMTP_USER, SMTP_PASS)
+            s.send_message(msg)
+    except Exception as e:
+        print("Email error:", e)
+        return
+    print("Email sent to", MAIL_TO)
+
+
 async def main():
-    """Check the product page and send an SMS alert if in stock (using Playwright)."""
+    """Check the product page and send an email alert if in stock (using Playwright)."""
     print("Launching browser with Playwright...")
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
@@ -146,8 +178,11 @@ async def main():
         in_stock = add_btn and not sold_out_visible and not disabled_btn
         if in_stock:
             reasons.append("button enabled")
-            await log("Sending Fast2SMS notification…")
-            send_fast2sms(f"🚨 Amul Rose Lassi is IN STOCK!")
+            await log("Sending email notification…")
+            send_email(
+                "Amul Rose Lassi in stock",
+                "🚨 Amul Rose Lassi pack is now available"
+            )
             await asyncio.sleep(5)
         else:
             await log("Item considered out of stock")

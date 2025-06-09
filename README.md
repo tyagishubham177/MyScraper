@@ -1,13 +1,13 @@
 # 🥤 Amul Lassi Tracker
 
-Amul periodically releases a *High-Protein Rose Lassi* pack that often goes out of stock in minutes. This repository contains a small Python utility and accompanying GitHub Actions workflow that watches the [Amul web store](https://shop.amul.com) for the pack of 30 being available. When the script detects that the product can be added to cart, a message is sent via Fast2SMS so that you can order immediately.
+Amul periodically releases a *High-Protein Rose Lassi* pack that often goes out of stock in minutes. This repository contains a small Python utility and accompanying GitHub Actions workflow that watches the [Amul web store](https://shop.amul.com) for the pack of 30 being available. When the script detects that the product can be added to cart, an email notification is sent so that you can order immediately.
 
 The project was created with the goal of running **for free** using only GitHub Actions. By default the action checks every two hours and uploads screenshots of each run for debugging.
 
 ## How it works
 
 1. **check_stock.py** uses [Playwright](https://playwright.dev) to load the product page in a headless browser. It types your pincode, waits for the availability indicators and determines whether the item is in stock.
-2. When an "Add to Cart" button is found and the page does not show "Sold Out", the script sends an SMS through the Fast2SMS API. Multiple recipients can be configured via environment variables.
+2. When an "Add to Cart" button is found and the page does not show "Sold Out", the script sends an email notification using SMTP. Multiple recipients can be configured via environment variables.
 3. Each run saves screenshots inside the `artifacts/` directory. When executed by GitHub Actions these screenshots are uploaded as an action artifact so you can see exactly what the page looked like.
 
 The workflow definition lives in `.github/workflows/schedule.yml` and runs every two hours (`cron: "0 */2 * * *"`). You can also trigger it manually from the Actions tab.
@@ -24,8 +24,12 @@ The workflow definition lives in `.github/workflows/schedule.yml` and runs every
 
 2. **Set up environment variables**
    - `PINCODE` – the postal code used on the Amul store.
-   - `F2S_API_KEY` – your Fast2SMS authentication key.
-   - `F2S_NUMBERS` – comma separated list of phone numbers to notify (e.g. `91xxxxxxxxxx`).
+   - `MAIL_HOST` – SMTP server hostname.
+   - `MAIL_PORT` – SMTP server port (e.g. `587`).
+   - `MAIL_USER` – SMTP username.
+   - `MAIL_PASS` – SMTP password.
+   - `MAIL_FROM` – address used in the From header (defaults to `MAIL_USER`).
+   - `MAIL_TO` – comma separated list of email recipients.
    These can be placed in a `.env` file or configured as GitHub secrets when using the workflow.
 
 3. **Run locally**
@@ -60,4 +64,4 @@ The `web/` folder contains a very small HTML page and three API endpoints that c
 - `.github/workflows/schedule.yml` – GitHub Actions workflow that installs dependencies, runs the script and uploads screenshots.
 - `web/` – optional Vercel front‑end for toggling the workflow.
 
-With this setup you can monitor Amul's store for the elusive lassi pack and get an instant alert on your phone as soon as it becomes available.
+With this setup you can monitor Amul's store for the elusive lassi pack and get an instant alert in your inbox as soon as it becomes available.
