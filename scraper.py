@@ -32,19 +32,6 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
         await asyncio.sleep(3) # Added sleep after navigation
         await log("Page loaded")
 
-        # Extract product name
-        product_name_element = await page.query_selector("h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4")
-        product_name = "The Product" # Default value
-        if product_name_element:
-            content = await product_name_element.text_content()
-            if content:
-                product_name = content.strip()
-                await log("Extracted product name:", product_name)
-            else:
-                await log("Product name element found but no text_content. Using default.")
-        else:
-            await log("Product name element (h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4) not found. Using default.")
-
         modal = await page.query_selector("div.modal-content.bg-transparent")
         if modal:
             pincode_input_selector = "#search" # Use the pincode argument
@@ -110,6 +97,19 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
         add_btn = enabled_visible
         ab_status = ("visible" if enabled_visible else ("hidden" if enabled_elem else "missing"))
         await log("Add to Cart enabled:", ab_status)
+
+        # Extract product name
+        product_name_element = await page.query_selector("h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4")
+        product_name = "The Product" # Default value
+        if product_name_element:
+            content = await product_name_element.text_content()
+            if content:
+                product_name = content.strip()
+                await log("Extracted product name:", product_name)
+            else:
+                await log("Product name element found but no text_content. Using default.")
+        else:
+            await log("Product name element (h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4) not found. Using default.")
 
         in_stock = add_btn and not sold_out_visible and not disabled_btn
 
