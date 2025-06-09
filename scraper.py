@@ -1,5 +1,5 @@
 import asyncio
-import os # For makedirs
+# import os # No longer needed as makedirs and screenshots are removed
 from playwright.async_api import async_playwright
 
 async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]:
@@ -11,7 +11,7 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
         page = await browser.new_page()
         # await asyncio.sleep(5) # Removed sleep
 
-        os.makedirs("artifacts", exist_ok=True)
+        # os.makedirs("artifacts", exist_ok=True) # Removed
         step = 0
 
         async def log(*msgs: object) -> None:
@@ -19,12 +19,12 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
             text = " ".join(str(m) for m in msgs)
             print(text) # Keep console logging
             step += 1
-            # Ensure page is available for screenshots
-            safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
-            try:
-                await page.screenshot(path=f"artifacts/{step:02d}_{safe}.png")
-            except Exception as e:
-                print(f"Error taking screenshot: {e}")
+            # Screenshot logic removed
+            # safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
+            # try:
+            #     await page.screenshot(path=f"artifacts/{step:02d}_{safe}.png")
+            # except Exception as e:
+            #     print(f"Error taking screenshot: {e}")
             # await asyncio.sleep(5) # Removed sleep
 
         print(f"Navigating to {url}") # Use the url argument
