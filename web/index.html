@@ -30,6 +30,66 @@
         <div id="runsAccordion" class="accordion"></div>
       </div>
     </div>
+
+    <!-- Recipient Management Card -->
+    <div class="card shadow-lg mx-auto mt-4">
+      <div class="card-body">
+        <h2 class="text-primary mb-3 text-center">Recipient Management</h2>
+        <form id="recipient-form" class="mb-3">
+          <div class="input-group">
+            <input type="email" class="form-control" id="recipient-email" placeholder="Enter recipient email" required>
+            <button class="btn btn-primary btn-neumorphic" type="button" id="add-recipient-btn">
+              <i data-lucide="user-plus" class="me-1"></i>Add Recipient
+            </button>
+          </div>
+        </form>
+        <div id="recipients-list-container">
+          <h5 class="mt-3">Current Recipients:</h5>
+          <ul id="recipients-list" class="list-group">
+            <!-- Recipients will be listed here -->
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                No recipients yet.
+            </li>
+          </ul>
+        </div>
+        <div id="recipient-subscriptions-section" class="mt-4" style="display: none;">
+          <h4 id="recipient-subscriptions-title">Manage Subscriptions for <span id="selected-recipient-email"></span></h4>
+          <div id="subscription-product-list" class="list-group">
+            <!-- Available products with checkboxes will be listed here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Management Card -->
+    <div class="card shadow-lg mx-auto mt-4">
+      <div class="card-body">
+        <h2 class="text-primary mb-3 text-center">Product Management</h2>
+        <form id="product-form" class="mb-3">
+          <div class="mb-2">
+            <label for="product-name" class="form-label">Product Name</label>
+            <input type="text" class="form-control" id="product-name" placeholder="Enter product name" required>
+          </div>
+          <div class="mb-2">
+            <label for="product-url" class="form-label">Product URL</label>
+            <input type="url" class="form-control" id="product-url" placeholder="Enter product URL" required>
+          </div>
+          <button class="btn btn-primary btn-neumorphic w-100" type="button" id="add-product-btn">
+            <i data-lucide="package-plus" class="me-1"></i>Add Product
+          </button>
+        </form>
+        <div id="products-list-container">
+          <h5 class="mt-3">Current Products:</h5>
+          <ul id="products-list" class="list-group">
+            <!-- Products will be listed here -->
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                No products yet.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
   </div>
   <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="fab" aria-label="Open Transactional History">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
