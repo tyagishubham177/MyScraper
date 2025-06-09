@@ -37,7 +37,7 @@ The workflow definition lives in `.github/workflows/schedule.yml` and runs every
 4. **Run via GitHub Actions**
    - Fork this repository or push it to your own account.
    - Add the above variables as secrets in your GitHub project.
-   - The `Lassi Watchdog` workflow will check every two hours and upload screenshots from each run.
+   - The `Amul Watchdog` workflow will check every two hours and upload screenshots from each run.
 
 ## Optional web interface
 
