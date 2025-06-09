@@ -11,7 +11,43 @@ import os # For F2S_KEY/TO if they were used directly (they are in the commented
 
 
 def format_long_message(product_name: str, url: str) -> str:
-    return f"🚨 {product_name.strip()} is IN STOCK! Check it out: {url}"
+    # Basic HTML structure for the email body
+    html_body = f"""
+    <html>
+    <head>
+        <style>
+        body {{ font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }}
+        .container {{ background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
+        h1 {{ color: #333333; }}
+        p {{ color: #555555; line-height: 1.6; }}
+        .button {{
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 15px;
+            background-color: #28a745; /* Green */
+            color: white !important; /* Ensure text is white */
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }}
+        .button:hover {{ background-color: #218838; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+        <h1>🚀 Stock Alert! 🚀</h1>
+        <p>Good news! The product you're watching is back in stock:</p>
+        <p><strong>{product_name.strip()}</strong></p>
+        <p>Don't miss out! Check it out here:</p>
+        <a href="{url}" class="button">View Product Now</a>
+        <p style="margin-top: 20px; font-size: 0.9em; color: #777;">
+            This is an automated notification.
+        </p>
+        </div>
+    </body>
+    </html>
+    """
+    return html_body
 
 def format_short_message(product_name: str) -> str:
     return f"ALERT: {product_name.strip()} is back in stock!"
@@ -22,7 +58,7 @@ def send_email_notification(subject: str, body: str, sender: str, recipients: li
         print("⚠️ Essential email configuration (EMAIL_HOST, EMAIL_SENDER, EMAIL_RECIPIENTS) is missing or invalid.")
         return
     try:
-        msg = MIMEText(body)
+        msg = MIMEText(body, 'html')
         msg['Subject'] = subject
         msg['From'] = sender
         msg['To'] = ", ".join(recipients)
