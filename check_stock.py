@@ -7,7 +7,7 @@ from email.mime.text import MIMEText
 # ——————————————————————————————————————————
 # Config from GitHub Secrets / .env
 URL       = ("https://shop.amul.com/en/product/"
-             "amul-high-protein-rose-lassi-200-ml-or-pack-of-30")
+             "amul-adrak-chai-instant-tea-mix-14-g-or-pack-of-10-sachets")
 PINCODE   = os.getenv("PINCODE",  "110001")
 # F2S_KEY   = os.getenv("F2S_API_KEY")             # Fast2SMS auth key
 # F2S_TO    = os.getenv("F2S_NUMBERS")             # Comma-separated numbers (e.g. 91xxxxxxxxxx)
@@ -17,12 +17,15 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_RECIPIENTS = os.getenv("EMAIL_RECIPIENTS")
+print(f"DEBUG: EMAIL_HOST='{EMAIL_HOST}'")
+print(f"DEBUG: EMAIL_SENDER='{EMAIL_SENDER}'")
+print(f"DEBUG: EMAIL_RECIPIENTS='{EMAIL_RECIPIENTS}'")
 # ——————————————————————————————————————————
 
 def send_email_notification(subject: str, body: str, sender: str, recipients: list[str], host: str, port: int, username: str = None, password: str = None):
     """Sends an email notification."""
-    if not (host and sender and recipients):
-        print("⚠️ Essential email configuration (EMAIL_HOST, EMAIL_SENDER, EMAIL_RECIPIENTS) is missing.")
+    if not (host and sender and recipients and all(recipients)): # Also check if recipients list is not empty or contains empty strings
+        print("⚠️ Essential email configuration (EMAIL_HOST, EMAIL_SENDER, EMAIL_RECIPIENTS) is missing or invalid.")
         return
     try:
         msg = MIMEText(body)
@@ -178,7 +181,7 @@ async def main():
             reasons.append("button enabled")
             await log("Sending Fast2SMS notification…")
             # send_fast2sms(f"🚨 Amul Rose Lassi is IN STOCK!")
-            if EMAIL_HOST and EMAIL_SENDER and EMAIL_RECIPIENTS:
+            if EMAIL_HOST and EMAIL_SENDER and EMAIL_RECIPIENTS and all(EMAIL_RECIPIENTS.split(',')):
                 send_email_notification(
                     subject="Product In Stock Alert!",
                     body=f"🚨 Amul Rose Lassi is IN STOCK! Check it out: {URL}",
@@ -190,7 +193,7 @@ async def main():
                     password=EMAIL_HOST_PASSWORD
                 )
             else:
-                print("⚠️ Email configuration missing, cannot send email.")
+                print("⚠️ Email configuration missing or invalid (EMAIL_HOST, EMAIL_SENDER, EMAIL_RECIPIENTS), cannot send email.")
             await asyncio.sleep(5)
         else:
             await log("Item considered out of stock")
