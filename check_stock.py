@@ -147,7 +147,7 @@ async def main():
         if in_stock:
             reasons.append("button enabled")
             await log("Sending Fast2SMS notification…")
-            send_fast2sms(f"🚨 Amul Rose Lassi is IN STOCK! {URL}")
+            send_fast2sms(f"🚨 Amul Rose Lassi is IN STOCK!")
             await asyncio.sleep(5)
         else:
             await log("Item considered out of stock")
