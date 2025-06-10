@@ -5,163 +5,108 @@ let initialSubscriptionDataForModal = '';
 // Global variable to store the set of initially subscribed product IDs for the current modal view
 let initialSubscribedProductIds = new Set();
 
-// --- Calculate Next Check Times Function ---
+// --- Calculate Next Check Times Function (Revised Logic) ---
 function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours, frequencyMinutes, count = 4) {
-  const times = [];
-  let baseTime;
+  // lastCheckedAtISO is ignored in this revised logic for projection purposes.
+  // Projections are always based on current time and selected frequency.
 
-  if (lastCheckedAtISO) {
-    baseTime = new Date(lastCheckedAtISO);
-  } else {
-    baseTime = new Date(); // Use current time if no last_checked_at
+  const projectedTimes = [];
+  const now = new Date();
+
+  const todayObj = new Date();
+  const todayDateAsNumber = todayObj.getFullYear() * 10000 + todayObj.getMonth() * 100 + todayObj.getDate();
+
+  function formatTime(date) {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   }
 
-  // Ensure baseTime is a valid date
-  if (isNaN(baseTime.getTime())) {
-    console.error("Invalid baseTime in calculateNextCheckTimes", lastCheckedAtISO);
-    baseTime = new Date(); // Fallback to current time
+  function isSameDay(date1, dateAsNumber) {
+    const d1DateAsNumber = date1.getFullYear() * 10000 + date1.getMonth() * 100 + date1.getDate();
+    return d1DateAsNumber === dateAsNumber;
   }
 
-  let isDefaultInterval = false;
+  // Calculate the first 15-minute slot >= current time
+  let firstRun = new Date(now.getTime());
+  firstRun.setSeconds(0);
+  firstRun.setMilliseconds(0);
+  if (firstRun.getMinutes() % 15 !== 0) {
+    firstRun.setMinutes(firstRun.getMinutes() + (15 - (firstRun.getMinutes() % 15)));
+  }
+  // If firstRun is in the past due to calculation (e.g. now is 10:00, firstRun becomes 10:00, but loop increments it first)
+  // This shouldn't happen with the current logic as we are finding the *next* or current slot.
+
+  // Handle Zero Frequency: Product checks every 15 minutes
   if (frequencyDays === 0 && frequencyHours === 0 && frequencyMinutes === 0) {
-    // Default to 15-minute intervals if all frequencies are zero
-    frequencyMinutes = 15;
-    isDefaultInterval = true;
-    // If lastCheckedAtISO is null (new subscription) and it's default,
-    // we want to show upcoming slots from NOW, not from a fixed past time.
-    if (!lastCheckedAtISO) {
-        baseTime = new Date();
+    let nextDefaultTime = new Date(firstRun.getTime());
+    while (projectedTimes.length < count) {
+      if (isSameDay(nextDefaultTime, todayDateAsNumber)) {
+        projectedTimes.push(formatTime(nextDefaultTime));
+      } else {
+        // If we cross into the next day, stop.
+        break;
+      }
+      nextDefaultTime.setMinutes(nextDefaultTime.getMinutes() + 15);
     }
+    return projectedTimes;
   }
 
-  const today = new Date();
-  const currentDay = today.getFullYear() * 10000 + today.getMonth() * 100 + today.getDate();
+  // Handle Non-Zero Frequency
+  if (isSameDay(firstRun, todayDateAsNumber)) {
+    projectedTimes.push(formatTime(firstRun));
+  } else {
+    // If the very first run time is already not today, then no times for today.
+    return [];
+  }
 
-  for (let i = 0; i < count; i++) {
-    let nextDue;
-    if (i === 0 && !isDefaultInterval) {
-      // For the first calculation, and not using default 15min interval,
-      // the next due is based on last_checked_at + frequency
-      nextDue = new Date(baseTime.getTime());
-      nextDue.setDate(nextDue.getDate() + frequencyDays);
-      nextDue.setHours(nextDue.getHours() + frequencyHours);
-      nextDue.setMinutes(nextDue.getMinutes() + frequencyMinutes);
-    } else if (i === 0 && isDefaultInterval) {
-        // If it's default interval, and it's the first one,
-        // we want to find the *next* 15-min slot from baseTime (which could be now).
-        nextDue = new Date(baseTime.getTime());
-        const minutes = nextDue.getMinutes();
-        const remainder = minutes % 15;
-        if (remainder === 0 && lastCheckedAtISO) { // if lastCheckedAtISO is defined, it means it was checked at exactly :00, :15, :30, :45
-            nextDue.setMinutes(minutes + 15);
-        } else if (remainder === 0 && !lastCheckedAtISO) { // if it's a new sub, and current time is exactly :00, :15...
-             // no change, this is a valid slot.
-        }
-        else {
-            nextDue.setMinutes(minutes + (15 - remainder));
-        }
-        nextDue.setSeconds(0);
-        nextDue.setMilliseconds(0);
+  let lastAddedTime = new Date(firstRun.getTime());
 
-    } else {
-      // For subsequent times, or if it's the default interval from the start
-      const previousTime = new Date(times[times.length - 1].rawTime); // Get the last added Date object
-      nextDue = new Date(previousTime.getTime());
-      if (isDefaultInterval) {
-        nextDue.setMinutes(nextDue.getMinutes() + 15);
-      } else {
-        nextDue.setDate(nextDue.getDate() + frequencyDays);
-        nextDue.setHours(nextDue.getHours() + frequencyHours);
-        nextDue.setMinutes(nextDue.getMinutes() + frequencyMinutes);
-      }
+  for (let i = 1; i < count; i++) { // Loop count-1 times as firstRun is already added
+    let theoreticalNextTime = new Date(lastAddedTime.getTime());
+    theoreticalNextTime.setDate(theoreticalNextTime.getDate() + frequencyDays);
+    theoreticalNextTime.setHours(theoreticalNextTime.getHours() + frequencyHours);
+    theoreticalNextTime.setMinutes(theoreticalNextTime.getMinutes() + frequencyMinutes);
+
+    // Snap this theoreticalNextTime to the next available 15-minute slot
+    let snappedNextTime = new Date(theoreticalNextTime.getTime());
+    snappedNextTime.setSeconds(0);
+    snappedNextTime.setMilliseconds(0);
+    if (snappedNextTime.getMinutes() % 15 !== 0) {
+      snappedNextTime.setMinutes(snappedNextTime.getMinutes() + (15 - (snappedNextTime.getMinutes() % 15)));
     }
+    // Ensure snappedNextTime is not earlier than theoreticalNextTime if theoreticalNextTime was already a slot.
+    // This can happen if theoreticalNextTime is 10:00, snapping makes it 10:00.
+    // If theoreticalNextTime is 10:01, snapping makes it 10:15.
+    // The current snapping logic (add 15 - remainder) correctly rounds up or keeps it.
 
-    const nextDueDay = nextDue.getFullYear() * 10000 + nextDue.getMonth() * 100 + nextDue.getDate();
+    if (isSameDay(snappedNextTime, todayDateAsNumber)) {
+      // Avoid adding duplicate times if frequency is very short and snaps to the same slot
+      if (projectedTimes.length === 0 || formatTime(snappedNextTime) !== projectedTimes[projectedTimes.length - 1]) {
+         // Check if snappedNextTime is practically the same as lastAddedTime due to snapping
+         // (e.g. lastAddedTime = 10:00, freq = 1 min -> theoretical = 10:01, snapped = 10:15)
+         // (e.g. lastAddedTime = 10:00, freq = 15 min -> theoretical = 10:15, snapped = 10:15)
+         // Only add if it's a new, distinct time slot.
+        const lastTimeInArray = projectedTimes[projectedTimes.length-1];
+        if (formatTime(snappedNextTime) !== lastTimeInArray) { // check formatted time to avoid issues with Date objects
+            projectedTimes.push(formatTime(snappedNextTime));
+        } else if (snappedNextTime.getTime() > new Date(todayObj.toDateString() + " " + lastTimeInArray).getTime()){
+            // This case handles if the formatted time is the same but it's a different slot due to date change then back to same day
+            // which is less likely given same day filtering. Adding for robustness.
+            projectedTimes.push(formatTime(snappedNextTime));
+        }
 
-    if (nextDueDay === currentDay) {
-      const hours = nextDue.getHours().toString().padStart(2, '0');
-      const minutes = nextDue.getMinutes().toString().padStart(2, '0');
-      times.push({ formattedTime: `${hours}:${minutes}`, rawTime: nextDue });
-    } else if (nextDueDay > currentDay && times.length === 0) {
-      // If the very first calculated time is already on a future day,
-      // indicate that no checks are scheduled for today.
-      // For now, we just return empty, but could add a specific marker.
-      return []; // No times for today
-    } else if (nextDueDay > currentDay) {
-      // Stop if we've crossed into the next day and already have some times for today
+      }
+    } else {
+      // If a calculated time falls outside of today, stop.
       break;
     }
-    // If nextDueDay < currentDay (e.g. last_checked_at is old), we still calculate forward
-    // until we reach currentDay or futureDay.
+    lastAddedTime = new Date(snappedNextTime.getTime()); // Update lastAddedTime to the snapped time for the next iteration
+     if (projectedTimes.length >= count) break; // Ensure we don't exceed count
   }
-
-  // If using default 15 min interval and no last_checked_at,
-  // ensure the first time is not in the past.
-  if (isDefaultInterval && !lastCheckedAtISO) {
-    const now = new Date();
-    while (times.length > 0 && times[0].rawTime < now) {
-      // Recalculate the first time based on the removed time + 15 mins
-      const lastRemovedRawTime = times.shift().rawTime;
-      const newFirstDue = new Date(lastRemovedRawTime.getTime());
-      newFirstDue.setMinutes(newFirstDue.getMinutes() + 15);
-
-      const newFirstDueDay = newFirstDue.getFullYear() * 10000 + newFirstDue.getMonth() * 100 + newFirstDue.getDate();
-      if (newFirstDueDay === currentDay) {
-          const hours = newFirstDue.getHours().toString().padStart(2, '0');
-          const minutes = newFirstDue.getMinutes().toString().padStart(2, '0');
-          times.unshift({ formattedTime: `${hours}:${minutes}`, rawTime: newFirstDue }); // Add to the beginning
-      } else {
-          // If the new time is not today, stop adding.
-          break;
-      }
-      // If we shifted all times out, we need to re-populate based on the last one
-      if (times.length === 0) {
-          let baseForRepopulate = new Date(newFirstDue.getTime());
-           // if the newFirstDue itself was not today, we need to start from 'now' for repopulation.
-          if (newFirstDueDay !== currentDay) {
-            baseForRepopulate = new Date(); // reset to now
-            const currentMinutes = baseForRepopulate.getMinutes();
-            const remainder = currentMinutes % 15;
-            if (remainder !== 0) {
-                 baseForRepopulate.setMinutes(currentMinutes + (15 - remainder));
-            }
-            baseForRepopulate.setSeconds(0);
-            baseForRepopulate.setMilliseconds(0);
-          }
-
-
-          const hours = baseForRepopulate.getHours().toString().padStart(2, '0');
-          const minutes = baseForRepopulate.getMinutes().toString().padStart(2, '0');
-          // Check if this re-calculated time is for today before adding
-          const repopulateDay = baseForRepopulate.getFullYear() * 10000 + baseForRepopulate.getMonth() * 100 + baseForRepopulate.getDate();
-          if (repopulateDay === currentDay) {
-            times.push({ formattedTime: `${hours}:${minutes}`, rawTime: baseForRepopulate });
-          }
-
-
-          // Re-populate subsequent times if the first one was valid
-          if (times.length > 0) {
-              while(times.length < count) {
-                  const previousTimeRaw = times[times.length - 1].rawTime;
-                  const nextInterval = new Date(previousTimeRaw.getTime());
-                  nextInterval.setMinutes(nextInterval.getMinutes() + 15);
-
-                  const nextIntervalDay = nextInterval.getFullYear() * 10000 + nextInterval.getMonth() * 100 + nextInterval.getDate();
-                  if (nextIntervalDay === currentDay) {
-                      const h = nextInterval.getHours().toString().padStart(2, '0');
-                      const m = nextInterval.getMinutes().toString().padStart(2, '0');
-                      times.push({ formattedTime: `${h}:${m}`, rawTime: nextInterval });
-                  } else {
-                      break; // Stop if next interval is not today
-                  }
-              }
-          }
-      }
-    }
-  }
-
-
-  return times.map(t => t.formattedTime);
+  // Remove duplicates that might occur if snapping causes multiple theoretical times to map to the same slot.
+  // This is less likely with the current logic but good for safety.
+  return [...new Set(projectedTimes)];
 }
 
 // --- Toast Notification Function ---
