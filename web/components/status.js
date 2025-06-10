@@ -1,10 +1,11 @@
-import {API_ENABLE, API_DISABLE, API_STATUS} from './config.js';
+import {API_ENABLE, API_DISABLE, API_STATUS, API_DISPATCH} from './config.js';
 import {createRipple} from './utils.js';
 
 const loader = document.getElementById('loader');
 const statusSpan = document.getElementById('status');
 const enableButton = document.getElementById('enable');
 const disableButton = document.getElementById('disable');
+const dispatchButton = document.getElementById('dispatch');
 
 export const showLoader = () => {
   loader.style.display = 'inline-block';
@@ -28,7 +29,8 @@ export async function call(path) {
 
 enableButton.addEventListener('click', () => call(API_ENABLE));
 disableButton.addEventListener('click', () => call(API_DISABLE));
-[enableButton, disableButton].forEach(btn => btn.addEventListener('click', createRipple));
+dispatchButton.addEventListener('click', () => call(API_DISPATCH));
+[enableButton, disableButton, dispatchButton].forEach(btn => btn && btn.addEventListener('click', createRipple));
 
 export async function fetchStatus() {
   statusSpan.textContent = 'Loading…';
