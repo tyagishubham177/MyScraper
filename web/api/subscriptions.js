@@ -12,7 +12,32 @@ const DEFAULT_DELAY_MINUTES = 0;
 async function getFromKV(key) {
   try {
     const data = await kv.get(key);
-    return data ? data : [];
+    if (!data) return [];
+
+    if (Array.isArray(data)) {
+      let migrated = false;
+      for (const sub of data) {
+        if (sub.recipientId && !sub.recipient_id) {
+          sub.recipient_id = sub.recipientId;
+          delete sub.recipientId;
+          migrated = true;
+        }
+        if (sub.productId && !sub.product_id) {
+          sub.product_id = sub.productId;
+          delete sub.productId;
+          migrated = true;
+        }
+      }
+      if (migrated) {
+        try {
+          await kv.set(key, data);
+        } catch (e) {
+          console.error(`Error persisting migrated ${key} to KV:`, e);
+        }
+      }
+    }
+
+    return data;
   } catch (error) {
     console.error(`Error fetching ${key} from KV:`, error);
     return []; // Return empty array on error to prevent breaking main logic
@@ -54,12 +79,26 @@ export default async function handler(req, res) {
 
         const currentSubscriptions = await getFromKV('subscriptions');
         const existingSubscription = currentSubscriptions.find(
-          s => s.recipient_id === recipient_id && s.product_id === product_id
+          s =>
+            (s.recipient_id === recipient_id || s.recipientId === recipient_id) &&
+            (s.product_id === product_id || s.productId === product_id)
         );
 
         if (existingSubscription) {
           // Update existing subscription
           let updated = false;
+
+          // Normalize any legacy field names
+          if (existingSubscription.recipientId && !existingSubscription.recipient_id) {
+            existingSubscription.recipient_id = existingSubscription.recipientId;
+            delete existingSubscription.recipientId;
+            updated = true;
+          }
+          if (existingSubscription.productId && !existingSubscription.product_id) {
+            existingSubscription.product_id = existingSubscription.productId;
+            delete existingSubscription.productId;
+            updated = true;
+          }
           // Update new granular fields if provided
           if (req.body.frequency_days !== undefined) {
             existingSubscription.frequency_days = parseInt(req.body.frequency_days, 10);
@@ -164,7 +203,10 @@ export default async function handler(req, res) {
         const initialCount = currentSubscriptions.length;
 
         const updatedSubscriptions = currentSubscriptions.filter(
-          s => !(s.recipient_id === recipient_id && s.product_id === product_id)
+          s => !(
+            (s.recipient_id === recipient_id || s.recipientId === recipient_id) &&
+            (s.product_id === product_id || s.productId === product_id)
+          )
         );
 
         if (updatedSubscriptions.length === initialCount) {
@@ -187,6 +229,16 @@ export default async function handler(req, res) {
         // Helper to add default fields and perform on-the-fly migration for GET requests
         const addDefaultSubscriptionFields = (subscription) => {
           let newSub = { ...subscription }; // Create a mutable copy
+
+          // Migrate legacy field names if present
+          if (newSub.recipientId && !newSub.recipient_id) {
+            newSub.recipient_id = newSub.recipientId;
+            delete newSub.recipientId;
+          }
+          if (newSub.productId && !newSub.product_id) {
+            newSub.product_id = newSub.productId;
+            delete newSub.productId;
+          }
 
           // Migration for frequency
           if (newSub.frequency) {
