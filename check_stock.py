@@ -58,183 +58,166 @@ async def main():
 
             # print(f"\nChecking product from API: '{product_name_api}' (ID: {product_id}) at URL: {product_api_url}")
 
-            try:
-                in_stock, product_name_scraper = await scraper.check_product_availability(product_api_url, config.PINCODE)
-                effective_product_name = product_name_scraper if product_name_scraper else product_name_api
+            # --- BEGIN MODIFIED SECTION ---
 
-                if in_stock:
-                    print(f"✅ Product '{effective_product_name}' (URL: {product_api_url}) is IN STOCK.")
+            # 1. Fetch all subscriptions for this product FIRST
+            subscriptions_url = f"{config.APP_BASE_URL}/api/subscriptions?product_id={product_id}"
+            all_product_subscriptions = await fetch_api_data(session, subscriptions_url)
 
-                    # Fetch all subscriptions for this product
-                    subscriptions_url = f"{config.APP_BASE_URL}/api/subscriptions?product_id={product_id}"
-                    all_product_subscriptions = await fetch_api_data(session, subscriptions_url)
+            if not all_product_subscriptions or not isinstance(all_product_subscriptions, list):
+                print(f"Could not fetch subscriptions or data was invalid for product ID {product_id}. API returned: {all_product_subscriptions}. Skipping product.")
+                # Respectful delay before continuing to the next product
+                delay = getattr(config, 'DELAY_BETWEEN_REQUESTS', 1)
+                await asyncio.sleep(delay)
+                continue
 
-                    if not all_product_subscriptions or not isinstance(all_product_subscriptions, list):
-                        print(f"Could not fetch subscriptions or data was invalid for product ID {product_id}. API returned: {all_product_subscriptions}")
-                        continue # Skip to next product if no subscription data
+            # 2. Determine active/due subscriptions (based on frequency and last_checked_at)
+            # This list will be used for deciding to scrape and for updating last_checked_at later.
+            active_subscriptions_due_check = []
+            # Use current_utc_time from the start of main() for this entire run's consistency in "due" calculation
+            # Alternatively, a fresh current_utc_time = datetime.now(timezone.utc) could be used here per product.
+            # For now, using the script's start time for this check.
 
-                    # Filter subscriptions based on frequency BEFORE checking stock for these subscriptions
-                    # It's better to get current time per product as processing can take time.
-                    # However, for a single run of this script, current_utc_time from the start of main() is acceptable for now.
-                    # For longer running services, this should be updated per check.
-                    # For this iteration, we'll use the current_utc_time defined at the start of main().
+            for sub in all_product_subscriptions:
+                if not isinstance(sub, dict):
+                    print(f"Skipping invalid subscription object: {sub}")
+                    continue
 
-                    # New frequency check logic
-                    active_subscriptions_for_this_product = []
-                    for sub in all_product_subscriptions:
-                        if not isinstance(sub, dict):
-                            print(f"Skipping invalid subscription object: {sub}")
-                            continue
+                freq_days = sub.get('frequency_days', 0)
+                freq_hours = sub.get('frequency_hours', 0)
+                freq_minutes = sub.get('frequency_minutes', 0)
+                last_checked_at_str = sub.get('last_checked_at')
+                sub_id = sub.get('id', 'Unknown_ID')
 
-                        # API should provide these with defaults. If missing, treat as 0.
-                        freq_days = sub.get('frequency_days', 0)
-                        freq_hours = sub.get('frequency_hours', 0)
-                        freq_minutes = sub.get('frequency_minutes', 0)
-                        last_checked_at_str = sub.get('last_checked_at')
-                        sub_id = sub.get('id', 'Unknown_ID')
-
-                        is_due = False
-                        if last_checked_at_str is None:
-                            is_due = True
-                            print(f"INFO: Subscription {sub_id} for product {product_id} has no last_checked_at, due for check.")
-                        else:
-                            try:
-                                last_checked_at_dt = isoparse(last_checked_at_str)
-                                if last_checked_at_dt.tzinfo is None:
-                                    last_checked_at_dt = last_checked_at_dt.replace(tzinfo=timezone.utc)
-
-                                if freq_days == 0 and freq_hours == 0 and freq_minutes == 0:
-                                    is_due = True
-                                    print(f"INFO: Subscription {sub_id} for product {product_id} has zero frequency, due for check on every run.")
-                                else:
-                                    next_due_dt = calculate_next_check_due(last_checked_at_dt, freq_days, freq_hours, freq_minutes)
-                                    if current_utc_time >= next_due_dt:
-                                        is_due = True
-                                        print(f"INFO: Subscription {sub_id} for product {product_id} is due. Next due: {next_due_dt.isoformat()}, Last checked: {last_checked_at_str}.")
-                                    # else: # Optional: log when not due
-                                        # print(f"DEBUG: Subscription {sub_id} for product {product_id} not due. Next due: {next_due_dt.isoformat()}, Last checked: {last_checked_at_str}.")
-                            except ValueError:
-                                print(f"ERROR: Could not parse last_checked_at_str: '{last_checked_at_str}' for subscription {sub_id}. Considering it due.")
-                                is_due = True
-
-                        if is_due:
-                            sub['_effective_check_time'] = current_utc_time
-                            active_subscriptions_for_this_product.append(sub)
-
-                    if not active_subscriptions_for_this_product:
-                        print(f"Product '{effective_product_name}' is in stock, but no subscriptions are due for a check based on new frequency logic at {current_utc_time.strftime('%H:%M:%S %Z')}.")
-                        continue
-
-                    # Check for active delays
-                    loop_time_utc = datetime.now(timezone.utc) # Use a fresh time for delay checks
-                    subscriptions_not_delayed = []
-                    for sub in active_subscriptions_for_this_product:
-                        delayed_until_str = sub.get('delayed_until')
-                        if delayed_until_str:
-                            try:
-                                delayed_until_dt = isoparse(delayed_until_str)
-                                # If isoparse returns naive, assume UTC (API should provide timezone)
-                                if delayed_until_dt.tzinfo is None:
-                                    delayed_until_dt = delayed_until_dt.replace(tzinfo=timezone.utc)
-
-                                if delayed_until_dt > loop_time_utc:
-                                    print(f"INFO: Subscription for recipient {sub.get('recipient_id')} product {product_id} is currently delayed until {delayed_until_str}. Skipping notification.")
-                                    continue # Skip this subscription
-                            except ValueError:
-                                print(f"ERROR: Could not parse delayed_until_str: '{delayed_until_str}' for subscription {sub.get('id')}. Proceeding without delay consideration for this sub.")
-                        subscriptions_not_delayed.append(sub)
-
-                    if not subscriptions_not_delayed:
-                        print(f"Product '{effective_product_name}' is in stock, frequency criteria met, but all active subscriptions are currently delayed.")
-                        continue
-
-                    # Proceed with notification logic for subscriptions that are active and not delayed
-                    subscribed_recipient_ids = {s.get('recipient_id') for s in subscriptions_not_delayed if s.get('recipient_id')}
-
-                    if not subscribed_recipient_ids:
-                        print(f"Product '{effective_product_name}' is in stock, frequency/delay criteria met, but no valid recipient IDs found.")
-                        continue
-
-                    email_list_for_product = [
-                        recipients_map[rid] for rid in subscribed_recipient_ids if rid in recipients_map
-                    ]
-
-                    if email_list_for_product:
-                        email_subject = f"{effective_product_name.strip()} In Stock Alert!"
-                        email_body = notifications.format_long_message(effective_product_name, product_api_url)
-
-                        print(f"Attempting to send notifications to: {', '.join(email_list_for_product)}")
-
-                        # Send actual notifications
-                        if config.EMAIL_HOST and config.EMAIL_SENDER:
-                            notifications.send_email_notification(
-                                subject=email_subject,
-                                body=email_body,
-                                sender=config.EMAIL_SENDER,
-                                recipients=email_list_for_product,
-                                host=config.EMAIL_HOST,
-                                port=config.EMAIL_PORT,
-                                username=config.EMAIL_HOST_USER,
-                                password=config.EMAIL_HOST_PASSWORD
-                            )
-                            print(f"📨 Email notifications sent for '{effective_product_name}'.")
-
-                            # After successful notification, update timestamps for subscriptions with delay_on_stock
-                            notification_time_utc = datetime.now(timezone.utc) # Fresh timestamp for updates
-                            for sub_to_update in subscriptions_not_delayed:
-                                if sub_to_update.get('recipient_id') in subscribed_recipient_ids and sub_to_update.get('delay_on_stock'):
-                                    # Retrieve granular delay fields
-                                    d_days = sub_to_update.get('delay_days', 0)
-                                    d_hours = sub_to_update.get('delay_hours', 0)
-                                    d_minutes = sub_to_update.get('delay_minutes', 0)
-
-                                    if d_days == 0 and d_hours == 0 and d_minutes == 0:
-                                        print(f"INFO: Subscription {sub_to_update.get('id')} for product {product_id} has zero delay (D/H/M all zero). No delay will be applied.")
-                                        # Optionally, update last_in_stock_at without delayed_until if that's desired
-                                        # For now, just skip delay update.
-                                        continue
-
-                                    delay_timedelta = timedelta(days=d_days, hours=d_hours, minutes=d_minutes)
-                                    last_in_stock_at_iso = notification_time_utc.isoformat()
-                                    delayed_until_calculated_dt = notification_time_utc + delay_timedelta
-                                    delayed_until_iso = delayed_until_calculated_dt.isoformat()
-
-                                    update_payload = {
-                                        "recipient_id": sub_to_update.get('recipient_id'),
-                                        "product_id": product_id, # product_id is from the outer loop
-                                        "last_in_stock_at": last_in_stock_at_iso,
-                                        "delayed_until": delayed_until_iso
-                                    }
-                                    update_url = f"{config.APP_BASE_URL}/api/subscriptions"
-                                    try:
-                                        async with session.post(update_url, json=update_payload) as response:
-                                            if response.status == 200 or response.status == 201:
-                                                print(f"INFO: Successfully updated subscription for {sub_to_update.get('recipient_id')} product {product_id} with delay until {delayed_until_iso}.")
-                                            else:
-                                                error_text = await response.text()
-                                                print(f"ERROR: Failed to update subscription with delay for {sub_to_update.get('recipient_id')} product {product_id}: {response.status} - {error_text}")
-                                    except Exception as e_update:
-                                        print(f"ERROR: Exception during subscription update for {sub_to_update.get('recipient_id')} product {product_id}: {e_update}")
-                        else:
-                            print("⚠️ Email configuration missing or invalid (EMAIL_HOST, EMAIL_SENDER), cannot send email.")
-                    else:
-                        print(f"Product '{effective_product_name}' is in stock, but no valid & subscribed recipients found via API after mapping IDs to emails for notification.")
+                is_due = False
+                if last_checked_at_str is None:
+                    is_due = True
+                    # print(f"DEBUG: Subscription {sub_id} for product {product_id} has no last_checked_at, due for check.")
                 else:
-                    # print(f"❌ Product '{effective_product_name}' (URL: {product_api_url}) is OUT OF STOCK or information is unavailable.")
-                    pass # Keep the else block for structure, or remove if no other out-of-stock logic needed
+                    try:
+                        last_checked_at_dt = isoparse(last_checked_at_str)
+                        if last_checked_at_dt.tzinfo is None:
+                            last_checked_at_dt = last_checked_at_dt.replace(tzinfo=timezone.utc)
 
-            except Exception as e:
-                print(f"🚨 An error occurred while processing product {product_name_api} (URL: {product_api_url}): {e}")
+                        if freq_days == 0 and freq_hours == 0 and freq_minutes == 0:
+                            is_due = True # Always check if frequency is zero (or not set)
+                            # print(f"DEBUG: Subscription {sub_id} for product {product_id} has zero frequency, due for check.")
+                        else:
+                            next_due_dt = calculate_next_check_due(last_checked_at_dt, freq_days, freq_hours, freq_minutes)
+                            if current_utc_time >= next_due_dt:
+                                is_due = True
+                                # print(f"DEBUG: Subscription {sub_id} for product {product_id} is due. Next due: {next_due_dt.isoformat()}, Last checked: {last_checked_at_str}.")
+                    except ValueError:
+                        print(f"ERROR: Could not parse last_checked_at_str: '{last_checked_at_str}' for subscription {sub_id}. Considering it due.")
+                        is_due = True
 
-            # Placeholder for updating last_checked_at for all subscriptions that were due for this product
-            # This happens regardless of whether the product was in stock or if notifications were sent,
-            # as a check was performed for these active subscriptions.
-            # Ensure 'active_subscriptions_for_this_product' was defined (it would be unless an early continue happened)
-            if 'active_subscriptions_for_this_product' in locals() and active_subscriptions_for_this_product:
-                update_url = f"{config.APP_BASE_URL}/api/subscriptions"
-                for sub_to_update_lca in active_subscriptions_for_this_product:
+                if is_due:
+                    sub['_effective_check_time'] = current_utc_time # Store the time this check was deemed "due"
+                    active_subscriptions_due_check.append(sub)
+
+            # 3. If no active/due subscriptions, print message and skip scraping
+            if not active_subscriptions_due_check:
+                print(f"ℹ️ No active or due subscriptions for product '{product_name_api}' (ID: {product_id}) at {current_utc_time.strftime('%Y-%m-%d %H:%M:%S %Z')}. Skipping scrape.")
+                # Update last_checked_at for subscriptions that might have been fetched but weren't due (if any were due, they are in active_subscriptions_due_check)
+                # This part is tricky: the original code updates LCA for 'active_subscriptions_for_this_product'.
+                # If we skip scraping, we still need to update LCA for those that *were* due.
+                # The current logic at the end of the loop handles 'active_subscriptions_due_check' (renamed from 'active_subscriptions_for_this_product').
+                # So, if active_subscriptions_due_check is empty here, the LCA update loop at the end won't run for this product, which is correct.
+            else:
+                print(f"Found {len(active_subscriptions_due_check)} active/due subscriptions for '{product_name_api}' (ID: {product_id}). Proceeding with scrape.")
+                try:
+                    in_stock, product_name_scraper = await scraper.check_product_availability(product_api_url, config.PINCODE)
+                    effective_product_name = product_name_scraper if product_name_scraper else product_name_api
+
+                    if in_stock:
+                        print(f"✅ Product '{effective_product_name}' (URL: {product_api_url}) is IN STOCK.")
+
+                        # Filter the previously fetched active/due subscriptions for 'delayed_until'
+                        loop_time_utc = datetime.now(timezone.utc) # Fresh time for delay checks
+                        subscriptions_to_notify = []
+                        for sub in active_subscriptions_due_check: # Use the already filtered list
+                            delayed_until_str = sub.get('delayed_until')
+                            if delayed_until_str:
+                                try:
+                                    delayed_until_dt = isoparse(delayed_until_str)
+                                    if delayed_until_dt.tzinfo is None:
+                                        delayed_until_dt = delayed_until_dt.replace(tzinfo=timezone.utc)
+                                    if delayed_until_dt > loop_time_utc:
+                                        print(f"INFO: Subscription for recipient {sub.get('recipient_id')} product {product_id} is currently delayed until {delayed_until_str}. Skipping notification.")
+                                        continue
+                                except ValueError:
+                                    print(f"ERROR: Could not parse delayed_until_str: '{delayed_until_str}' for subscription {sub.get('id')}. Considering not delayed.")
+                            subscriptions_to_notify.append(sub)
+
+                        if not subscriptions_to_notify:
+                            print(f"Product '{effective_product_name}' is in stock, but all {len(active_subscriptions_due_check)} active/due subscriptions are currently delayed.")
+                        else:
+                            subscribed_recipient_ids = {s.get('recipient_id') for s in subscriptions_to_notify if s.get('recipient_id')}
+                            if not subscribed_recipient_ids:
+                                print(f"Product '{effective_product_name}' is in stock, but no valid recipient IDs in non-delayed subscriptions.")
+                            else:
+                                email_list_for_product = [recipients_map[rid] for rid in subscribed_recipient_ids if rid in recipients_map]
+                                if email_list_for_product:
+                                    email_subject = f"{effective_product_name.strip()} In Stock Alert!"
+                                    email_body = notifications.format_long_message(effective_product_name, product_api_url)
+                                    print(f"Attempting to send notifications to: {', '.join(email_list_for_product)}")
+
+                                    if config.EMAIL_HOST and config.EMAIL_SENDER:
+                                        notifications.send_email_notification(
+                                            subject=email_subject, body=email_body, sender=config.EMAIL_SENDER,
+                                            recipients=email_list_for_product, host=config.EMAIL_HOST, port=config.EMAIL_PORT,
+                                            username=config.EMAIL_HOST_USER, password=config.EMAIL_HOST_PASSWORD
+                                        )
+                                        print(f"📨 Email notifications sent for '{effective_product_name}'.")
+
+                                        notification_time_utc = datetime.now(timezone.utc)
+                                        for sub_to_update in subscriptions_to_notify: # Only update those who were to be notified
+                                            if sub_to_update.get('recipient_id') in subscribed_recipient_ids and sub_to_update.get('delay_on_stock'):
+                                                d_days = sub_to_update.get('delay_days', 0)
+                                                d_hours = sub_to_update.get('delay_hours', 0)
+                                                d_minutes = sub_to_update.get('delay_minutes', 0)
+
+                                                if d_days == 0 and d_hours == 0 and d_minutes == 0:
+                                                    print(f"INFO: Subscription {sub_to_update.get('id')} for product {product_id} has zero delay_on_stock duration. No delay applied.")
+                                                    continue
+
+                                                delay_timedelta = timedelta(days=d_days, hours=d_hours, minutes=d_minutes)
+                                                last_in_stock_at_iso = notification_time_utc.isoformat()
+                                                delayed_until_calculated_dt = notification_time_utc + delay_timedelta
+                                                delayed_until_iso = delayed_until_calculated_dt.isoformat()
+                                                update_payload = {
+                                                    "recipient_id": sub_to_update.get('recipient_id'), "product_id": product_id,
+                                                    "last_in_stock_at": last_in_stock_at_iso, "delayed_until": delayed_until_iso
+                                                }
+                                                update_url_delay = f"{config.APP_BASE_URL}/api/subscriptions" # Renamed variable
+                                                try:
+                                                    async with session.post(update_url_delay, json=update_payload) as resp_delay: # Renamed variable
+                                                        if resp_delay.status == 200 or resp_delay.status == 201:
+                                                            print(f"INFO: Successfully updated subscription for {sub_to_update.get('recipient_id')} product {product_id} with delay until {delayed_until_iso}.")
+                                                        else:
+                                                            error_text = await resp_delay.text()
+                                                            print(f"ERROR: Failed to update subscription with delay for {sub_to_update.get('recipient_id')} product {product_id}: {resp_delay.status} - {error_text}")
+                                                except Exception as e_delay_update: # Renamed variable
+                                                    print(f"ERROR: Exception during subscription delay update for {sub_to_update.get('recipient_id')} product {product_id}: {e_delay_update}")
+                                    else:
+                                        print("⚠️ Email configuration missing, cannot send email.")
+                                else:
+                                    print(f"Product '{effective_product_name}' is in stock, but no valid email addresses for subscribed recipients.")
+                    else: # Product out of stock
+                        print(f"❌ Product '{effective_product_name}' (URL: {product_api_url}) is OUT OF STOCK.")
+                        # No notification or delay logic needed here, but last_checked_at for active_subscriptions_due_check will be updated below.
+
+                except Exception as e:
+                    print(f"🚨 An error occurred while scraping or processing product {product_name_api} (URL: {product_api_url}): {e}")
+
+            # --- END MODIFIED SECTION ---
+
+            # Update last_checked_at for all subscriptions that were determined to be active/due for this product run
+            # This list is 'active_subscriptions_due_check'. If it's empty (e.g. no subs, or none were due), this loop won't run.
+            if active_subscriptions_due_check: # Check if the list is not empty
+                update_lca_url = f"{config.APP_BASE_URL}/api/subscriptions" # Renamed variable
+                for sub_to_update_lca in active_subscriptions_due_check:
                     recipient_id_lca = sub_to_update_lca.get('recipient_id')
-                    # product_id is already available from the outer loop
                     sub_id_lca = sub_to_update_lca.get('id', 'Unknown_ID')
 
                     if '_effective_check_time' in sub_to_update_lca and recipient_id_lca and product_id:
@@ -245,16 +228,16 @@ async def main():
                             "last_checked_at": new_last_checked_at_iso
                         }
                         try:
-                            async with session.post(update_url, json=update_payload_lca) as response:
-                                if response.status == 200 or response.status == 201: # Check for 200 or 201
-                                    print(f"INFO: Successfully updated last_checked_at for recipient {recipient_id_lca}, product {product_id} to {new_last_checked_at_iso}.")
+                            async with session.post(update_lca_url, json=update_payload_lca) as resp_lca: # Renamed variable
+                                if resp_lca.status == 200 or resp_lca.status == 201:
+                                    print(f"INFO: Successfully updated last_checked_at for subscription {sub_id_lca} (Recipient {recipient_id_lca}, Product {product_id}) to {new_last_checked_at_iso}.")
                                 else:
-                                    error_text = await response.text()
-                                    print(f"ERROR: Failed to update last_checked_at for recipient {recipient_id_lca}, product {product_id}. Status: {response.status} - {error_text}")
-                        except aiohttp.ClientError as e_lca:
-                            print(f"ERROR: ClientError while updating last_checked_at for recipient {recipient_id_lca}, product {product_id}: {e_lca}")
+                                    error_text = await resp_lca.text()
+                                    print(f"ERROR: Failed to update last_checked_at for subscription {sub_id_lca}. Status: {resp_lca.status} - {error_text}")
+                        except aiohttp.ClientError as e_lca_client: # Renamed variable
+                            print(f"ERROR: ClientError while updating last_checked_at for subscription {sub_id_lca}: {e_lca_client}")
                         except Exception as e_lca_general:
-                             print(f"ERROR: Unexpected error while updating last_checked_at for recipient {recipient_id_lca}, product {product_id}: {e_lca_general}")
+                             print(f"ERROR: Unexpected error while updating last_checked_at for subscription {sub_id_lca}: {e_lca_general}")
                     else:
                         print(f"WARN: Missing data to update last_checked_at for sub ID {sub_id_lca} (recipient_id: {recipient_id_lca}, product_id: {product_id}, _effective_check_time set: {'_effective_check_time' in sub_to_update_lca})")
 

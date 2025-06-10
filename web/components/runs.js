@@ -2,6 +2,30 @@
 import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from './config.js';
 import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog} from './utils.js';
 
+function parseScraperDecisionsFromLog(logText) {
+  if (!logText) return [];
+  const lines = logText.split('\n');
+  const decisions = [];
+  // Regex for IN STOCK: ✅ Product '(.*?)' \(URL: (.*?)\) is IN STOCK.
+  const inStockRegex = /✅ Product '(.*?)' \(URL: .*?\) is IN STOCK\./;
+  // Regex for OUT OF STOCK: ❌ Product '(.*?)' \(URL: (.*?)\) is OUT OF STOCK.
+  const outOfStockRegex = /❌ Product '(.*?)' \(URL: .*?\) is OUT OF STOCK\./;
+
+  for (const line of lines) {
+    const inStockMatch = line.match(inStockRegex);
+    if (inStockMatch) {
+      decisions.push({ name: inStockMatch[1], status: 'IN STOCK' });
+      continue; // Check next line
+    }
+
+    const outOfStockMatch = line.match(outOfStockRegex);
+    if (outOfStockMatch) {
+      decisions.push({ name: outOfStockMatch[1], status: 'OUT OF STOCK' });
+    }
+  }
+  return decisions;
+}
+
 export async function fetchRuns() {
   const acc = document.getElementById('runsAccordion');
   let skeletonHTML = '';
@@ -89,11 +113,106 @@ export async function fetchRuns() {
           html += `<p><strong>Started:</strong> ${started ? formatRunDate(started) : 'N/A'}</p>`;
           const completed = info.completed_at || (info.step ? info.step.completed_at : null);
           html += `<p><strong>Completed:</strong> ${completed ? formatRunDate(completed) : 'N/A'}</p>`;
-          overviewTabPane.innerHTML = html;
-          overviewTabPane.classList.add('fade-in-content');
-          currentCollapse.dataset.overviewLoaded = 'true';
+          overviewTabPane.innerHTML = html; // Set basic overview first
+          currentCollapse.dataset.overviewLoaded = 'true'; // Mark basic overview as loaded
+
+          // --- BEGIN Product Stock Summary Section ---
+          if (!overviewTabPane.dataset.productSummaryLoaded) {
+            try {
+              // Note: This fetches logs specifically for the overview.
+              // For optimization, consider caching/reusing logs if already fetched by the 'Logs' tab.
+              const logRes = await fetch(`${API_LOGS}?id=${runId}`);
+              if (!logRes.ok) throw new Error(`Failed to fetch logs for summary: ${logRes.status}`);
+
+              const blob = await logRes.blob();
+              const zip = await JSZip.loadAsync(blob);
+              let rawLogText = '';
+              let foundLogFile = false;
+              const normalizedStepName = 'runstockchecker'; // As used in Logs tab
+
+              // Prioritize specific log file names (similar to Logs tab logic)
+              for (const fname of Object.keys(zip.files)) {
+                const lowerFname = fname.toLowerCase();
+                const normalizedFname = lowerFname.replace(/[\s_]+/g, '');
+                if (normalizedFname.includes(normalizedStepName)) {
+                  rawLogText = await zip.files[fname].async('string');
+                  foundLogFile = true;
+                  break;
+                }
+              }
+              if (!foundLogFile) { // Fallback to other common names
+                for (const fname of Object.keys(zip.files)) {
+                  const lowerFname = fname.toLowerCase();
+                  if (lowerFname.includes('run_stock_checker') || lowerFname.includes('stock checker') || lowerFname.includes('stock-checker')) {
+                    rawLogText = await zip.files[fname].async('string');
+                    foundLogFile = true;
+                    break;
+                  }
+                }
+              }
+              if (!foundLogFile) { // Fallback to the first file if no specific match
+                const firstFile = Object.keys(zip.files)[0];
+                if (firstFile) {
+                  rawLogText = await zip.files[firstFile].async('string');
+                } else {
+                  rawLogText = 'No log file found in archive.';
+                }
+              }
+
+              const trimmedLog = extractCheckStockLog(rawLogText);
+              const cleanedLogText = cleanLogText(trimmedLog);
+              const scraperDecisions = parseScraperDecisionsFromLog(cleanedLogText);
+
+              let summaryContentHtml = '<h4 class="mt-3">Product Stock Summary:</h4>';
+              if (scraperDecisions.length > 0) {
+                summaryContentHtml += '<div>'; // Container for product entries
+                scraperDecisions.forEach(decision => {
+                  let statusHtml = '';
+                  if (decision.status === 'IN STOCK') {
+                    statusHtml = `<span style="color: green;"><i data-lucide="check-circle" class="me-1"></i>IN STOCK</span>`;
+                  } else if (decision.status === 'OUT OF STOCK') {
+                    statusHtml = `<span style="color: red;"><i data-lucide="x-circle" class="me-1"></i>OUT OF STOCK</span>`;
+                  } else {
+                    statusHtml = `<span>${decision.status}</span>`; // Fallback for unexpected status
+                  }
+                  summaryContentHtml += `
+                    <div class="mb-2">
+                      <span>${decision.name}: </span>
+                      <strong>${statusHtml}</strong>
+                    </div>`;
+                });
+                summaryContentHtml += '</div>';
+                overviewTabPane.innerHTML += summaryContentHtml;
+              } else {
+                overviewTabPane.innerHTML += '<p class="mt-3 text-muted">No product stock decisions found in logs.</p>';
+              }
+              overviewTabPane.dataset.productSummaryLoaded = 'true';
+
+              // If lucide icons were added, ensure they are rendered.
+              // Assuming a global lucide.replace() might be called by other parts of the app,
+              // or that Bootstrap handles data-lucide. If not, a targeted call would be needed here.
+              if (scraperDecisions.length > 0) {
+                setTimeout(() => {
+                  if (typeof lucide !== 'undefined' && lucide && typeof lucide.replace === 'function') {
+                    lucide.replace();
+                  }
+                }, 50);
+              }
+
+            } catch (logErr) {
+              console.error(`Error loading or parsing log for product summary (run ${runId}):`, logErr);
+              overviewTabPane.innerHTML += `<p class="text-warning mt-3">Could not load product stock summary: ${logErr.message}</p>`;
+              overviewTabPane.dataset.productSummaryLoaded = 'true'; // Mark as loaded even on error to prevent retries
+            }
+          }
+          // --- END Product Stock Summary Section ---
+
+          overviewTabPane.classList.add('fade-in-content'); // Ensure fade-in after all modifications
+
         } catch (err) {
           overviewTabPane.innerHTML = `<div class="text-danger">Error loading overview: ${err.message}</div>`;
+           // Also add fade-in for error message
+          overviewTabPane.classList.add('fade-in-content');
         }
       });
 
@@ -139,7 +258,22 @@ export async function fetchRuns() {
             }
             const trimmed = extractCheckStockLog(rawLogText);
             const cleanedLogText = cleanLogText(trimmed);
-            logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs..."><pre class="bg-light border mt-2 p-2 small fade-in-content">${cleanedLogText}</pre>`;
+            logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs..."><pre class="bg-light border mt-2 p-2 small fade-in-content"></pre>`;
+            const logLines = cleanedLogText.split('\n');
+            const preElement = logsTabPane.querySelector('pre');
+            preElement.textContent = cleanedLogText;
+
+            const searchInput = logsTabPane.querySelector('input[type="text"]');
+            searchInput.addEventListener('input', () => {
+              const searchTerm = searchInput.value.toLowerCase();
+              if (!searchTerm) {
+                preElement.textContent = cleanedLogText;
+                return;
+              }
+              const filteredLines = logLines.filter(line => line.toLowerCase().includes(searchTerm));
+              preElement.textContent = filteredLines.join('\n');
+            });
+
             logsTabPane.dataset.loaded = 'true';
           } catch (err) {
             logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs..."><div class="text-danger">Error loading logs: ${err.message}</div>`;
