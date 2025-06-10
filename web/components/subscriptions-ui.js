@@ -68,7 +68,26 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     freqInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 me-2 small">D</span>');
     freqInputsCol.appendChild(createInputElement(`freq-hours-${product.id}`, 'number', currentSubscription.frequency_hours, 0, 23));
     freqInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 me-2 small">H</span>');
-    freqInputsCol.appendChild(createInputElement(`freq-mins-${product.id}`, 'number', currentSubscription.frequency_minutes, 0, 55, 5));
+
+    // Create select for frequency_minutes
+    const freqMinsSelect = document.createElement('select');
+    freqMinsSelect.id = `freq-mins-${product.id}`;
+    freqMinsSelect.className = 'form-select form-select-sm d-inline-block';
+    freqMinsSelect.style.width = '70px';
+    [0, 15, 30, 45].forEach(val => {
+      const option = document.createElement('option');
+      option.value = val;
+      option.textContent = val;
+      freqMinsSelect.appendChild(option);
+    });
+    // Set selected value, defaulting to 0 if not one of the options
+    const currentFreqMins = currentSubscription.frequency_minutes;
+    if ([0, 15, 30, 45].includes(currentFreqMins)) {
+      freqMinsSelect.value = currentFreqMins;
+    } else {
+      freqMinsSelect.value = 0;
+    }
+    freqInputsCol.appendChild(freqMinsSelect);
     freqInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 small">M</span>');
     freqRow.appendChild(freqInputsCol);
     settingsGrid.appendChild(freqRow);
@@ -97,7 +116,26 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     delayInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 me-2 small">D</span>');
     delayInputsCol.appendChild(createInputElement(`delay-hours-${product.id}`, 'number', currentSubscription.delay_hours, 0, 23));
     delayInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 me-2 small">H</span>');
-    delayInputsCol.appendChild(createInputElement(`delay-mins-${product.id}`, 'number', currentSubscription.delay_minutes, 0, 55, 5));
+
+    // Create select for delay_minutes
+    const delayMinsSelect = document.createElement('select');
+    delayMinsSelect.id = `delay-mins-${product.id}`;
+    delayMinsSelect.className = 'form-select form-select-sm d-inline-block';
+    delayMinsSelect.style.width = '70px';
+    [0, 15, 30, 45].forEach(val => {
+      const option = document.createElement('option');
+      option.value = val;
+      option.textContent = val;
+      delayMinsSelect.appendChild(option);
+    });
+    // Set selected value, defaulting to 0 if not one of the options
+    const currentDelayMins = currentSubscription.delay_minutes;
+    if ([0, 15, 30, 45].includes(currentDelayMins)) {
+      delayMinsSelect.value = currentDelayMins;
+    } else {
+      delayMinsSelect.value = 0;
+    }
+    delayInputsCol.appendChild(delayMinsSelect);
     delayInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 small">M</span>');
     delayDurationRow.appendChild(delayInputsCol);
 
