@@ -1,5 +1,6 @@
 import {API_ENABLE, API_DISABLE, API_STATUS, API_DISPATCH} from './config.js';
 import {createRipple} from './utils.js';
+import {fetchRuns} from './runs.js';
 
 const loader = document.getElementById('loader');
 const statusSpan = document.getElementById('status');
@@ -27,9 +28,29 @@ export async function call(path) {
   await fetchStatus();
 }
 
+async function runWorkflow() {
+  showLoader();
+  try {
+    let state = null;
+    const res = await fetch(API_STATUS);
+    if (res.ok) {
+      const data = await res.json();
+      state = data.state;
+    }
+    if (state && state.toLowerCase() === 'disabled') {
+      await fetch(API_ENABLE, {method: 'POST'});
+    }
+    await fetch(API_DISPATCH, {method: 'POST'});
+  } catch (e) {
+    console.error('Action error:', e);
+  }
+  await fetchStatus();
+  setTimeout(fetchRuns, 5000);
+}
+
 enableButton.addEventListener('click', () => call(API_ENABLE));
 disableButton.addEventListener('click', () => call(API_DISABLE));
-dispatchButton.addEventListener('click', () => call(API_DISPATCH));
+dispatchButton.addEventListener('click', runWorkflow);
 [enableButton, disableButton, dispatchButton].forEach(btn => btn && btn.addEventListener('click', createRipple));
 
 export async function fetchStatus() {

@@ -50,6 +50,11 @@ export function initPage() {
     });
     refreshButton.addEventListener('click', createRipple);
   }
+  const refreshRunsButton = document.getElementById('refresh-runs');
+  if (refreshRunsButton) {
+    refreshRunsButton.addEventListener('click', fetchRuns);
+    refreshRunsButton.addEventListener('click', createRipple);
+  }
   fetchStatus();
   fetchRuns();
   initTilt();
