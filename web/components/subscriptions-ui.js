@@ -8,14 +8,13 @@ let initialSubscribedProductIds = new Set();
 // --- Helper Function to Floor to 15 Minute Interval ---
 function floorTo15MinuteInterval(dateObj) {
   if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
-    // Handle invalid date input, perhaps return null or throw error
-    // For now, let's return a new Date() to avoid downstream errors, though this might not be ideal.
     console.error("Invalid date passed to floorTo15MinuteInterval:", dateObj);
-    const validDate = new Date();
-    validDate.setSeconds(0);
-    validDate.setMilliseconds(0);
-    validDate.setMinutes(Math.floor(validDate.getMinutes() / 15) * 15);
-    return validDate;
+    // Fallback to a valid Date object, floored to the current 15-min interval
+    const now = new Date();
+    now.setSeconds(0);
+    now.setMilliseconds(0);
+    now.setMinutes(Math.floor(now.getMinutes() / 15) * 15);
+    return now;
   }
   const newDate = new Date(dateObj.getTime());
   newDate.setSeconds(0);
@@ -24,157 +23,176 @@ function floorTo15MinuteInterval(dateObj) {
   return newDate;
 }
 
-
-// --- Calculate Next Check Times Function (Revised Logic based on last_checked_at and flooring) ---
-function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours, frequencyMinutes, count = 4) {
-  const projectedTimes = [];
-  const currentDate = new Date(); // For checking if times are on the current day
-
-  function formatTime(date) {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
+// --- Helper Function to Format Display String for Dates ---
+function formatDisplayString(dateObj, isToday) {
+  const hours = dateObj.getHours().toString().padStart(2, '0');
+  const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+  if (isToday) {
     return `${hours}:${minutes}`;
+  } else {
+    const year = dateObj.getFullYear();
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
+    const day = dateObj.getDate().toString().padStart(2, '0');
+    // Using "MMM D, HH:MM" for non-today dates for better readability
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${monthNames[dateObj.getMonth()]} ${day}, ${hours}:${minutes}`;
+    // Alternative: return `${year}-${month}-${day} ${hours}:${minutes}`;
   }
-
-  function isSameDayAsCurrent(date) {
-    if (!(date instanceof Date) || isNaN(date.getTime())) return false;
-    return date.getFullYear() === currentDate.getFullYear() &&
-           date.getMonth() === currentDate.getMonth() &&
-           date.getDate() === currentDate.getDate();
-  }
-
-  let lastCheckedAtDate = null;
-  if (lastCheckedAtISO) {
-    const parsedDate = new Date(lastCheckedAtISO);
-    if (!isNaN(parsedDate.getTime())) {
-      lastCheckedAtDate = parsedDate;
-    } else {
-      console.error("Invalid lastCheckedAtISO date string:", lastCheckedAtISO);
-    }
-  }
-
-  // Handle Zero Frequency
-  if (frequencyDays === 0 && frequencyHours === 0 && frequencyMinutes === 0) {
-    let currentTimeBase = lastCheckedAtDate ? new Date(lastCheckedAtDate.getTime() + 15 * 60000) : new Date();
-    // If lastCheckedAtDate exists and adding 15 mins makes it past 'now', start from 'now' instead.
-    if (lastCheckedAtDate && currentTimeBase < new Date()) {
-        currentTimeBase = new Date();
-    } else if (!lastCheckedAtDate) { // If no lastCheckedAt, ensure base is not in past
-        currentTimeBase = new Date();
-    }
-
-
-    let nextSlot = floorTo15MinuteInterval(currentTimeBase);
-    // If nextSlot is still before currentTimeBase (e.g. currentTimeBase is 10:05, nextSlot is 10:00), advance it.
-    // This ensures the first slot is >= currentTimeBase.
-    if (nextSlot.getTime() < currentTimeBase.getTime() && (currentTimeBase.getMinutes() % 15 !==0) ) {
-         nextSlot.setMinutes(nextSlot.getMinutes() + 15); // Advance to the next slot
-    }
-
-
-    while (projectedTimes.length < count) {
-      if (isSameDayAsCurrent(nextSlot)) {
-        const formatted = formatTime(nextSlot);
-        if (!projectedTimes.includes(formatted)) { // Ensure uniqueness
-             projectedTimes.push(formatted);
-        } else {
-            // If it's a duplicate, we still need to advance for the next potential unique slot
-        }
-      } else {
-        // Stop if we cross into another day (or if initial slot is not today)
-        if (projectedTimes.length > 0 || nextSlot > currentDate ) break;
-      }
-      nextSlot.setMinutes(nextSlot.getMinutes() + 15);
-    }
-    return projectedTimes;
-  }
-
-  // Handle Non-Zero Frequency
-  let currentBaseTime;
-
-  if (!lastCheckedAtDate) { // New subscription
-    currentBaseTime = floorTo15MinuteInterval(new Date());
-    if (isSameDayAsCurrent(currentBaseTime)) {
-      projectedTimes.push(formatTime(currentBaseTime));
-    }
-  } else { // Existing subscription
-    let theoreticalNextDue = new Date(lastCheckedAtDate.getTime() +
-      (frequencyDays * 24 * 60 * 60000) +
-      (frequencyHours * 60 * 60000) +
-      (frequencyMinutes * 60000));
-    currentBaseTime = floorTo15MinuteInterval(theoreticalNextDue);
-
-    // If the calculated first run is in the past, start from now, floored.
-    if (currentBaseTime < new Date()) {
-        currentBaseTime = floorTo15MinuteInterval(new Date());
-    }
-
-    if (isSameDayAsCurrent(currentBaseTime)) {
-      projectedTimes.push(formatTime(currentBaseTime));
-    }
-  }
-
-  // Ensure currentBaseTime is valid before loop, if projectedTimes is empty, it means first slot wasn't today.
-  if (projectedTimes.length === 0 && !isSameDayAsCurrent(currentBaseTime)) {
-      return []; // First calculated time is not today
-  }
-   // If projectedTimes is still empty, it means currentBaseTime (from new Date()) was not today, which is impossible.
-   // Or, currentBaseTime from existing sub was not today.
-   // Ensure currentBaseTime is today if projectedTimes is empty.
-   if (projectedTimes.length === 0) {
-       currentBaseTime = floorTo15MinuteInterval(new Date()); // Reset to today if all else fails to get a base
-       if (isSameDayAsCurrent(currentBaseTime)) {
-           projectedTimes.push(formatTime(currentBaseTime));
-       } else {
-           return []; // Cannot establish a base time for today.
-       }
-   }
-
-
-  while (projectedTimes.length < count) {
-    let nextTheoreticalDue = new Date(currentBaseTime.getTime() +
-      (frequencyDays * 24 * 60 * 60000) +
-      (frequencyHours * 60 * 60000) +
-      (frequencyMinutes * 60000));
-    let nextDisplayedTime = floorTo15MinuteInterval(nextTheoreticalDue);
-
-    if (!isSameDayAsCurrent(nextDisplayedTime)) {
-      break; // Stop if we cross to another day
-    }
-
-    const formattedNextTime = formatTime(nextDisplayedTime);
-
-    // Handle cases where frequency is small, causing flooring to produce same time
-    if (projectedTimes.length > 0 && formattedNextTime === projectedTimes[projectedTimes.length - 1]) {
-      // Advance by 15 mins from the *colliding* time to show a different slot
-      nextDisplayedTime.setMinutes(nextDisplayedTime.getMinutes() + 15);
-      nextDisplayedTime = floorTo15MinuteInterval(nextDisplayedTime); // Re-floor after advancing
-
-      // If advancing pushes it to the next day, break
-      if (!isSameDayAsCurrent(nextDisplayedTime)) {
-        break;
-      }
-      // Add the new advanced & floored time if it's different
-      const newFormattedTime = formatTime(nextDisplayedTime);
-      if (newFormattedTime !== projectedTimes[projectedTimes.length - 1]) {
-         projectedTimes.push(newFormattedTime);
-      } else {
-          // If still same, means we advanced e.g. 10:00 to 10:15, but 10:15 was already there.
-          // Or, advancing made it same as a previous entry.
-          // To prevent infinite loop, we must ensure currentBaseTime advances.
-      }
-
-    } else {
-      projectedTimes.push(formattedNextTime);
-    }
-
-    currentBaseTime = new Date(nextDisplayedTime.getTime()); // Update base for next iteration to the last valid displayed time
-
-    if (projectedTimes.length >= count) break;
-  }
-  // Return unique times only (Set conversion handles if any duplicates slipped through complex logic)
-  return [...new Set(projectedTimes)];
 }
+
+// --- Calculate Next Check Times Function (Refined Plan) ---
+function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours, frequencyMinutes, maxFutureChecks = 9) { // Changed default to 9
+  const checkEvents = [];
+  const now = new Date();
+
+  // Helper function, already defined globally but good for clarity if this function were standalone
+  function _isToday(dateObj, referenceDate) {
+    return dateObj.getFullYear() === referenceDate.getFullYear() &&
+           dateObj.getMonth() === referenceDate.getMonth() &&
+           dateObj.getDate() === referenceDate.getDate();
+  }
+
+  let calculationBaseDate = new Date(now.getTime()); // Use a copy of 'now'
+
+  if (lastCheckedAtISO) {
+    const lastCheckedDate = new Date(lastCheckedAtISO);
+    if (!isNaN(lastCheckedDate.getTime())) {
+      const todayStatus = _isToday(lastCheckedDate, now);
+      const displayString = formatDisplayString(lastCheckedDate, todayStatus);
+      checkEvents.push({
+        timeString: displayString,
+        dateObject: new Date(lastCheckedDate.getTime()), // Store a copy
+        isPastEvent: true,
+        isToday: todayStatus,
+      });
+      calculationBaseDate = new Date(lastCheckedDate.getTime()); // Base future calculations on this
+    } else {
+      console.error("Invalid lastCheckedAtISO date string provided:", lastCheckedAtISO);
+      // If lastCheckedAtISO is invalid, proceed as if it wasn't provided (base on 'now')
+    }
+  }
+
+  const totalFrequencyMinutes = (frequencyDays * 24 * 60) + (frequencyHours * 60) + frequencyMinutes;
+
+  // If frequency is zero or invalid, don't calculate future checks beyond the initial lastCheckedAt (if any)
+  if (totalFrequencyMinutes <= 0) {
+    // If there was no lastCheckedAtISO, and frequency is zero, we might want to show "Next: As soon as possible"
+    // or a single upcoming slot from 'now'. For now, returning only past event or empty.
+    if (checkEvents.length === 0) { // No last check, and zero frequency
+        let nextCheckTime = floorTo15MinuteInterval(new Date(now.getTime()));
+        if (nextCheckTime.getTime() < now.getTime()) { // If flooring made it past
+            nextCheckTime.setMinutes(nextCheckTime.getMinutes() + 15); // Advance
+            nextCheckTime = floorTo15MinuteInterval(nextCheckTime); // Re-floor
+        }
+        const todayStatus = _isToday(nextCheckTime, now);
+        checkEvents.push({
+            timeString: formatDisplayString(nextCheckTime, todayStatus),
+            dateObject: nextCheckTime,
+            isPastEvent: false,
+            isToday: todayStatus,
+        });
+    }
+    return checkEvents;
+  }
+
+  let futureChecksCount = 0;
+  let nextCheckTime = new Date(calculationBaseDate.getTime());
+
+  // "From midnight" principle for the first future check if lastCheckedAtISO was present
+  if (lastCheckedAtISO && checkEvents.length > 0) {
+    // Start of the day of lastCheckedDate
+    const startOfLastCheckedDay = new Date(calculationBaseDate.getFullYear(), calculationBaseDate.getMonth(), calculationBaseDate.getDate());
+
+    // How many full cycles have passed since start of that day up to lastCheckedTime?
+    const minutesIntoDayOfLastCheck = (calculationBaseDate.getHours() * 60) + calculationBaseDate.getMinutes();
+    const cyclesPassed = Math.floor(minutesIntoDayOfLastCheck / totalFrequencyMinutes);
+
+    // The start of the next cycle
+    let nextCycleStartMinutes = (cyclesPassed + 1) * totalFrequencyMinutes;
+
+    // Convert this minute offset back to a date
+    nextCheckTime = new Date(startOfLastCheckedDay.getTime() + nextCycleStartMinutes * 60000);
+
+    // If this calculated nextCheckTime is still before or same as calculationBaseDate (lastCheckedDate),
+    // it means we need to advance it by one more frequency period.
+    if (nextCheckTime.getTime() <= calculationBaseDate.getTime()) {
+        nextCheckTime.setMinutes(nextCheckTime.getMinutes() + totalFrequencyMinutes);
+    }
+
+  } else { // No lastCheckedAtISO, or it was invalid
+    // Start from 'now' but align to the "from midnight" principle for today.
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const minutesIntoToday = (now.getHours() * 60) + now.getMinutes();
+
+    let cyclesSinceMidnight = Math.floor(minutesIntoToday / totalFrequencyMinutes);
+    let nextCycleStartMinutesToday = (cyclesSinceMidnight) * totalFrequencyMinutes; // This is the start of current or last cycle
+
+    nextCheckTime = new Date(startOfToday.getTime() + nextCycleStartMinutesToday * 60000);
+
+    // If this time is in the past (relative to 'now'), or exactly 'now' move to the next cycle
+    if (nextCheckTime.getTime() <= now.getTime()) {
+        nextCheckTime.setMinutes(nextCheckTime.getMinutes() + totalFrequencyMinutes);
+    }
+  }
+
+  // Always floor the first calculated future time
+  nextCheckTime = floorTo15MinuteInterval(nextCheckTime);
+
+  // If the first floored future check is still before 'now', advance it.
+  // This can happen if 'now' is e.g. 10:05, freq is 1hr, last check far in past.
+  // Midnight logic might give 10:00. We need 11:00.
+  // Or if no last check, midnight logic gives 10:00. We need 11:00.
+  while (nextCheckTime.getTime() <= now.getTime() && nextCheckTime.getTime() <= calculationBaseDate.getTime() && futureChecksCount < 100 ) { // Add safety break for loop
+      // If nextCheckTime is same or before last actual check, advance it.
+      // This is critical if lastCheckTime itself was very recent and frequency is small.
+      // Also if the initial calculation based on 'now' resulted in a time slot that's already passed or is the current one.
+      nextCheckTime.setMinutes(nextCheckTime.getMinutes() + totalFrequencyMinutes);
+      nextCheckTime = floorTo15MinuteInterval(nextCheckTime); // Re-floor after adding frequency
+  }
+
+
+  // Generate future checks
+  const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60000); // Stop generating if too far
+
+  while (futureChecksCount < maxFutureChecks && nextCheckTime < twoDaysFromNow) {
+    // Ensure the slot is actually in the future relative to 'now'
+    // (especially for the very first future slot after all adjustments)
+    if (nextCheckTime.getTime() > now.getTime()) {
+        const todayStatus = _isToday(nextCheckTime, now);
+        const displayString = formatDisplayString(nextCheckTime, todayStatus);
+        // Avoid duplicate times if frequency is very small compared to 15-min interval
+        if (!checkEvents.some(e => e.dateObject.getTime() === nextCheckTime.getTime())) {
+            checkEvents.push({
+                timeString: displayString,
+                dateObject: new Date(nextCheckTime.getTime()), // Store a copy
+                isPastEvent: false,
+                isToday: todayStatus,
+            });
+            futureChecksCount++;
+        }
+    }
+
+    // Calculate next theoretical time based on the current `nextCheckTime`
+    nextCheckTime.setMinutes(nextCheckTime.getMinutes() + totalFrequencyMinutes);
+    nextCheckTime = floorTo15MinuteInterval(nextCheckTime); // Floor it for the next iteration
+
+    // Safety break for very small frequencies that might not advance `nextCheckTime` enough
+    // after flooring, especially if `totalFrequencyMinutes` < 15.
+    // The duplicate check above helps, but this is an additional safeguard.
+    if (checkEvents.length > 0 && checkEvents[checkEvents.length -1].dateObject.getTime() >= nextCheckTime.getTime()){
+        // If the new nextCheckTime isn't greater than the last one added, manually advance by 15 min to find a new slot.
+        nextCheckTime.setMinutes(checkEvents[checkEvents.length -1].dateObject.getMinutes() + 15);
+        nextCheckTime = floorTo15MinuteInterval(nextCheckTime);
+
+        // If still not advancing (e.g., end of day, crossing 2-day limit), break
+        if (checkEvents.length > 0 && checkEvents[checkEvents.length -1].dateObject.getTime() >= nextCheckTime.getTime()){
+            break;
+        }
+    }
+  }
+  return checkEvents;
+}
+
 
 // --- Toast Notification Function ---
 function showToastNotification(message, type = 'info', duration = 4000) {
@@ -435,43 +453,67 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     settingsGrid.appendChild(delayRow);
     settingsGrid.appendChild(delayDurationRow);
 
-    // --- Add Next Check Times Display ---
-    const nextTimesRow = document.createElement('div');
-    nextTimesRow.className = 'row mt-2 mb-2 align-items-center'; // Added mt-2 for spacing
-    const nextTimesLabelCol = document.createElement('div');
-    nextTimesLabelCol.className = 'col-md-3 col-lg-2'; // Adjusted column for label
-    nextTimesLabelCol.innerHTML = `<label class="form-label small">Next checks (today):</label>`;
-    nextTimesRow.appendChild(nextTimesLabelCol);
+    // --- Merged Check Times Display ---
+    const checkEventsRow = document.createElement('div');
+    checkEventsRow.className = 'row mt-2 mb-2 align-items-start'; // align-items-start for better label align if text wraps
+    const checkEventsLabelCol = document.createElement('div');
+    checkEventsLabelCol.className = 'col-md-3 col-lg-2';
+    checkEventsLabelCol.innerHTML = `<label class="form-label small fw-semibold">Event Log & Schedule:</label>`;
+    checkEventsRow.appendChild(checkEventsLabelCol);
 
-    const nextTimesValuesCol = document.createElement('div');
-    nextTimesValuesCol.className = 'col-md-9 col-lg-10'; // Adjusted column for values
-    const nextTimesDiv = document.createElement('div');
-    nextTimesDiv.id = `next-check-times-${product.id}`;
-    nextTimesDiv.className = 'd-flex flex-wrap'; // Use flex for horizontal layout and wrapping
+    const checkEventsValuesCol = document.createElement('div');
+    checkEventsValuesCol.className = 'col-md-9 col-lg-10';
 
-    const calculatedTimes = calculateNextCheckTimes(
-      currentSubscription.last_checked_at,
-      currentSubscription.frequency_days,
-      currentSubscription.frequency_hours,
-      currentSubscription.frequency_minutes
+    const allCheckEvents = calculateNextCheckTimes(
+        currentSubscription.last_checked_at,
+        currentSubscription.frequency_days,
+        currentSubscription.frequency_hours,
+        currentSubscription.frequency_minutes
     );
 
-    if (calculatedTimes.length > 0) {
-      calculatedTimes.forEach(time => {
-        const timeSpan = document.createElement('span');
-        timeSpan.className = 'badge bg-secondary me-1 mb-1'; // Bootstrap badge for styling
-        timeSpan.textContent = time;
-        nextTimesDiv.appendChild(timeSpan);
-      });
-    } else {
-      nextTimesDiv.textContent = 'None scheduled for today.';
-      nextTimesDiv.className = 'small text-muted'; // Style for this message
-    }
-    nextTimesValuesCol.appendChild(nextTimesDiv);
-    nextTimesRow.appendChild(nextTimesValuesCol);
-    settingsGrid.appendChild(nextTimesRow);
-    // --- End Next Check Times Display ---
+    const checkTimesBadgesDiv = document.createElement('div');
+    checkTimesBadgesDiv.className = 'd-flex flex-wrap';
 
+    if (allCheckEvents.length === 0) {
+        const noEventsMsg = document.createElement('span');
+        noEventsMsg.textContent = 'Not scheduled.';
+        noEventsMsg.className = 'small text-muted';
+        checkTimesBadgesDiv.appendChild(noEventsMsg);
+    } else {
+        const hasPastEvent = allCheckEvents.some(event => event.isPastEvent);
+        if (!currentSubscription.last_checked_at && !hasPastEvent) {
+            const neverCheckedMsg = document.createElement('div');
+            neverCheckedMsg.textContent = 'Never checked. Expected schedule:';
+            neverCheckedMsg.className = 'small text-muted mb-1'; // Add margin bottom
+            checkEventsValuesCol.appendChild(neverCheckedMsg); // Prepend message
+        }
+
+        allCheckEvents.forEach(event => {
+            const timeSpan = document.createElement('span');
+            // Using badge class for consistent padding/look, but removing default bg
+            timeSpan.className = 'badge me-1 mb-1';
+            timeSpan.textContent = event.timeString;
+            timeSpan.style.marginRight = '5px'; // Explicit margin
+
+            if (event.isPastEvent) {
+                timeSpan.style.color = 'white'; // Ensure text is visible on gray
+                timeSpan.style.backgroundColor = 'gray';
+            } else { // Future event
+                if (event.isToday) {
+                    timeSpan.style.color = 'white'; // Ensure text is visible
+                    timeSpan.style.backgroundColor = 'seagreen';
+                } else {
+                    timeSpan.style.color = 'black'; // Ensure text is visible on lightgreen
+                    timeSpan.style.backgroundColor = 'lightgreen';
+                }
+            }
+            checkTimesBadgesDiv.appendChild(timeSpan);
+        });
+    }
+    checkEventsValuesCol.appendChild(checkTimesBadgesDiv);
+    checkEventsRow.appendChild(checkEventsValuesCol);
+    settingsGrid.appendChild(checkEventsRow);
+    // --- End Merged Check Times Display ---
 
     // Set initial visibility of settings based on main checkbox
     settingsGrid.style.display = mainCheckbox.checked ? 'block' : 'none';
