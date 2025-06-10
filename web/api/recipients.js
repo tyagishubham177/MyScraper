@@ -105,7 +105,7 @@ export default async function handler(req, res) {
 
         // Remove associated subscriptions
         let currentSubscriptions = await getSubscriptionsFromKV();
-        const updatedSubscriptions = currentSubscriptions.filter(s => s.recipientId !== recipientIdToDelete);
+        const updatedSubscriptions = currentSubscriptions.filter(s => s.recipient_id !== recipientIdToDelete);
 
         // Save subscriptions only if they changed
         if (updatedSubscriptions.length < currentSubscriptions.length) {
