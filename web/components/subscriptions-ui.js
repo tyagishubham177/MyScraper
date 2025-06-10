@@ -282,17 +282,21 @@ function createInputElement(id, type, value, min, max, step) {
   const input = document.createElement('input');
   input.type = type;
   input.id = id;
-  input.className = 'form-control form-control-sm d-inline-block'; // Bootstrap classes
-  input.style.width = '70px'; // Adjust width as needed
-  if (type === 'number') {
-    input.value = value;
-    if (min !== undefined) input.min = min;
-    if (max !== undefined) input.max = max;
-    if (step !== undefined) input.step = step;
-  } else if (type === 'checkbox') {
+
+  if (type === 'checkbox') {
+    input.className = 'form-check-input';
     input.checked = value;
-    input.className = 'form-check-input'; // Bootstrap class for checkbox
+  } else {
+    input.className = 'form-control form-control-sm d-inline-block'; // Bootstrap classes
+    input.style.width = '70px';
+    if (type === 'number') {
+      input.value = value;
+      if (min !== undefined) input.min = min;
+      if (max !== undefined) input.max = max;
+      if (step !== undefined) input.step = step;
+    }
   }
+
   return input;
 }
 
