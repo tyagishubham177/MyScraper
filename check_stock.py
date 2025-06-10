@@ -56,7 +56,7 @@ async def main():
                 print(f"⚠️ Skipping product due to missing ID or URL in API data: {product_info}")
                 continue
 
-            print(f"\nChecking product from API: '{product_name_api}' (ID: {product_id}) at URL: {product_api_url}")
+            # print(f"\nChecking product from API: '{product_name_api}' (ID: {product_id}) at URL: {product_api_url}")
 
             try:
                 in_stock, product_name_scraper = await scraper.check_product_availability(product_api_url, config.PINCODE)
@@ -220,7 +220,8 @@ async def main():
                     else:
                         print(f"Product '{effective_product_name}' is in stock, but no valid & subscribed recipients found via API after mapping IDs to emails for notification.")
                 else:
-                    print(f"❌ Product '{effective_product_name}' (URL: {product_api_url}) is OUT OF STOCK or information is unavailable.")
+                    # print(f"❌ Product '{effective_product_name}' (URL: {product_api_url}) is OUT OF STOCK or information is unavailable.")
+                    pass # Keep the else block for structure, or remove if no other out-of-stock logic needed
 
             except Exception as e:
                 print(f"🚨 An error occurred while processing product {product_name_api} (URL: {product_api_url}): {e}")

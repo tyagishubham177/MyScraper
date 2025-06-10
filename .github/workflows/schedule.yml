@@ -2,7 +2,7 @@ name: Amul Watchdog
 
 on:
   schedule:
-    - cron: "0 */2 * * *"   # every 2 h (UTC) ⇒ every 2 h IST
+    - cron: "*/15 * * * *"   # every 15 min
   workflow_dispatch:        # manual run button
 
 jobs:

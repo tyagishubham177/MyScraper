@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from playwright.async_api import async_playwright
 
 async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]:
@@ -12,18 +13,18 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
         # await asyncio.sleep(5) # Removed sleep
 
         os.makedirs("artifacts", exist_ok=True)
-        step = 0
+        # step = 0 # Removed
 
         async def log(*msgs: object) -> None:
-            nonlocal step # Ensure we modify the outer step
+            # nonlocal step # Removed
             text = " ".join(str(m) for m in msgs)
             print(text) # Keep console logging
-            step += 1
-            safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30]
-            try:
-                await page.screenshot(path=f"artifacts/{step:02d}_{safe}.png")
-            except Exception as e:
-                print(f"Error taking screenshot: {e}")
+            # step += 1 # Removed
+            # safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in text)[:30] # Removed
+            # try: # Removed screenshot from log
+                # await page.screenshot(path=f"artifacts/{step:02d}_{safe}.png") # Removed
+            # except Exception as e: # Removed
+                # print(f"Error taking screenshot: {e}") # Removed
             # await asyncio.sleep(5) # Removed sleep
 
         print(f"Navigating to {url}") # Use the url argument
@@ -64,6 +65,18 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
         else:
             await log("Pincode modal not found")
             # reasons = ["no pincode input"]
+
+        # Single screenshot logic
+        safe_url_part = re.sub(r'^https?://', '', url) # Remove http(s)://
+        safe_url_part = re.sub(r'[^a-zA-Z0-9_-]', '_', safe_url_part) # Replace non-alphanumeric with underscore
+        safe_filename = f"artifacts/screenshot_{safe_url_part[:100]}.png" # Truncate
+
+        try:
+            print(f"Attempting to take screenshot: {safe_filename}")
+            await page.screenshot(path=safe_filename)
+            print(f"Screenshot saved: {safe_filename}")
+        except Exception as e:
+            print(f"Error taking single screenshot for {url}: {e}")
 
         await log("Checking availability indicators…")
         sold_out_elem = await page.query_selector("div.alert.alert-danger.mt-3")
