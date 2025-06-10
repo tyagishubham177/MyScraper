@@ -54,8 +54,8 @@ def format_short_message(product_name: str) -> str:
 
 def send_email_notification(subject: str, body: str, sender: str, recipients: list[str], host: str, port: int, username: str = None, password: str = None):
     """Sends an email notification."""
-    if not (host and sender and recipients and all(recipients)): # Also check if recipients list is not empty or contains empty strings
-        print("⚠️ Essential email configuration (EMAIL_HOST, EMAIL_SENDER, EMAIL_RECIPIENTS) is missing or invalid.")
+    if not (host and sender and recipients and all(recipients)):
+        print("⚠️ Essential email configuration or recipient list is missing or invalid.")
         return
     try:
         msg = MIMEText(body, 'html')
