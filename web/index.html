@@ -21,15 +21,26 @@
           Workflow status:
           <span id="status" class="fw-bold">Loading…</span><i data-lucide="info" class="ms-1"></i>
           <div id="loader" class="spinner-border text-info ms-2" role="status" style="display:none;width:1.5rem;height:1.5rem;"><span class="visually-hidden">Loading...</span></div>
-          <button id="refresh" class="btn btn-sm btn-secondary ms-2 btn-neumorphic"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
         </p>
-        <p>Use the buttons below to enable or disable the scheduled GitHub Action.</p>
-        <div class="mb-3">
-          <button id="enable" class="btn btn-success me-2 btn-neumorphic"><i data-lucide="play-circle" class="me-1"></i>Enable workflow</button>
-          <button id="disable" class="btn btn-danger btn-neumorphic"><i data-lucide="stop-circle" class="me-1"></i>Disable workflow</button>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <button id="refresh" class="btn btn-secondary w-100 btn-neumorphic"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
+          </div>
+          <div class="col-6">
+            <button id="dispatch" class="btn btn-primary w-100 btn-neumorphic"><i data-lucide="zap" class="me-1"></i>Run workflow</button>
+          </div>
+          <div class="col-6">
+            <button id="enable" class="btn btn-success w-100 btn-neumorphic"><i data-lucide="play-circle" class="me-1"></i>Enable workflow</button>
+          </div>
+          <div class="col-6">
+            <button id="disable" class="btn btn-danger w-100 btn-neumorphic"><i data-lucide="stop-circle" class="me-1"></i>Disable workflow</button>
+          </div>
         </div>
-        <h2 class="mt-4">Recent runs</h2>
-        <div id="runsAccordion" class="accordion"></div>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <h2 class="mb-0">Recent runs</h2>
+          <button id="refresh-runs" class="btn btn-sm btn-secondary btn-neumorphic"><i data-lucide="refresh-cw" class="me-1"></i>Refresh runs</button>
+        </div>
+        <div id="runsAccordion" class="accordion mt-2"></div>
           </div>
         </div>
       </div> <!-- End of Left Column -->

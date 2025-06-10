@@ -523,6 +523,7 @@
     margin-bottom: 0.5rem;
     margin-right: 0;
     border-radius: .375rem !important; /* Bootstrap's default form-control border-radius */
+    width: 100%;
   }
   #recipient-form .input-group .btn {
     width: 100%;
