@@ -50,18 +50,57 @@ export default async function handler(req, res) {
         );
 
         if (existingSubscription) {
-          return res.status(200).json({ message: 'Subscription already exists', subscription: existingSubscription });
+          // Update existing subscription
+          let updated = false;
+          if (req.body.frequency !== undefined) {
+            existingSubscription.frequency = req.body.frequency;
+            updated = true;
+          }
+          if (req.body.delay_on_stock !== undefined) {
+            existingSubscription.delay_on_stock = req.body.delay_on_stock;
+            updated = true;
+          }
+          if (req.body.delay_duration !== undefined) {
+            existingSubscription.delay_duration = req.body.delay_duration;
+            updated = true;
+          }
+          if (req.body.last_in_stock_at !== undefined) {
+            existingSubscription.last_in_stock_at = req.body.last_in_stock_at;
+            updated = true;
+          }
+          if (req.body.delayed_until !== undefined) {
+            existingSubscription.delayed_until = req.body.delayed_until;
+            updated = true;
+          }
+
+          // Ensure other fields like id, recipient_id, product_id are not accidentally overwritten
+          // by ensuring they are not part of the update logic from req.body unless specifically intended
+          // (which they are not for this particular update feature)
+
+          if (updated) {
+            await saveToKV('subscriptions', currentSubscriptions); // currentSubscriptions contains the modified existingSubscription
+            return res.status(200).json(existingSubscription);
+          } else {
+            // No fields were updated, but subscription exists
+            return res.status(200).json({ message: 'Subscription exists, no update fields provided.', subscription: existingSubscription });
+          }
+        } else {
+          // Create new subscription
+          const newSubscription = {
+            id: String(Date.now()), // Simple ID generation
+            recipient_id: recipient_id,
+            product_id: product_id,
+            frequency: req.body.frequency || "daily",
+            delay_on_stock: req.body.delay_on_stock !== undefined ? req.body.delay_on_stock : false,
+            delay_duration: req.body.delay_duration || "1_day",
+            last_in_stock_at: null,
+            delayed_until: null,
+          };
+
+          currentSubscriptions.push(newSubscription);
+          await saveToKV('subscriptions', currentSubscriptions);
+          res.status(201).json(newSubscription);
         }
-
-        const newSubscription = {
-          id: String(Date.now()), // Simple ID generation
-          recipient_id: recipient_id,
-          product_id: product_id,
-        };
-
-        currentSubscriptions.push(newSubscription);
-        await saveToKV('subscriptions', currentSubscriptions);
-        res.status(201).json(newSubscription);
       } catch (error) {
         console.error("Error in POST /api/subscriptions:", error);
         res.status(500).json({ message: 'Error creating subscription in KV', error: error.message });
@@ -99,23 +138,38 @@ export default async function handler(req, res) {
     case 'GET':
       try {
         const { recipient_id, product_id } = req.query;
-        const subscriptions = await getFromKV('subscriptions');
+        let subscriptions = await getFromKV('subscriptions');
+
+        // Helper to add default fields to subscriptions if they are missing
+        const addDefaultSubscriptionFields = (subscription) => {
+          return {
+            ...subscription,
+            frequency: subscription.frequency || "daily",
+            delay_on_stock: subscription.delay_on_stock !== undefined ? subscription.delay_on_stock : false,
+            delay_duration: subscription.delay_duration || "1_day",
+            last_in_stock_at: subscription.last_in_stock_at || null,
+            delayed_until: subscription.delayed_until || null,
+          };
+        };
 
         if (recipient_id && product_id) {
           return res.status(400).json({ message: 'Provide either recipient_id OR product_id, not both.' });
         }
 
         if (recipient_id) {
-          const recipientSubscriptions = subscriptions.filter(s => s.recipient_id === recipient_id);
+          const recipientSubscriptions = subscriptions
+            .filter(s => s.recipient_id === recipient_id)
+            .map(addDefaultSubscriptionFields);
           res.status(200).json(recipientSubscriptions);
         } else if (product_id) {
-          const productSubscriptions = subscriptions.filter(s => s.product_id === product_id);
+          const productSubscriptions = subscriptions
+            .filter(s => s.product_id === product_id)
+            .map(addDefaultSubscriptionFields);
           res.status(200).json(productSubscriptions);
         } else {
-          // As per original logic, require a query parameter
-          return res.status(400).json({ message: 'Missing recipient_id or product_id query parameter.' });
-          // Alternatively, to return all subscriptions:
-          // res.status(200).json(subscriptions);
+          // Return all subscriptions with default fields applied
+          const allSubscriptionsWithDefaults = subscriptions.map(addDefaultSubscriptionFields);
+          res.status(200).json(allSubscriptionsWithDefaults);
         }
       } catch (error) {
         console.error("Error in GET /api/subscriptions:", error);
