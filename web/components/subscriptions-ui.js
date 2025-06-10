@@ -281,6 +281,16 @@ function updateSaveButtonState() {
   if (!saveBtn) return;
 
   const currentState = getModalFormState();
+
+  // --- DEBUG LOGGING START ---
+  console.log("DEBUG: updateSaveButtonState - initialSubscriptionDataForModal:", initialSubscriptionDataForModal);
+  console.log("DEBUG: updateSaveButtonState - currentState:", currentState);
+  window.debug_initialState = initialSubscriptionDataForModal;
+  window.debug_currentState = currentState;
+  window.debug_comparisonResult = currentState !== initialSubscriptionDataForModal;
+  console.log("DEBUG: updateSaveButtonState - comparisonResult (currentState !== initialSubscriptionDataForModal):", window.debug_comparisonResult);
+  // --- DEBUG LOGGING END ---
+
   if (currentState !== initialSubscriptionDataForModal) {
     saveBtn.classList.remove('btn-outline-primary');
     saveBtn.classList.add('btn-primary');
@@ -333,17 +343,29 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     let currentSubscription = subscriptionsMap.get(product.id);
     const isNewSubscription = !subscriptionsMap.has(product.id);
 
-    if (isNewSubscription || currentSubscription.frequency_days === undefined) {
-      currentSubscription = currentSubscription || {}; // Ensure it's an object if it was truly undefined
-      currentSubscription.frequency_days = 0;
-      currentSubscription.frequency_hours = 1;
-      currentSubscription.frequency_minutes = 0;
-      currentSubscription.delay_on_stock = true;
-      currentSubscription.delay_days = 1;
-      currentSubscription.delay_hours = 0;
-      currentSubscription.delay_minutes = 0;
+    if (isNewSubscription) {
+      // This is a product the user is not currently subscribed to.
+      // We need to provide a temporary 'currentSubscription' object for UI rendering defaults.
+      currentSubscription = { // Initialize with all necessary UI defaults
+        frequency_days: 0, // UI default for new item
+        frequency_hours: 1, // UI default for new item
+        frequency_minutes: 0, // UI default for new item
+        delay_on_stock: true, // UI default for new item (snooze ON)
+        delay_days: 1, // UI default for new item
+        delay_hours: 0, // UI default for new item
+        delay_minutes: 0, // UI default for new item
+        last_in_stock_at: null, // Standard fields that should exist
+        delayed_until: null,
+        last_checked_at: null
+        // Note: product_id and recipient_id are implicitly part of the context,
+        // not stored directly on this temporary object passed for rendering.
+      };
     }
-
+    // If it's NOT a newSubscription, currentSubscription is the object from the server.
+    // It is assumed that the GET API's `addDefaultSubscriptionFields` has already populated
+    // all necessary fields (frequency_days, delay_on_stock, etc.) with appropriate defaults
+    // if they were missing from the stored KV data. Thus, no further defaulting is needed here
+    // for existing subscriptions.
 
     const listItem = document.createElement('div');
     listItem.className = 'list-group-item mb-3 p-3 border rounded'; // Styling for each product entry
