@@ -645,6 +645,17 @@
   vertical-align: middle;
   margin-right: 0 !important; /* Override default if any */
 }
+
+/* Close button inside Manage Subscriptions heading */
+#close-subscriptions-btn {
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+}
+#close-subscriptions-btn .lucide {
+  width: 1em;
+  height: 1em;
+  margin-right: 0 !important;
+}
 /* .list-group-item .btn-edit-icon:hover { */
   /* background-color: var(--bs-gray-200); -- Bootstrap handles this for outline buttons */
 /* } */

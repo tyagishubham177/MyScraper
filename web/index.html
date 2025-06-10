@@ -37,7 +37,7 @@
       <div class="col-lg-7 mb-4" id="managementAccordion"> <!-- Right Column for Management Sections -->
         <!-- Recipient Management Trigger -->
         <button class="btn btn-primary w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#recipientManagementCollapse" aria-expanded="false" aria-controls="recipientManagementCollapse">
-            Recipient Management <i class="lucide lucide-chevron-down ms-1"></i>
+            Recipient Management <i data-lucide="chevron-down" class="ms-1"></i>
         </button>
         <!-- Recipient Management Collapsible Card -->
         <div class="collapse" id="recipientManagementCollapse" data-bs-parent="#managementAccordion">
@@ -62,7 +62,12 @@
                       </ul>
                     </div>
                     <div id="recipient-subscriptions-section" class="mt-4" style="display: none;">
-                      <h4 id="recipient-subscriptions-title">Manage Subscriptions for <span id="selected-recipient-email"></span></h4>
+                      <h4 id="recipient-subscriptions-title" class="d-flex justify-content-between align-items-center">
+                        <span>Manage Subscriptions for <span id="selected-recipient-email"></span></span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="close-subscriptions-btn" title="Close">
+                          <i data-lucide="x"></i>
+                        </button>
+                      </h4>
                       <div id="subscription-product-list" class="list-group">
                         <!-- Available products with checkboxes will be listed here -->
                       </div>
@@ -73,7 +78,7 @@
 
         <!-- Product Management Trigger -->
         <button class="btn btn-primary w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#productManagementCollapse" aria-expanded="false" aria-controls="productManagementCollapse">
-            Product Management <i class="lucide lucide-chevron-down ms-1"></i>
+            Product Management <i data-lucide="chevron-down" class="ms-1"></i>
         </button>
         <!-- Product Management Collapsible Card -->
         <div class="collapse" id="productManagementCollapse" data-bs-parent="#managementAccordion">
@@ -149,7 +154,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="particles.js"></script>
   <script src="vanilla-tilt.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/lucide.min.js"></script>
+  <script src="lucide-icons.js"></script>
   <script type="module" src="components/main.js"></script>
 </body>
 </html>

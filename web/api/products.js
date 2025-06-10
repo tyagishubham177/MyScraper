@@ -91,6 +91,44 @@ export default async function handler(req, res) {
       }
       break;
 
+    case 'PUT':
+      try {
+        const { id } = req.query;
+        const { url, name } = req.body;
+
+        if (!id) {
+          return res.status(400).json({ message: 'Product ID is required' });
+        }
+        if (!url || typeof url !== 'string') {
+          return res.status(400).json({ message: 'Invalid URL' });
+        }
+        try {
+          new URL(url);
+        } catch (_) {
+          return res.status(400).json({ message: 'Invalid URL format' });
+        }
+        if (!name || typeof name !== 'string' || name.trim() === '') {
+          return res.status(400).json({ message: 'Invalid product name' });
+        }
+
+        let currentProducts = await getProductsFromKV();
+        const productIndex = currentProducts.findIndex(p => p.id === id);
+        if (productIndex === -1) {
+          return res.status(404).json({ message: 'Product not found' });
+        }
+        currentProducts[productIndex] = {
+          ...currentProducts[productIndex],
+          url,
+          name: name.trim(),
+        };
+        await saveProductsToKV(currentProducts);
+        res.status(200).json(currentProducts[productIndex]);
+      } catch (error) {
+        console.error('Error in PUT /api/products:', error);
+        res.status(500).json({ message: 'Error updating product in KV', error: error.message });
+      }
+      break;
+
     case 'DELETE':
       try {
         const { id: productIdToDelete } = req.query;
@@ -127,7 +165,7 @@ export default async function handler(req, res) {
       break;
 
     default:
-      res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
       res.status(405).json({ message: `Method ${method} Not Allowed` });
   }
 }
