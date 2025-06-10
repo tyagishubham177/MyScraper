@@ -605,15 +605,16 @@ async function handleSaveAllSubscriptionSettings() {
     // If not subscribed and was not initially in initialSubscribedProductIds, do nothing.
   });
 
+  // 1. Show Toast Notification (using existing logic, but with early exit)
   if (apiCallPromises.length === 0) {
     showToastNotification("No changes to save.", 'info');
     if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = originalBtnText;
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnText;
     }
-    storeInitialFormState(); // Update to current (unchanged) state
-    updateSaveButtonState();
-    return;
+    // storeInitialFormState(); // Already reflects no changes / called on modal open
+    // updateSaveButtonState(); // Button should already be in correct state / called on modal open
+    return; // Exit early
   }
 
   const results = await Promise.allSettled(apiCallPromises.map(p => p()));
@@ -641,61 +642,53 @@ async function handleSaveAllSubscriptionSettings() {
   });
 
   let feedbackMessage = "";
-  if (successCount > 0) {
-    feedbackMessage += `${successCount} subscription operation(s) processed successfully. `;
-  }
-  if (errorCount > 0) {
-    feedbackMessage += `Encountered ${errorCount} error(s): ${errorMessages.join('; ')}.`;
-  } else if (successCount > 0 && errorCount === 0) {
-    // feedbackMessage += "All changes saved successfully!"; // Already covered by first part
+  if (successCount > 0 && errorCount === 0) {
+    feedbackMessage = `Successfully processed ${successCount} operation(s). All changes saved!`;
+  } else if (successCount > 0 && errorCount > 0) {
+    feedbackMessage = `Processed ${successCount} operation(s) successfully, but ${errorCount} error(s) occurred: ${errorMessages.join('; ')}. Check UI for details.`;
+  } else if (successCount === 0 && errorCount > 0) {
+    feedbackMessage = `All ${errorCount} operation(s) failed: ${errorMessages.join('; ')}. Please try again.`;
   } else if (successCount === 0 && errorCount === 0 && apiCallPromises.length > 0) {
-     feedbackMessage = "Operations processed, but no specific success/error status was captured for some items.";
-  } else if (apiCallPromises.length === 0) { // Should be caught earlier
-    feedbackMessage = "No changes to save.";
+    // This case should ideally not be common if promises resolve/reject as expected.
+    feedbackMessage = "Operations attempted, but no specific success/error status was captured. Please review.";
   }
+  // No need for an explicit "No changes to save" message here, as it's handled by the early return.
 
   // Determine toast type based on counts
-  let toastType = 'info'; // Default for "Processing complete" or mixed results not easily categorized
+  let toastType = 'info'; // Default for unusual cases
   if (errorCount > 0 && successCount > 0) {
     toastType = 'warning'; // Partial success
   } else if (errorCount > 0 && successCount === 0) {
-    toastType = 'error';
+    toastType = 'error';   // All failed
   } else if (successCount > 0 && errorCount === 0) {
-    toastType = 'success';
-  } else if (successCount === 0 && errorCount === 0 && apiCallPromises.length > 0) {
-    // This case means all promises settled but didn't match our specific success/error criteria inside the promise values
-    // which shouldn't happen with the current promise construction logic.
-    // Or, it means operations were attempted but none resulted in a typical "saved" or "error" state we track.
-    toastType = 'info'; // Or 'warning' if this state implies uncertainty
-    if (!feedbackMessage) feedbackMessage = "Operations processed with undetermined outcomes for some items.";
+    toastType = 'success'; // All successful
   }
-
-
+  // If apiCallPromises.length > 0 but feedbackMessage is still empty (e.g. unusual state), default toast.
   if (feedbackMessage.trim()) {
     showToastNotification(feedbackMessage.trim(), toastType);
-  } else if (apiCallPromises.length === 0) {
-    // This case is already handled by an earlier "No changes to save" toast.
-    // However, if it were to be reached, an 'info' toast might be suitable.
-    // showToastNotification("No operations were performed.", 'info');
-  } else {
-     showToastNotification("Processing complete.", toastType);
+  } else if (apiCallPromises.length > 0) {
+    // Fallback toast if feedbackMessage somehow ended up empty despite operations.
+    showToastNotification("Processing complete. Review subscription status.", 'info');
+  }
+  // Note: The early exit for "apiCallPromises.length === 0" handles the "No changes to save" case.
+
+
+  // 2. Conditionally reload modal content from server
+  //    Only reload if operations were attempted.
+  if (apiCallPromises.length > 0 && recipientId && modalBodyElement) {
+      await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement);
   }
 
-
-  // Optionally, refresh the modal to show the persisted state
-  if (errorCount === 0 && recipientId && modalBodyElement) {
-    // Only reload fully if no errors, to show pristine server state
-    await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement);
-  }
-
-  // Always restore button state regardless of reload
+  // 3. Restore button state
   if (saveBtn) {
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = originalBtnText;
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalBtnText;
   }
-  // After saving (or attempting to save), re-capture the form state and update button
-  storeInitialFormState(); // Current state becomes the new initial state
-  updateSaveButtonState(); // Update button based on this new initial state
+
+  // 4. Update initial form state and save button UI
+  //    This MUST be after any potential modal reload.
+  storeInitialFormState();
+  updateSaveButtonState();
 }
 
 
