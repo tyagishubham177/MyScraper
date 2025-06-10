@@ -701,7 +701,49 @@
     color: rgba(0, 0, 0, 0.5); /* Darker placeholder text for modal inputs */
 }
 
+/* Scrollable Modal Body */
+#subscriptionModalBody {
+  max-height: 450px; /* Adjusted height slightly */
+  overflow-y: auto;
+}
+
+/* Square Green Checkboxes for Subscription Modal */
+#subscriptionModalBody .form-check-input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 1.25em;
+  height: 1.25em;
+  background-color: #fff;
+  border: 1px solid #adb5bd;
+  border-radius: 0.25em; /* Slightly rounded square */
+  position: relative;
+  cursor: pointer;
+  vertical-align: middle; /* Helps align with label text */
+  margin-right: 0.5rem; /* Space between checkbox and label, consistent with existing */
+}
+
+#subscriptionModalBody .form-check-input[type="checkbox"]:checked {
+  background-color: #28a745; /* Green background */
+  border-color: #28a745; /* Green border */
+}
+
+#subscriptionModalBody .form-check-input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.35em;
+  top: 0.15em;
+  width: 0.4em;
+  height: 0.7em;
+  border: solid white;
+  border-width: 0 0.15em 0.15em 0;
+  transform: rotate(45deg);
+}
+
+
 /* Refinements for Subscription Product List Checkboxes */
+/* These existing rules will apply ON TOP of the above for items within #subscription-product-list if that ID is used within the modal */
+/* If #subscriptionModalBody is the parent of #subscription-product-list, the new rules are more specific for the general modal body context */
 #subscription-product-list .list-group-item.form-check {
   display: flex; /* Use flexbox for alignment */
   align-items: center; /* Vertically center checkbox and label text */
@@ -711,7 +753,7 @@
 #subscription-product-list .form-check-input {
   position: static;
   float: none;
-  margin: 0 0.5rem 0 0;
+  margin: 0; /* Removed specific margin here as it's handled by the new rule for #subscriptionModalBody .form-check-input */
   /* The align-items: center on the parent should handle most vertical alignment needs. */
 }
 

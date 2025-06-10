@@ -32,7 +32,20 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
   const subscriptionsMap = new Map(recipientSubscriptions.map(sub => [sub.product_id, sub]));
 
   allProducts.forEach(product => {
-    const currentSubscription = subscriptionsMap.get(product.id) || {}; // API sends defaults
+    let currentSubscription = subscriptionsMap.get(product.id);
+    const isNewSubscription = !subscriptionsMap.has(product.id);
+
+    if (isNewSubscription || currentSubscription.frequency_days === undefined) {
+      currentSubscription = currentSubscription || {}; // Ensure it's an object if it was truly undefined
+      currentSubscription.frequency_days = 0;
+      currentSubscription.frequency_hours = 1;
+      currentSubscription.frequency_minutes = 0;
+      currentSubscription.delay_on_stock = true;
+      currentSubscription.delay_days = 1;
+      currentSubscription.delay_hours = 0;
+      currentSubscription.delay_minutes = 0;
+    }
+
 
     const listItem = document.createElement('div');
     listItem.className = 'list-group-item mb-3 p-3 border rounded'; // Styling for each product entry
@@ -142,14 +155,6 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     settingsGrid.appendChild(delayRow);
     settingsGrid.appendChild(delayDurationRow);
 
-    // Save Button
-    const saveButton = document.createElement('button');
-    saveButton.textContent = 'Save Settings';
-    saveButton.className = 'btn btn-sm btn-outline-primary mt-2 save-subscription-settings-btn';
-    saveButton.setAttribute('data-product-id', product.id);
-    // recipientId is currentModalRecipientId
-    settingsGrid.appendChild(saveButton);
-
     // Set initial visibility of settings based on main checkbox
     settingsGrid.style.display = mainCheckbox.checked ? 'block' : 'none';
 
@@ -157,6 +162,100 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     modalBodyElement.appendChild(listItem);
   });
 }
+
+// Handles saving ALL subscription settings from the modal
+async function handleSaveAllSubscriptionSettings() {
+  const recipientId = currentModalRecipientId;
+  const modalBodyElement = document.getElementById('subscriptionModalBody');
+
+  if (!recipientId || !modalBodyElement) {
+    alert('Error: Cannot save settings. Recipient or modal body not found.');
+    return;
+  }
+
+  const productItems = modalBodyElement.querySelectorAll('.list-group-item');
+  const results = [];
+
+  for (const item of productItems) {
+    const mainCheckbox = item.querySelector('.subscription-toggle');
+    if (!mainCheckbox) continue;
+
+    const productId = mainCheckbox.dataset.productId;
+    const isSubscribed = mainCheckbox.checked;
+
+    try {
+      if (isSubscribed) {
+        // Collect values from new granular pickers
+        const frequency_days = parseInt(document.getElementById(`freq-days-${productId}`).value, 10);
+        const frequency_hours = parseInt(document.getElementById(`freq-hours-${productId}`).value, 10);
+        const frequency_minutes = parseInt(document.getElementById(`freq-mins-${productId}`).value, 10);
+        const delay_on_stock = document.getElementById(`delay-stock-${productId}`).checked;
+        const delay_days = parseInt(document.getElementById(`delay-days-${productId}`).value, 10);
+        const delay_hours = parseInt(document.getElementById(`delay-hours-${productId}`).value, 10);
+        const delay_minutes = parseInt(document.getElementById(`delay-mins-${productId}`).value, 10);
+
+        const payload = {
+          recipient_id: recipientId,
+          product_id: productId,
+          frequency_days,
+          frequency_hours,
+          frequency_minutes,
+          delay_on_stock,
+          delay_days,
+          delay_hours,
+          delay_minutes,
+        };
+        await window.fetchAPI('/api/subscriptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        results.push({ productId, status: 'saved' });
+      } else {
+        // If not subscribed, check if a subscription exists to delete it
+        // This check might be redundant if the backend handles DELETE for non-existent subs gracefully
+        // For now, we assume we only send DELETE if it was previously subscribed or could have been.
+        await window.fetchAPI('/api/subscriptions', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipient_id: recipientId, product_id: productId }),
+        });
+        results.push({ productId, status: 'deleted' });
+      }
+    } catch (error) {
+      console.error(`Error processing subscription for product ${productId}:`, error);
+      results.push({ productId, status: 'error', message: error.message });
+    }
+  }
+
+  // Feedback to user
+  const successfulSaves = results.filter(r => r.status === 'saved').length;
+  const successfulDeletes = results.filter(r => r.status === 'deleted').length;
+  const errors = results.filter(r => r.status === 'error');
+
+  let feedbackMessage = '';
+  if (successfulSaves > 0) feedbackMessage += `${successfulSaves} subscription(s) saved. `;
+  if (successfulDeletes > 0) feedbackMessage += `${successfulDeletes} subscription(s) removed. `;
+  if (errors.length > 0) {
+    feedbackMessage += `\nEncountered ${errors.length} error(s):\n`;
+    errors.forEach(err => {
+      feedbackMessage += `- Product ID ${err.productId}: ${err.message}\n`;
+    });
+  }
+
+  if (feedbackMessage) {
+    alert(feedbackMessage.trim() || 'No changes were made.');
+  } else {
+    alert('All settings processed. No changes detected or all operations failed silently.');
+  }
+
+  // Optionally, refresh the modal to show the persisted state
+  if (errors.length === 0) {
+    // This will re-fetch and show the current state from the server.
+    _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement);
+  }
+}
+
 
 // Handles saving subscription settings from the modal
 async function handleSaveSubscriptionSettings(event) {
@@ -206,41 +305,25 @@ async function handleSaveSubscriptionSettings(event) {
 }
 
 // Handles toggling a subscription from the modal
-async function handleSubscriptionToggle(event) {
+function handleSubscriptionToggle(event) {
   const checkbox = event.target;
   const productId = checkbox.dataset.productId;
   const recipientId = currentModalRecipientId; // Use global recipient ID
 
   if (!productId || !recipientId) {
-    alert('Could not update subscription: critical information missing.');
+    // This recipientId check might be less critical now if we're not making API calls,
+    // but productId is essential for finding the settings grid.
+    console.error('Could not toggle subscription view: critical information missing.');
     return;
   }
 
-  const isSubscribing = checkbox.checked;
-  const modalBody = document.getElementById('subscriptionModalBody');
-
-  try {
-    if (isSubscribing) {
-      // API defaults will be used for granular settings
-      await window.fetchAPI('/api/subscriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipientId, product_id: productId }),
-      });
-    } else {
-      await window.fetchAPI('/api/subscriptions', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipientId, product_id: productId }),
-      });
-    }
-    // Refresh modal content after toggle
-    await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBody);
-  } catch (error) {
-    console.error('Error toggling subscription:', error);
-    alert(`Failed to update subscription: ${error.message}`);
-    checkbox.checked = !isSubscribing; // Revert checkbox on error
+  const settingsGrid = document.getElementById(`settings-${recipientId}-${productId}`);
+  if (settingsGrid) {
+    settingsGrid.style.display = checkbox.checked ? 'block' : 'none';
+  } else {
+    console.error(`Settings grid not found for product ${productId}`);
   }
+  // API calls and re-rendering are deferred to "Save All Subscriptions"
 }
 
 // Fetches all products and a specific recipient's subscriptions
@@ -327,14 +410,22 @@ export function initSubscriptionsUI() {
   if(modalCloseButton) modalCloseButton.addEventListener('click', closeModal);
   if(modalFooterCloseButton) modalFooterCloseButton.addEventListener('click', closeModal);
 
+  // Add Save All Subscriptions button to the modal footer
+  const modalFooter = modal.querySelector('.modal-footer');
+  if (modalFooter) {
+    const saveAllButton = document.createElement('button');
+    saveAllButton.type = 'button';
+    saveAllButton.id = 'saveAllSubscriptionsBtn';
+    saveAllButton.className = 'btn btn-primary';
+    saveAllButton.textContent = 'Save All Subscriptions';
+    saveAllButton.addEventListener('click', () => handleSaveAllSubscriptionSettings()); // Wrapper to call the async function
+    modalFooter.appendChild(saveAllButton);
+  }
+
   // Event delegation for dynamic content within the modal body
   const modalBody = document.getElementById('subscriptionModalBody');
   if (modalBody) {
-    modalBody.addEventListener('click', (event) => {
-      if (event.target.classList.contains('save-subscription-settings-btn')) {
-        handleSaveSubscriptionSettings(event);
-      }
-    });
+    // Removed event listener for individual save buttons
     modalBody.addEventListener('change', (event) => {
       if (event.target.classList.contains('subscription-toggle')) {
         handleSubscriptionToggle(event);
