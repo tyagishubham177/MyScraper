@@ -230,16 +230,32 @@ async def main():
             # as a check was performed for these active subscriptions.
             # Ensure 'active_subscriptions_for_this_product' was defined (it would be unless an early continue happened)
             if 'active_subscriptions_for_this_product' in locals() and active_subscriptions_for_this_product:
-                print(f"INFO: Placeholder for updating last_checked_at for product {product_id}:")
-                for sub_to_log_check in active_subscriptions_for_this_product:
-                    sub_id_log = sub_to_log_check.get('id', 'Unknown_ID')
-                    # Ensure _effective_check_time was set
-                    if '_effective_check_time' in sub_to_log_check:
-                         effective_check_time_iso = sub_to_log_check.get('_effective_check_time').isoformat()
-                         print(f"  - Sub ID: {sub_id_log}, Would update last_checked_at to: {effective_check_time_iso}")
+                update_url = f"{config.APP_BASE_URL}/api/subscriptions"
+                for sub_to_update_lca in active_subscriptions_for_this_product:
+                    recipient_id_lca = sub_to_update_lca.get('recipient_id')
+                    # product_id is already available from the outer loop
+                    sub_id_lca = sub_to_update_lca.get('id', 'Unknown_ID')
+
+                    if '_effective_check_time' in sub_to_update_lca and recipient_id_lca and product_id:
+                        new_last_checked_at_iso = sub_to_update_lca['_effective_check_time'].isoformat()
+                        update_payload_lca = {
+                            "recipient_id": recipient_id_lca,
+                            "product_id": product_id,
+                            "last_checked_at": new_last_checked_at_iso
+                        }
+                        try:
+                            async with session.post(update_url, json=update_payload_lca) as response:
+                                if response.status == 200 or response.status == 201: # Check for 200 or 201
+                                    print(f"INFO: Successfully updated last_checked_at for recipient {recipient_id_lca}, product {product_id} to {new_last_checked_at_iso}.")
+                                else:
+                                    error_text = await response.text()
+                                    print(f"ERROR: Failed to update last_checked_at for recipient {recipient_id_lca}, product {product_id}. Status: {response.status} - {error_text}")
+                        except aiohttp.ClientError as e_lca:
+                            print(f"ERROR: ClientError while updating last_checked_at for recipient {recipient_id_lca}, product {product_id}: {e_lca}")
+                        except Exception as e_lca_general:
+                             print(f"ERROR: Unexpected error while updating last_checked_at for recipient {recipient_id_lca}, product {product_id}: {e_lca_general}")
                     else:
-                        # This case should ideally not happen if logic is correct
-                        print(f"  - Sub ID: {sub_id_log}, _effective_check_time not set, cannot log last_checked_at update.")
+                        print(f"WARN: Missing data to update last_checked_at for sub ID {sub_id_lca} (recipient_id: {recipient_id_lca}, product_id: {product_id}, _effective_check_time set: {'_effective_check_time' in sub_to_update_lca})")
 
             # Respectful delay, ensure DELAY_BETWEEN_REQUESTS is defined in config
             delay = getattr(config, 'DELAY_BETWEEN_REQUESTS', 1) # Default to 1s if not defined
