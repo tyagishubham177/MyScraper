@@ -27,6 +27,10 @@ async function getFromKV(key) {
           delete sub.productId;
           migrated = true;
         }
+        if (typeof sub.delay_on_stock === 'string') {
+          sub.delay_on_stock = sub.delay_on_stock === 'true';
+          migrated = true;
+        }
       }
       if (migrated) {
         try {
@@ -77,6 +81,11 @@ export default async function handler(req, res) {
           return res.status(404).json({ message: 'Product not found' });
         }
 
+        let delayOnStockBody = req.body.delay_on_stock;
+        if (typeof delayOnStockBody === 'string') {
+          delayOnStockBody = delayOnStockBody === 'true';
+        }
+
         const currentSubscriptions = await getFromKV('subscriptions');
         const existingSubscription = currentSubscriptions.find(
           s =>
@@ -97,6 +106,10 @@ export default async function handler(req, res) {
           if (existingSubscription.productId && !existingSubscription.product_id) {
             existingSubscription.product_id = existingSubscription.productId;
             delete existingSubscription.productId;
+            updated = true;
+          }
+          if (typeof existingSubscription.delay_on_stock === 'string') {
+            existingSubscription.delay_on_stock = existingSubscription.delay_on_stock === 'true';
             updated = true;
           }
           // Update new granular fields if provided
@@ -128,8 +141,8 @@ export default async function handler(req, res) {
           }
 
           // Update other existing fields
-          if (req.body.delay_on_stock !== undefined) {
-            existingSubscription.delay_on_stock = req.body.delay_on_stock;
+          if (delayOnStockBody !== undefined) {
+            existingSubscription.delay_on_stock = delayOnStockBody;
             updated = true;
           }
           if (req.body.last_in_stock_at !== undefined) {
@@ -172,7 +185,7 @@ export default async function handler(req, res) {
             frequency_days: req.body.frequency_days ?? DEFAULT_FREQUENCY_DAYS,
             frequency_hours: req.body.frequency_hours ?? DEFAULT_FREQUENCY_HOURS,
             frequency_minutes: req.body.frequency_minutes ?? DEFAULT_FREQUENCY_MINUTES, // TODO: Validate step
-            delay_on_stock: req.body.delay_on_stock !== undefined ? req.body.delay_on_stock : false,
+            delay_on_stock: delayOnStockBody !== undefined ? delayOnStockBody : false,
             delay_days: req.body.delay_days ?? DEFAULT_DELAY_DAYS,
             delay_hours: req.body.delay_hours ?? DEFAULT_DELAY_HOURS,
             delay_minutes: req.body.delay_minutes ?? DEFAULT_DELAY_MINUTES, // TODO: Validate step
@@ -284,6 +297,10 @@ export default async function handler(req, res) {
               }
             }
             delete newSub.delay_duration; // Remove old field
+          }
+
+          if (typeof newSub.delay_on_stock === 'string') {
+            newSub.delay_on_stock = newSub.delay_on_stock === 'true';
           }
 
           // Apply defaults for new granular fields if not set (either directly or via migration)
