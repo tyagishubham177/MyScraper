@@ -420,12 +420,14 @@
     color: #333333; /* Dark text for product names in subscription list */
 }
 #subscription-product-list .form-check-input {
-    border-color: rgba(255,255,255,0.5);
+    /* border-color: rgba(255,255,255,0.5); */ /* Conflicting border, handled by more specific rule */
 }
+/*
 #subscription-product-list .form-check-input:checked {
     background-color: var(--success-color);
     border-color: var(--success-color);
 }
+*/
 
 
 /* Ensure buttons with icons are aligned */
@@ -701,7 +703,51 @@
     color: rgba(0, 0, 0, 0.5); /* Darker placeholder text for modal inputs */
 }
 
+/* Scrollable Modal Body */
+#subscriptionModalBody {
+  max-height: 450px; /* Adjusted height slightly */
+  overflow-y: auto;
+}
+
+/* Square Green Checkboxes for Subscription Modal */
+#subscriptionModalBody .form-check-input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 1.25em;
+  height: 1.25em;
+  background-color: #fff;
+  border: 1px solid #adb5bd;
+  border-radius: 0.25em; /* Slightly rounded square */
+  position: relative;
+  cursor: pointer;
+  vertical-align: middle; /* Helps align with label text */
+  margin-right: 0.5rem; /* Space between checkbox and label, consistent with existing */
+  background-image: none !important; /* Remove Bootstrap's default SVG image */
+}
+
+#subscriptionModalBody .form-check-input[type="checkbox"]:checked {
+  background-color: #28a745; /* Green background */
+  border-color: #28a745; /* Green border */
+  background-image: none !important; /* Also for checked state */
+}
+
+#subscriptionModalBody .form-check-input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.35em;
+  top: 0.15em;
+  width: 0.4em;
+  height: 0.7em;
+  border: solid white;
+  border-width: 0 0.15em 0.15em 0;
+  transform: rotate(45deg);
+}
+
+
 /* Refinements for Subscription Product List Checkboxes */
+/* These existing rules will apply ON TOP of the above for items within #subscription-product-list if that ID is used within the modal */
+/* If #subscriptionModalBody is the parent of #subscription-product-list, the new rules are more specific for the general modal body context */
 #subscription-product-list .list-group-item.form-check {
   display: flex; /* Use flexbox for alignment */
   align-items: center; /* Vertically center checkbox and label text */
@@ -711,7 +757,7 @@
 #subscription-product-list .form-check-input {
   position: static;
   float: none;
-  margin: 0 0.5rem 0 0;
+  margin: 0; /* Removed specific margin here as it's handled by the new rule for #subscriptionModalBody .form-check-input */
   /* The align-items: center on the parent should handle most vertical alignment needs. */
 }
 
@@ -734,4 +780,169 @@
 
 #settingsPane .offcanvas-title {
   color: #333333;
+}
+
+/* Save All Subscriptions Button Styles */
+
+/* Initial state (btn-outline-primary is the base in JS when no changes) */
+#saveAllSubscriptionsBtn {
+  /* Default styling will be btn btn-outline-primary assigned via JS initially */
+  /* Ensure transition for smooth style changes */
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+/* State when there are unsaved changes */
+/* This class will be added via JavaScript. */
+#saveAllSubscriptionsBtn.btn-unsaved-changes {
+  background-color: #0d6efd; /* Bootstrap primary blue */
+  border-color: #0d6efd;
+  color: #fff;
+}
+/* Ensure hover/focus states for unsaved changes are consistent with btn-primary */
+#saveAllSubscriptionsBtn.btn-unsaved-changes:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+#saveAllSubscriptionsBtn.btn-unsaved-changes:focus,
+#saveAllSubscriptionsBtn.btn-unsaved-changes.focus { /* .focus class for JS focus */
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.25rem rgba(49, 132, 253, 0.5); /* Bootstrap's primary focus shadow */
+}
+
+
+/* Loading state (when saving) */
+/* This class will be added via JavaScript. */
+#saveAllSubscriptionsBtn.btn-loading {
+  /* Style will be based on btn-primary (unsaved changes style) */
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+  opacity: 0.65 !important; /* Indicate disabled state, !important if other opacity rules interfere */
+  cursor: not-allowed !important; /* Indicate non-interactive */
+  /* Prevent hover/focus effects when loading */
+  pointer-events: none;
+}
+
+/* Spinner for loading state - to be embedded in the button text by JS */
+#saveAllSubscriptionsBtn .spinner-border-sm {
+  margin-right: 0.5rem;
+  vertical-align: text-bottom; /* Align spinner nicely with text */
+}
+
+/* Subscription Modal UI Enhancements */
+#subscriptionModal .modal-content {
+  /* Using existing card background with blur: rgba(255, 255, 255, 0.1) and backdrop-filter: blur(20px); */
+  /* If a more opaque/distinct background is needed, it can be set here, but for theme consistency, we inherit. */
+  border-radius: 0.5rem; /* Consistent with other cards, like .card */
+  border: 1px solid rgba(209, 213, 219, 0.3); /* Match card border */
+}
+
+#subscriptionModal .modal-header {
+  background-color: rgba(0, 0, 0, 0.03); /* Subtle header background */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 1rem 1.5rem;
+}
+
+/* Target h5 if #subscriptionModalHeaderTitle is an h5, or just the ID */
+#subscriptionModalHeaderTitle {
+  font-weight: 600; /* Bolder title */
+  font-size: 1.2rem; /* Adjusted size */
+  color: #333; /* Ensure good contrast on the light header bg */
+}
+
+#subscriptionModal .modal-body {
+  /* Existing: max-height: 450px; overflow-y: auto; */
+  padding: 1rem 1.25rem; /* Standard Bootstrap modal body padding or adjust as needed */
+}
+
+/* Optional: Refined hover for list items if current is not distinct enough */
+/* #subscriptionModalBody .list-group-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+} */
+
+#subscriptionModal .modal-footer {
+  background-color: rgba(0, 0, 0, 0.03); /* Match header or be neutral */
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  justify-content: flex-end; /* Align buttons to the right */
+}
+
+#subscriptionModal .modal-footer .btn + .btn { /* For spacing between buttons like "Close" and "Save All" */
+  margin-left: 0.5rem;
+}
+
+/* Toast Notification Styles */
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1090; /* Higher than Bootstrap modal z-index (usually 1050-1060 for modal, 1070 for modal backdrop) */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Toasts stack nicely from the right */
+  width: auto; /* Allow toasts to define their own width up to max-width */
+}
+
+.toast-notification {
+  background-color: #fff; /* Default background */
+  color: #333;
+  padding: 12px 20px;
+  margin-bottom: 10px;
+  border-radius: 0.375rem; /* Bootstrap's default */
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+  opacity: 0; /* Start hidden for fade-in */
+  transform: translateX(100%); /* Start off-screen to the right for slide-in effect */
+  transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+  min-width: 280px; /* Ensure a decent minimum width */
+  max-width: 380px; /* Max width */
+  /* Allow flex behavior for content inside if needed, e.g., for close button alignment */
+  display: flex;
+  justify-content: space-between; /* If a close button is present */
+  align-items: center;
+}
+
+.toast-notification.show {
+  opacity: 1;
+  transform: translateX(0); /* Slide in to view */
+}
+
+/* States for different notification types */
+.toast-notification.success {
+  background-color: #d1e7dd; /* Bootstrap success background subtle */
+  color: #0f5132; /* Bootstrap success text subtle */
+  border-left: 5px solid var(--success-color); /* Accent border using our variable */
+}
+
+.toast-notification.error {
+  background-color: #f8d7da; /* Bootstrap danger background subtle */
+  color: #842029; /* Bootstrap danger text subtle */
+  border-left: 5px solid var(--danger-color); /* Accent border using our variable */
+}
+
+.toast-notification.warning {
+  background-color: #fff3cd; /* Bootstrap warning background subtle */
+  color: #664d03; /* Bootstrap warning text subtle */
+  border-left: 5px solid #ffc107; /* Accent border */
+}
+
+/* Optional: Close button styling if added to toast markup */
+.toast-notification .btn-close-toast {
+  background: none;
+  border: none;
+  color: inherit; /* Inherits color from parent (.success, .error, etc.) */
+  /* float: right; -- No longer needed with flex */
+  font-size: 1.2rem;
+  font-weight: bold;
+  line-height: 1;
+  opacity: 0.6; /* Slightly more visible than BS default for btn-close */
+  margin-left: 15px; /* Space between message and close button */
+  padding: 0; /* Reset padding */
+  cursor: pointer;
+  text-shadow: none; /* Ensure no text shadow if parent has one */
+}
+.toast-notification .btn-close-toast:hover {
+  opacity: 0.9;
 }

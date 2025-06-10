@@ -1,5 +1,111 @@
 // Global variable to store current recipient ID for modal operations
 let currentModalRecipientId = null;
+// Global variable to store the initial state of the subscription form in the modal
+let initialSubscriptionDataForModal = '';
+// Global variable to store the set of initially subscribed product IDs for the current modal view
+let initialSubscribedProductIds = new Set();
+
+
+// --- Toast Notification Function ---
+function showToastNotification(message, type = 'info', duration = 4000) {
+  let toastContainer = document.querySelector('.toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container';
+    document.body.appendChild(toastContainer);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+  toast.classList.add(type); // e.g., 'success', 'error', 'warning', 'info'
+
+  toast.textContent = message;
+
+  toastContainer.appendChild(toast);
+
+  // Trigger reflow to ensure transition plays
+  void toast.offsetWidth;
+
+  toast.classList.add('show');
+
+  const hideTimeout = setTimeout(() => {
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, { once: true });
+  }, duration);
+
+  // Optional: Allow manual close by clicking the toast
+  toast.addEventListener('click', () => {
+    clearTimeout(hideTimeout);
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, { once: true });
+  }, { once: true });
+}
+
+
+// --- Helper functions for Save All Button State Management ---
+
+// Collects the current state of all relevant inputs in the modal
+function getModalFormState() {
+  const modalBodyElement = document.getElementById('subscriptionModalBody');
+  if (!modalBodyElement) return '';
+
+  const formData = {};
+  const productItems = modalBodyElement.querySelectorAll('.list-group-item');
+
+  productItems.forEach(item => {
+    const mainCheckbox = item.querySelector('.subscription-toggle');
+    if (!mainCheckbox) return;
+
+    const productId = mainCheckbox.dataset.productId;
+    formData[productId] = {
+      subscribed: mainCheckbox.checked,
+    };
+
+    if (mainCheckbox.checked) {
+      formData[productId].frequency_days = parseInt(document.getElementById(`freq-days-${productId}`)?.value, 10);
+      formData[productId].frequency_hours = parseInt(document.getElementById(`freq-hours-${productId}`)?.value, 10);
+      formData[productId].frequency_minutes = parseInt(document.getElementById(`freq-mins-${productId}`)?.value, 10);
+      formData[productId].delay_on_stock = document.getElementById(`delay-stock-${productId}`)?.checked;
+      formData[productId].delay_days = parseInt(document.getElementById(`delay-days-${productId}`)?.value, 10);
+      formData[productId].delay_hours = parseInt(document.getElementById(`delay-hours-${productId}`)?.value, 10);
+      formData[productId].delay_minutes = parseInt(document.getElementById(`delay-mins-${productId}`)?.value, 10);
+    }
+  });
+  return JSON.stringify(formData);
+}
+
+// Stores the current form state as the initial state
+function storeInitialFormState() {
+  initialSubscriptionDataForModal = getModalFormState();
+}
+
+// Updates the "Save All Subscriptions" button based on changes
+function updateSaveButtonState() {
+  const saveBtn = document.getElementById('saveAllSubscriptionsBtn');
+  if (!saveBtn) return;
+
+  const currentState = getModalFormState();
+  if (currentState !== initialSubscriptionDataForModal) {
+    saveBtn.classList.remove('btn-outline-primary');
+    saveBtn.classList.add('btn-primary');
+    // saveBtn.textContent = 'Save Changes'; // Optional: change text
+  } else {
+    saveBtn.classList.remove('btn-primary');
+    saveBtn.classList.add('btn-outline-primary');
+    // saveBtn.textContent = 'Save All Subscriptions'; // Default text
+  }
+}
+
+
+// --- Core UI Rendering and Event Handling ---
 
 // Helper to create input elements
 function createInputElement(id, type, value, min, max, step) {
@@ -32,7 +138,20 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
   const subscriptionsMap = new Map(recipientSubscriptions.map(sub => [sub.product_id, sub]));
 
   allProducts.forEach(product => {
-    const currentSubscription = subscriptionsMap.get(product.id) || {}; // API sends defaults
+    let currentSubscription = subscriptionsMap.get(product.id);
+    const isNewSubscription = !subscriptionsMap.has(product.id);
+
+    if (isNewSubscription || currentSubscription.frequency_days === undefined) {
+      currentSubscription = currentSubscription || {}; // Ensure it's an object if it was truly undefined
+      currentSubscription.frequency_days = 0;
+      currentSubscription.frequency_hours = 1;
+      currentSubscription.frequency_minutes = 0;
+      currentSubscription.delay_on_stock = true;
+      currentSubscription.delay_days = 1;
+      currentSubscription.delay_hours = 0;
+      currentSubscription.delay_minutes = 0;
+    }
+
 
     const listItem = document.createElement('div');
     listItem.className = 'list-group-item mb-3 p-3 border rounded'; // Styling for each product entry
@@ -142,23 +261,191 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     settingsGrid.appendChild(delayRow);
     settingsGrid.appendChild(delayDurationRow);
 
-    // Save Button
-    const saveButton = document.createElement('button');
-    saveButton.textContent = 'Save Settings';
-    saveButton.className = 'btn btn-sm btn-outline-primary mt-2 save-subscription-settings-btn';
-    saveButton.setAttribute('data-product-id', product.id);
-    // recipientId is currentModalRecipientId
-    settingsGrid.appendChild(saveButton);
-
     // Set initial visibility of settings based on main checkbox
     settingsGrid.style.display = mainCheckbox.checked ? 'block' : 'none';
 
     listItem.appendChild(settingsGrid);
     modalBodyElement.appendChild(listItem);
+
+    // Attach listeners to all inputs within this product item to detect changes
+    const inputsToWatch = [
+      mainCheckbox,
+      document.getElementById(`freq-days-${product.id}`),
+      document.getElementById(`freq-hours-${product.id}`),
+      document.getElementById(`freq-mins-${product.id}`),
+      document.getElementById(`delay-stock-${product.id}`),
+      document.getElementById(`delay-days-${product.id}`),
+      document.getElementById(`delay-hours-${product.id}`),
+      document.getElementById(`delay-mins-${product.id}`),
+    ];
+
+    inputsToWatch.forEach(input => {
+      if (input) {
+        const eventType = (input.type === 'checkbox' || input.tagName === 'SELECT') ? 'change' : 'input';
+        input.addEventListener(eventType, updateSaveButtonState);
+      }
+    });
   });
 }
 
-// Handles saving subscription settings from the modal
+// Handles saving ALL subscription settings from the modal
+async function handleSaveAllSubscriptionSettings() {
+  const saveBtn = document.getElementById('saveAllSubscriptionsBtn');
+  const originalBtnText = 'Save All Subscriptions'; // Assuming this is the default or desired text
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+  }
+
+  const recipientId = currentModalRecipientId;
+  const modalBodyElement = document.getElementById('subscriptionModalBody');
+
+  if (!recipientId || !modalBodyElement) {
+    showToastNotification('Error: Cannot save settings. Recipient or modal body not found.', 'error');
+    if (saveBtn) { // Restore button if we exit early
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnText;
+    }
+    return;
+  }
+
+  const productItems = modalBodyElement.querySelectorAll('.list-group-item');
+  const apiCallPromises = [];
+
+  productItems.forEach(item => {
+    const mainCheckbox = item.querySelector('.subscription-toggle');
+    if (!mainCheckbox) return;
+
+    const productId = mainCheckbox.dataset.productId;
+    const isSubscribed = mainCheckbox.checked;
+
+    if (isSubscribed) {
+      // Always POST if checked (API handles create/update)
+      const frequency_days = parseInt(document.getElementById(`freq-days-${productId}`).value, 10);
+      const frequency_hours = parseInt(document.getElementById(`freq-hours-${productId}`).value, 10);
+      const frequency_minutes = parseInt(document.getElementById(`freq-mins-${productId}`).value, 10);
+      const delay_on_stock = document.getElementById(`delay-stock-${productId}`).checked;
+      const delay_days = parseInt(document.getElementById(`delay-days-${productId}`).value, 10);
+      const delay_hours = parseInt(document.getElementById(`delay-hours-${productId}`).value, 10);
+      const delay_minutes = parseInt(document.getElementById(`delay-mins-${productId}`).value, 10);
+
+      const payload = {
+        recipient_id: recipientId, product_id: productId,
+        frequency_days, frequency_hours, frequency_minutes,
+        delay_on_stock, delay_days, delay_hours, delay_minutes,
+      };
+      // Add a function that returns the promise
+      apiCallPromises.push(() => window.fetchAPI('/api/subscriptions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      }).then(data => ({ productId, status: 'fulfilled', data }))
+         .catch(error => ({ productId, status: 'rejected', reason: error }))); // Simplified error object
+    } else if (initialSubscribedProductIds.has(productId)) {
+      // Only DELETE if it was initially subscribed and is now unchecked
+      const payload = { recipient_id: recipientId, product_id: productId };
+      apiCallPromises.push(() => window.fetchAPI('/api/subscriptions', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      }).then(data => ({ productId, status: 'fulfilled', data, operation: 'deleted' }))
+         .catch(error => ({ productId, status: 'rejected', reason: error })));
+    }
+    // If not subscribed and was not initially in initialSubscribedProductIds, do nothing.
+  });
+
+  if (apiCallPromises.length === 0) {
+    showToastNotification("No changes to save.", 'info');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalBtnText;
+    }
+    storeInitialFormState(); // Update to current (unchanged) state
+    updateSaveButtonState();
+    return;
+  }
+
+  const results = await Promise.allSettled(apiCallPromises.map(p => p()));
+
+  let successCount = 0;
+  let errorCount = 0;
+  const errorMessages = [];
+
+  results.forEach(result => {
+    // Each result from Promise.allSettled will have a status and either 'value' or 'reason'
+    // The 'value' here is the object we constructed in our .then/.catch handlers for each promise
+    if (result.status === 'fulfilled' && result.value.status === 'fulfilled') {
+      successCount++;
+    } else if (result.status === 'fulfilled' && result.value.status === 'rejected') {
+      // This case handles errors caught by our .catch within the promise function
+      errorCount++;
+      errorMessages.push(`Product ID ${result.value.productId}: ${result.value.reason.message || 'Failed operation'}`);
+    } else if (result.status === 'rejected') {
+      // This case handles errors if the promise function itself failed before .then/.catch (less likely here)
+      errorCount++;
+      // Result.reason might not have productId directly, depends on how it failed.
+      // This part might need adjustment based on what 'result.reason' contains.
+      errorMessages.push(`Operation failed: ${result.reason.message || 'Unknown error'}`);
+    }
+  });
+
+  let feedbackMessage = "";
+  if (successCount > 0) {
+    feedbackMessage += `${successCount} subscription operation(s) processed successfully. `;
+  }
+  if (errorCount > 0) {
+    feedbackMessage += `Encountered ${errorCount} error(s): ${errorMessages.join('; ')}.`;
+  } else if (successCount > 0 && errorCount === 0) {
+    // feedbackMessage += "All changes saved successfully!"; // Already covered by first part
+  } else if (successCount === 0 && errorCount === 0 && apiCallPromises.length > 0) {
+     feedbackMessage = "Operations processed, but no specific success/error status was captured for some items.";
+  } else if (apiCallPromises.length === 0) { // Should be caught earlier
+    feedbackMessage = "No changes to save.";
+  }
+
+  // Determine toast type based on counts
+  let toastType = 'info'; // Default for "Processing complete" or mixed results not easily categorized
+  if (errorCount > 0 && successCount > 0) {
+    toastType = 'warning'; // Partial success
+  } else if (errorCount > 0 && successCount === 0) {
+    toastType = 'error';
+  } else if (successCount > 0 && errorCount === 0) {
+    toastType = 'success';
+  } else if (successCount === 0 && errorCount === 0 && apiCallPromises.length > 0) {
+    // This case means all promises settled but didn't match our specific success/error criteria inside the promise values
+    // which shouldn't happen with the current promise construction logic.
+    // Or, it means operations were attempted but none resulted in a typical "saved" or "error" state we track.
+    toastType = 'info'; // Or 'warning' if this state implies uncertainty
+    if (!feedbackMessage) feedbackMessage = "Operations processed with undetermined outcomes for some items.";
+  }
+
+
+  if (feedbackMessage.trim()) {
+    showToastNotification(feedbackMessage.trim(), toastType);
+  } else if (apiCallPromises.length === 0) {
+    // This case is already handled by an earlier "No changes to save" toast.
+    // However, if it were to be reached, an 'info' toast might be suitable.
+    // showToastNotification("No operations were performed.", 'info');
+  } else {
+     showToastNotification("Processing complete.", toastType);
+  }
+
+
+  // Optionally, refresh the modal to show the persisted state
+  if (errorCount === 0 && recipientId && modalBodyElement) {
+    // Only reload fully if no errors, to show pristine server state
+    await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement);
+  }
+
+  // Always restore button state regardless of reload
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = originalBtnText;
+  }
+  // After saving (or attempting to save), re-capture the form state and update button
+  storeInitialFormState(); // Current state becomes the new initial state
+  updateSaveButtonState(); // Update button based on this new initial state
+}
+
+
+// Handles saving subscription settings from the modal (DEPRECATED - individual save buttons are removed)
 async function handleSaveSubscriptionSettings(event) {
   const button = event.target;
   const productId = button.dataset.productId;
@@ -206,41 +493,26 @@ async function handleSaveSubscriptionSettings(event) {
 }
 
 // Handles toggling a subscription from the modal
-async function handleSubscriptionToggle(event) {
+function handleSubscriptionToggle(event) {
   const checkbox = event.target;
   const productId = checkbox.dataset.productId;
   const recipientId = currentModalRecipientId; // Use global recipient ID
 
   if (!productId || !recipientId) {
-    alert('Could not update subscription: critical information missing.');
+    // This recipientId check might be less critical now if we're not making API calls,
+    // but productId is essential for finding the settings grid.
+    console.error('Could not toggle subscription view: critical information missing.');
     return;
   }
 
-  const isSubscribing = checkbox.checked;
-  const modalBody = document.getElementById('subscriptionModalBody');
-
-  try {
-    if (isSubscribing) {
-      // API defaults will be used for granular settings
-      await window.fetchAPI('/api/subscriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipientId, product_id: productId }),
-      });
-    } else {
-      await window.fetchAPI('/api/subscriptions', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipientId, product_id: productId }),
-      });
-    }
-    // Refresh modal content after toggle
-    await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBody);
-  } catch (error) {
-    console.error('Error toggling subscription:', error);
-    alert(`Failed to update subscription: ${error.message}`);
-    checkbox.checked = !isSubscribing; // Revert checkbox on error
+  const settingsGrid = document.getElementById(`settings-${recipientId}-${productId}`);
+  if (settingsGrid) {
+    settingsGrid.style.display = checkbox.checked ? 'block' : 'none';
+  } else {
+    console.error(`Settings grid not found for product ${productId}`);
   }
+  // API calls and re-rendering are deferred to "Save All Subscriptions"
+  updateSaveButtonState(); // Update button state as toggling is a change
 }
 
 // Fetches all products and a specific recipient's subscriptions
@@ -264,11 +536,16 @@ async function _fetchSubscriptionDataForRecipient(recipientId) {
 // Loads data and then renders it into the modal body
 async function _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement) {
   modalBodyElement.innerHTML = '<div class="list-group-item">Loading subscriptions...</div>';
+  initialSubscribedProductIds.clear(); // Clear for the new recipient
+
   const [allProducts, recipientSubscriptions] = await _fetchSubscriptionDataForRecipient(recipientId);
 
   if (allProducts === null) { // Check if fetching failed
     modalBodyElement.innerHTML = `<div class="list-group-item list-group-item-danger">Error loading subscription data.</div>`;
     return;
+  }
+  if (recipientSubscriptions && recipientSubscriptions.length > 0) {
+    recipientSubscriptions.forEach(sub => initialSubscribedProductIds.add(sub.product_id));
   }
   renderSubscriptionProductsInModal(allProducts, recipientSubscriptions || [], recipientId, modalBodyElement);
 }
@@ -290,6 +567,16 @@ export async function openSubscriptionModal(recipientId, recipientName) {
   modalTitle.textContent = `Manage Subscriptions for ${recipientName}`;
   await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBody);
   modal.style.display = 'block'; // Show modal
+
+  // After modal is populated and shown:
+  storeInitialFormState(); // Store the initial state of the form
+  updateSaveButtonState(); // Set the initial Save button style (should be outline)
+
+  const saveBtn = document.getElementById('saveAllSubscriptionsBtn');
+  if (saveBtn) {
+    saveBtn.disabled = false; // Ensure enabled
+    saveBtn.innerHTML = 'Save All Subscriptions'; // Ensure text is reset
+  }
 }
 
 // Initializes the subscription UI components (Modal based)
@@ -327,14 +614,23 @@ export function initSubscriptionsUI() {
   if(modalCloseButton) modalCloseButton.addEventListener('click', closeModal);
   if(modalFooterCloseButton) modalFooterCloseButton.addEventListener('click', closeModal);
 
+  // Add Save All Subscriptions button to the modal footer
+  const modalFooter = modal.querySelector('.modal-footer');
+  if (modalFooter) {
+    const saveAllButton = document.createElement('button');
+    saveAllButton.type = 'button';
+    saveAllButton.id = 'saveAllSubscriptionsBtn';
+    // Initial state should be btn-outline-primary, will be updated by updateSaveButtonState
+    saveAllButton.className = 'btn btn-outline-primary';
+    saveAllButton.textContent = 'Save All Subscriptions';
+    saveAllButton.addEventListener('click', () => handleSaveAllSubscriptionSettings());
+    modalFooter.appendChild(saveAllButton);
+  }
+
   // Event delegation for dynamic content within the modal body
   const modalBody = document.getElementById('subscriptionModalBody');
   if (modalBody) {
-    modalBody.addEventListener('click', (event) => {
-      if (event.target.classList.contains('save-subscription-settings-btn')) {
-        handleSaveSubscriptionSettings(event);
-      }
-    });
+    // Removed event listener for individual save buttons
     modalBody.addEventListener('change', (event) => {
       if (event.target.classList.contains('subscription-toggle')) {
         handleSubscriptionToggle(event);
