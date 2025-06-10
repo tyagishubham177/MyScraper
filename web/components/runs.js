@@ -163,28 +163,47 @@ export async function fetchRuns() {
               const cleanedLogText = cleanLogText(trimmedLog);
               const scraperDecisions = parseScraperDecisionsFromLog(cleanedLogText);
 
+              let summaryContentHtml = '<h4 class="mt-3">Product Stock Summary:</h4>';
               if (scraperDecisions.length > 0) {
-                let summaryHtml = '<h4 class="mt-3">Product Stock Summary:</h4><ul>';
+                summaryContentHtml += '<div>'; // Container for product entries
                 scraperDecisions.forEach(decision => {
-                  summaryHtml += `<li>${decision.name}: <strong>${decision.status}</strong></li>`;
+                  let statusHtml = '';
+                  if (decision.status === 'IN STOCK') {
+                    statusHtml = `<span style="color: green;"><i data-lucide="check-circle" class="me-1"></i>IN STOCK</span>`;
+                  } else if (decision.status === 'OUT OF STOCK') {
+                    statusHtml = `<span style="color: red;"><i data-lucide="x-circle" class="me-1"></i>OUT OF STOCK</span>`;
+                  } else {
+                    statusHtml = `<span>${decision.status}</span>`; // Fallback for unexpected status
+                  }
+                  summaryContentHtml += `
+                    <div class="mb-2">
+                      <span>${decision.name}: </span>
+                      <strong>${statusHtml}</strong>
+                    </div>`;
                 });
-                summaryHtml += '</ul>';
-                overviewTabPane.innerHTML += summaryHtml; // Append to existing overview
+                summaryContentHtml += '</div>';
+                overviewTabPane.innerHTML += summaryContentHtml;
               } else {
                 overviewTabPane.innerHTML += '<p class="mt-3 text-muted">No product stock decisions found in logs.</p>';
               }
               overviewTabPane.dataset.productSummaryLoaded = 'true';
+
+              // If lucide icons were added, ensure they are rendered.
+              // Assuming a global lucide.replace() might be called by other parts of the app,
+              // or that Bootstrap handles data-lucide. If not, a targeted call would be needed here.
+              if (typeof lucide !== 'undefined' && scraperDecisions.length > 0) {
+                lucide.replace(); // Call explicitly if needed and available
+              }
+
             } catch (logErr) {
               console.error(`Error loading or parsing log for product summary (run ${runId}):`, logErr);
               overviewTabPane.innerHTML += `<p class="text-warning mt-3">Could not load product stock summary: ${logErr.message}</p>`;
-              // Still mark as loaded to prevent retries on error
-              overviewTabPane.dataset.productSummaryLoaded = 'true';
+              overviewTabPane.dataset.productSummaryLoaded = 'true'; // Mark as loaded even on error to prevent retries
             }
           }
           // --- END Product Stock Summary Section ---
 
-          // Ensure the fade-in class is added after all content modifications
-          overviewTabPane.classList.add('fade-in-content');
+          overviewTabPane.classList.add('fade-in-content'); // Ensure fade-in after all modifications
 
         } catch (err) {
           overviewTabPane.innerHTML = `<div class="text-danger">Error loading overview: ${err.message}</div>`;
