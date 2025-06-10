@@ -191,8 +191,12 @@ export async function fetchRuns() {
               // If lucide icons were added, ensure they are rendered.
               // Assuming a global lucide.replace() might be called by other parts of the app,
               // or that Bootstrap handles data-lucide. If not, a targeted call would be needed here.
-              if (typeof lucide !== 'undefined' && scraperDecisions.length > 0) {
-                lucide.replace(); // Call explicitly if needed and available
+              if (scraperDecisions.length > 0) {
+                setTimeout(() => {
+                  if (typeof lucide !== 'undefined' && lucide && typeof lucide.replace === 'function') {
+                    lucide.replace();
+                  }
+                }, 50);
               }
 
             } catch (logErr) {
