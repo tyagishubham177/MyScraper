@@ -29,7 +29,9 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
 
         print(f"Navigating to {url}") # Use the url argument
         await page.goto(url, timeout=60000)
-        await asyncio.sleep(3) # Added sleep after navigation
+        # Wait for network to be idle to avoid capturing a blank page
+        await page.wait_for_load_state('networkidle')
+        await asyncio.sleep(1)  # small delay for any final render
         await log("Page loaded")
 
         modal = await page.query_selector("div.modal-content.bg-transparent")
@@ -57,6 +59,7 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
                     await page.keyboard.press("ArrowDown") # Try to select first if not auto-selected
                     await page.keyboard.press("Enter")
                 await asyncio.sleep(3) # Added sleep after pincode selection/attempt
+                await page.wait_for_load_state('networkidle')
                 await log("Pincode selected/attempted")
                 # reasons = ["pincode entered"] # Not used in this function's return
             else:
@@ -65,18 +68,6 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
         else:
             await log("Pincode modal not found")
             # reasons = ["no pincode input"]
-
-        # Single screenshot logic
-        safe_url_part = re.sub(r'^https?://', '', url) # Remove http(s)://
-        safe_url_part = re.sub(r'[^a-zA-Z0-9_-]', '_', safe_url_part) # Replace non-alphanumeric with underscore
-        safe_filename = f"artifacts/screenshot_{safe_url_part[:100]}.png" # Truncate
-
-        try:
-            print(f"Attempting to take screenshot: {safe_filename}")
-            await page.screenshot(path=safe_filename)
-            print(f"Screenshot saved: {safe_filename}")
-        except Exception as e:
-            print(f"Error taking single screenshot for {url}: {e}")
 
         await log("Checking availability indicators…")
         sold_out_elem = await page.query_selector("div.alert.alert-danger.mt-3")
@@ -131,6 +122,18 @@ async def check_product_availability(url: str, pincode: str) -> tuple[bool, str]
         if sold_out_visible: current_reasons.append("sold_out_visible")
         if disabled_btn: current_reasons.append("disabled_btn_visible")
         await log("Scraper decision:", "in_stock" if in_stock else "out_of_stock", "based on:", "; ".join(current_reasons))
+
+        # Take screenshot after all elements settled but before closing
+        safe_url_part = re.sub(r'^https?://', '', url)
+        safe_url_part = re.sub(r'[^a-zA-Z0-9_-]', '_', safe_url_part)
+        safe_filename = f"artifacts/screenshot_{safe_url_part[:100]}.png"
+
+        try:
+            print(f"Attempting to take screenshot: {safe_filename}")
+            await page.screenshot(path=safe_filename)
+            print(f"Screenshot saved: {safe_filename}")
+        except Exception as e:
+            print(f"Error taking single screenshot for {url}: {e}")
 
         await browser.close()
         # await asyncio.sleep(5) # Removed sleep
