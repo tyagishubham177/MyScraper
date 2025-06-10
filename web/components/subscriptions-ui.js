@@ -1,272 +1,317 @@
-// Assuming window.fetchAPI is available from a previous script (recipients-ui.js or products-ui.js)
-// If not, it should be defined here or imported.
+// Global variable to store current recipient ID for modal operations
+let currentModalRecipientId = null;
 
-// Renders the list of products with subscription toggles
-function renderSubscriptionProducts(allProducts, recipientSubscriptions, recipientId) {
-  const productListDiv = document.getElementById('subscription-product-list');
-  productListDiv.innerHTML = ''; // Clear current list
+// Helper to create input elements
+function createInputElement(id, type, value, min, max, step) {
+  const input = document.createElement('input');
+  input.type = type;
+  input.id = id;
+  input.className = 'form-control form-control-sm d-inline-block'; // Bootstrap classes
+  input.style.width = '70px'; // Adjust width as needed
+  if (type === 'number') {
+    input.value = value;
+    if (min !== undefined) input.min = min;
+    if (max !== undefined) input.max = max;
+    if (step !== undefined) input.step = step;
+  } else if (type === 'checkbox') {
+    input.checked = value;
+    input.className = 'form-check-input'; // Bootstrap class for checkbox
+  }
+  return input;
+}
+
+// Renders products and their subscription settings within the modal
+function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, recipientId, modalBodyElement) {
+  modalBodyElement.innerHTML = ''; // Clear current list
 
   if (!allProducts || allProducts.length === 0) {
-    productListDiv.innerHTML = '<div class="list-group-item">No products available to subscribe to.</div>';
+    modalBodyElement.innerHTML = '<div class="list-group-item">No products available.</div>';
     return;
   }
 
-  // Create a map for quick lookup of subscription details by product_id
   const subscriptionsMap = new Map(recipientSubscriptions.map(sub => [sub.product_id, sub]));
 
   allProducts.forEach(product => {
+    const currentSubscription = subscriptionsMap.get(product.id) || {}; // API sends defaults
+
     const listItem = document.createElement('div');
-    listItem.className = 'list-group-item'; // Main container for product info and settings
+    listItem.className = 'list-group-item mb-3 p-3 border rounded'; // Styling for each product entry
 
-    const productInfoDiv = document.createElement('div');
-    productInfoDiv.className = 'form-check'; // For checkbox and label
+    const mainToggleDiv = document.createElement('div');
+    mainToggleDiv.className = 'form-check mb-2';
+    const mainCheckbox = createInputElement(`sub-check-${recipientId}-${product.id}`, 'checkbox', !!subscriptionsMap.has(product.id));
+    mainCheckbox.classList.add('subscription-toggle'); // Keep this class for event delegation
+    mainCheckbox.setAttribute('data-product-id', product.id);
+    // recipientId is implicitly currentModalRecipientId for modal operations
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'form-check-input subscription-toggle';
-    checkbox.id = `sub-check-${product.id}`;
-    checkbox.setAttribute('data-product-id', product.id);
-    checkbox.setAttribute('data-recipient-id', recipientId);
-    const currentSubscription = subscriptionsMap.get(product.id);
-    checkbox.checked = !!currentSubscription;
+    const mainLabel = document.createElement('label');
+    mainLabel.className = 'form-check-label ms-2 fw-bold';
+    mainLabel.setAttribute('for', `sub-check-${recipientId}-${product.id}`);
+    mainLabel.textContent = product.name;
+    mainToggleDiv.appendChild(mainCheckbox);
+    mainToggleDiv.appendChild(mainLabel);
+    listItem.appendChild(mainToggleDiv);
 
-    const label = document.createElement('label');
-    label.className = 'form-check-label';
-    label.setAttribute('for', `sub-check-${product.id}`);
-    label.textContent = product.name;
+    const settingsGrid = document.createElement('div');
+    settingsGrid.className = 'container-fluid'; // Bootstrap grid system
+    settingsGrid.id = `settings-${recipientId}-${product.id}`;
 
-    productInfoDiv.appendChild(checkbox);
-    productInfoDiv.appendChild(label);
-    listItem.appendChild(productInfoDiv);
+    // Row for Frequency Settings
+    const freqRow = document.createElement('div');
+    freqRow.className = 'row mb-2 align-items-center';
+    freqRow.innerHTML = `<div class="col-md-2"><label class="form-label small">Frequency:</label></div>`;
 
-    // Container for additional settings, shown if subscribed
-    const settingsDiv = document.createElement('div');
-    settingsDiv.className = 'subscription-settings mt-2 ms-4'; // Added ms-4 for indentation
-    settingsDiv.id = `settings-${product.id}`;
-    // settingsDiv.style.display = checkbox.checked ? 'block' : 'none'; // Show/hide based on subscription
+    const freqInputsCol = document.createElement('div');
+    freqInputsCol.className = 'col-md-10 d-flex align-items-center';
 
-    // Frequency dropdown
-    const freqLabel = document.createElement('label');
-    freqLabel.setAttribute('for', `freq-${product.id}`);
-    freqLabel.textContent = 'Frequency:';
-    freqLabel.className = 'form-label me-2';
-    const freqSelect = document.createElement('select');
-    freqSelect.id = `freq-${product.id}`;
-    freqSelect.className = 'form-select form-select-sm d-inline-block w-auto me-3';
-    ["hourly", "every_2_hours", "daily", "weekly"].forEach(f => {
-      const option = document.createElement('option');
-      option.value = f;
-      option.textContent = f.replace('_', ' ');
-      freqSelect.appendChild(option);
-    });
-    freqSelect.value = currentSubscription?.frequency || 'daily';
+    freqInputsCol.appendChild(createInputElement(`freq-days-${product.id}`, 'number', currentSubscription.frequency_days, 0, 7)); // Max 7 days
+    freqInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 me-2 small">D</span>');
+    freqInputsCol.appendChild(createInputElement(`freq-hours-${product.id}`, 'number', currentSubscription.frequency_hours, 0, 23));
+    freqInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 me-2 small">H</span>');
+    freqInputsCol.appendChild(createInputElement(`freq-mins-${product.id}`, 'number', currentSubscription.frequency_minutes, 0, 55, 5));
+    freqInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 small">M</span>');
+    freqRow.appendChild(freqInputsCol);
+    settingsGrid.appendChild(freqRow);
 
-    // Delay on stock checkbox
-    const delayStockDiv = document.createElement('div');
-    delayStockDiv.className = 'form-check form-check-inline';
-    const delayStockCheckbox = document.createElement('input');
-    delayStockCheckbox.type = 'checkbox';
-    delayStockCheckbox.id = `delay-stock-${product.id}`;
-    delayStockCheckbox.className = 'form-check-input';
-    delayStockCheckbox.checked = currentSubscription?.delay_on_stock || false;
-    const delayStockLabel = document.createElement('label');
-    delayStockLabel.setAttribute('for', `delay-stock-${product.id}`);
-    delayStockLabel.textContent = 'Delay if item out of stock?';
-    delayStockLabel.className = 'form-check-label';
-    delayStockDiv.appendChild(delayStockCheckbox);
-    delayStockDiv.appendChild(delayStockLabel);
+    // Row for Delay Settings
+    const delayRow = document.createElement('div');
+    delayRow.className = 'row mb-2 align-items-center';
+    const delayToggleCol = document.createElement('div');
+    delayToggleCol.className = 'col-md-12 mb-2'; // Full width for checkbox
+    const delayCheckbox = createInputElement(`delay-stock-${product.id}`, 'checkbox', currentSubscription.delay_on_stock);
+    const delayLabel = document.createElement('label');
+    delayLabel.className = 'form-check-label small ms-2';
+    delayLabel.setAttribute('for', `delay-stock-${product.id}`);
+    delayLabel.textContent = 'Delay notifications if item is out of stock?';
+    delayToggleCol.appendChild(delayCheckbox);
+    delayToggleCol.appendChild(delayLabel);
+    delayRow.appendChild(delayToggleCol);
 
-    // Delay duration input
-    const delayDurationLabel = document.createElement('label');
-    delayDurationLabel.setAttribute('for', `delay-duration-${product.id}`);
-    delayDurationLabel.textContent = 'Delay duration:';
-    delayDurationLabel.className = 'form-label me-2';
-    const delayDurationInput = document.createElement('input');
-    delayDurationInput.type = 'text';
-    delayDurationInput.id = `delay-duration-${product.id}`;
-    delayDurationInput.className = 'form-control form-control-sm d-inline-block w-auto me-3';
-    delayDurationInput.value = currentSubscription?.delay_duration || '1_day';
-    delayDurationInput.placeholder = "e.g., 1_day, 3_hours";
+    const delayDurationRow = document.createElement('div'); // New row for duration inputs
+    delayDurationRow.className = 'row mb-2 align-items-center';
+    delayDurationRow.innerHTML = `<div class="col-md-2"><label class="form-label small">Delay For:</label></div>`;
 
-    // Save button
+    const delayInputsCol = document.createElement('div');
+    delayInputsCol.className = 'col-md-10 d-flex align-items-center';
+    delayInputsCol.appendChild(createInputElement(`delay-days-${product.id}`, 'number', currentSubscription.delay_days, 0, 7)); // Max 7 days
+    delayInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 me-2 small">D</span>');
+    delayInputsCol.appendChild(createInputElement(`delay-hours-${product.id}`, 'number', currentSubscription.delay_hours, 0, 23));
+    delayInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 me-2 small">H</span>');
+    delayInputsCol.appendChild(createInputElement(`delay-mins-${product.id}`, 'number', currentSubscription.delay_minutes, 0, 55, 5));
+    delayInputsCol.insertAdjacentHTML('beforeend', '<span class="ms-1 small">M</span>');
+    delayDurationRow.appendChild(delayInputsCol);
+
+    settingsGrid.appendChild(delayRow);
+    settingsGrid.appendChild(delayDurationRow);
+
+    // Save Button
     const saveButton = document.createElement('button');
     saveButton.textContent = 'Save Settings';
-    saveButton.className = 'btn btn-sm btn-outline-primary save-subscription-settings-btn';
+    saveButton.className = 'btn btn-sm btn-outline-primary mt-2 save-subscription-settings-btn';
     saveButton.setAttribute('data-product-id', product.id);
-    saveButton.setAttribute('data-recipient-id', recipientId);
+    // recipientId is currentModalRecipientId
+    settingsGrid.appendChild(saveButton);
 
-    settingsDiv.appendChild(freqLabel);
-    settingsDiv.appendChild(freqSelect);
-    settingsDiv.appendChild(delayStockDiv); // Inline checkbox with label
-    settingsDiv.appendChild(delayDurationLabel);
-    settingsDiv.appendChild(delayDurationInput);
-    settingsDiv.appendChild(saveButton);
+    // Set initial visibility of settings based on main checkbox
+    settingsGrid.style.display = mainCheckbox.checked ? 'block' : 'none';
 
-    // Add a little note for duration input
-    const durationNote = document.createElement('small');
-    durationNote.className = 'form-text text-muted d-block mt-1';
-    durationNote.textContent = 'Duration examples: "1_day", "12_hours", "30_minutes".';
-    settingsDiv.appendChild(durationNote);
-
-    listItem.appendChild(settingsDiv);
-    productListDiv.appendChild(listItem);
+    listItem.appendChild(settingsGrid);
+    modalBodyElement.appendChild(listItem);
   });
 }
 
-
-// Handles saving subscription settings
+// Handles saving subscription settings from the modal
 async function handleSaveSubscriptionSettings(event) {
   const button = event.target;
   const productId = button.dataset.productId;
-  const recipientId = button.dataset.recipientId || (window.selectedRecipient ? window.selectedRecipient.id : null);
+  const recipientId = currentModalRecipientId; // Use global recipient ID for modal
 
   if (!productId || !recipientId) {
     alert('Error: Product ID or Recipient ID missing.');
     return;
   }
 
-  const frequency = document.getElementById(`freq-${productId}`).value;
-  const delayOnStock = document.getElementById(`delay-stock-${productId}`).checked;
-  const delayDuration = document.getElementById(`delay-duration-${productId}`).value;
+  // Collect values from new granular pickers
+  const frequency_days = parseInt(document.getElementById(`freq-days-${productId}`).value, 10);
+  const frequency_hours = parseInt(document.getElementById(`freq-hours-${productId}`).value, 10);
+  const frequency_minutes = parseInt(document.getElementById(`freq-mins-${productId}`).value, 10);
+  const delay_on_stock = document.getElementById(`delay-stock-${productId}`).checked;
+  const delay_days = parseInt(document.getElementById(`delay-days-${productId}`).value, 10);
+  const delay_hours = parseInt(document.getElementById(`delay-hours-${productId}`).value, 10);
+  const delay_minutes = parseInt(document.getElementById(`delay-mins-${productId}`).value, 10);
+
+  const payload = {
+    recipient_id: recipientId,
+    product_id: productId,
+    frequency_days,
+    frequency_hours,
+    frequency_minutes,
+    delay_on_stock,
+    delay_days,
+    delay_hours,
+    delay_minutes,
+  };
 
   try {
     await window.fetchAPI('/api/subscriptions', {
-      method: 'POST', // Assuming API's POST handles update if subscription exists
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient_id: recipientId,
-        product_id: productId,
-        frequency: frequency,
-        delay_on_stock: delayOnStock,
-        delay_duration: delayDuration,
-      }),
+      body: JSON.stringify(payload),
     });
     alert('Subscription settings saved!');
-    // Optionally, reload subscriptions to confirm changes, though API response should be sufficient
-    // await _loadSubscriptionsForRecipient(recipientId);
+    // Optionally re-fetch and re-render modal content to confirm, or trust API
+    // For now, direct feedback is alert.
   } catch (error) {
     console.error('Error saving subscription settings:', error);
     alert(`Failed to save settings: ${error.message}`);
   }
 }
 
-
-// Handles toggling a subscription
+// Handles toggling a subscription from the modal
 async function handleSubscriptionToggle(event) {
   const checkbox = event.target;
   const productId = checkbox.dataset.productId;
-  const recipientId = window.selectedRecipient ? window.selectedRecipient.id : null;
-  // const settingsDiv = document.getElementById(`settings-${productId}`);
+  const recipientId = currentModalRecipientId; // Use global recipient ID
 
   if (!productId || !recipientId) {
-    console.error('Product ID or Recipient ID is missing for subscription toggle.');
     alert('Could not update subscription: critical information missing.');
     return;
   }
 
   const isSubscribing = checkbox.checked;
+  const modalBody = document.getElementById('subscriptionModalBody');
 
   try {
     if (isSubscribing) {
-      // Create new subscription with default settings
+      // API defaults will be used for granular settings
       await window.fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipient_id: recipientId,
-          product_id: productId,
-          frequency: "daily", // Default
-          delay_on_stock: false, // Default
-          delay_duration: "1_day" // Default
-        }),
+        body: JSON.stringify({ recipient_id: recipientId, product_id: productId }),
       });
-      // console.log(`Subscribed recipient ${recipientId} to product ${productId} with default settings`);
-      // After successful subscription, reload to show settings with defaults
-      // This will also make the settingsDiv visible if it was previously hidden by style.display
-      await _loadSubscriptionsForRecipient(recipientId);
     } else {
       await window.fetchAPI('/api/subscriptions', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipient_id: recipientId, product_id: productId }),
       });
-      // console.log(`Unsubscribed recipient ${recipientId} from product ${productId}`);
-      // After successful unsubscription, reload to hide/update settings
-      await _loadSubscriptionsForRecipient(recipientId);
     }
+    // Refresh modal content after toggle
+    await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBody);
   } catch (error) {
     console.error('Error toggling subscription:', error);
     alert(`Failed to update subscription: ${error.message}`);
-    // Revert checkbox state on error to reflect actual state
-    checkbox.checked = !isSubscribing;
+    checkbox.checked = !isSubscribing; // Revert checkbox on error
   }
 }
 
-// Loads all products and the recipient's subscriptions, then renders them
-async function _loadSubscriptionsForRecipient(recipientId) {
+// Fetches all products and a specific recipient's subscriptions
+async function _fetchSubscriptionDataForRecipient(recipientId) {
   if (!recipientId) {
-    console.warn('No recipient ID provided to loadSubscriptionsForRecipient.');
-    clearSubscriptionProducts(); // Clear display if no recipient
-    return;
+    console.warn('No recipient ID provided to _fetchSubscriptionDataForRecipient.');
+    return [null, null]; // Return nulls to indicate failure
   }
-
-  const productListDiv = document.getElementById('subscription-product-list');
-  productListDiv.innerHTML = '<div class="list-group-item">Loading subscriptions...</div>'; // Loading state
-
   try {
-    // Parallel fetch: all products and specific recipient's subscriptions
     const [allProducts, recipientSubscriptions] = await Promise.all([
       window.fetchAPI('/api/products'),
       window.fetchAPI(`/api/subscriptions?recipient_id=${recipientId}`)
     ]);
-
-    renderSubscriptionProducts(allProducts, recipientSubscriptions, recipientId);
+    return [allProducts, recipientSubscriptions];
   } catch (error) {
-    console.error(`Error loading subscriptions for recipient ${recipientId}:`, error);
-    productListDiv.innerHTML = `<div class="list-group-item list-group-item-danger">Error loading subscriptions: ${error.message}</div>`;
+    console.error(`Error loading subscription data for recipient ${recipientId}:`, error);
+    return [null, null]; // Return nulls or throw, depending on desired error handling
   }
 }
 
-// Clears the subscription product list
-function _clearSubscriptionProducts() {
-  const productListDiv = document.getElementById('subscription-product-list');
-  if (productListDiv) {
-    productListDiv.innerHTML = '';
+// Loads data and then renders it into the modal body
+async function _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement) {
+  modalBodyElement.innerHTML = '<div class="list-group-item">Loading subscriptions...</div>';
+  const [allProducts, recipientSubscriptions] = await _fetchSubscriptionDataForRecipient(recipientId);
+
+  if (allProducts === null) { // Check if fetching failed
+    modalBodyElement.innerHTML = `<div class="list-group-item list-group-item-danger">Error loading subscription data.</div>`;
+    return;
   }
-  // Optionally hide the entire section if desired
-  // const subscriptionsSection = document.getElementById('recipient-subscriptions-section');
-  // if (subscriptionsSection) {
-  //   subscriptionsSection.style.display = 'none';
-  // }
+  renderSubscriptionProductsInModal(allProducts, recipientSubscriptions || [], recipientId, modalBodyElement);
 }
 
-// Initializes the subscription UI components
+
+// Public function to open and populate the subscription modal
+export async function openSubscriptionModal(recipientId, recipientName) {
+  currentModalRecipientId = recipientId; // Store for use in event handlers
+  const modal = document.getElementById('subscriptionModal');
+  const modalTitle = document.getElementById('subscriptionModalHeaderTitle');
+  const modalBody = document.getElementById('subscriptionModalBody');
+
+  if (!modal || !modalTitle || !modalBody) {
+    console.error('Subscription modal elements not found in DOM.');
+    alert('Error: Subscription UI is not properly initialized.');
+    return;
+  }
+
+  modalTitle.textContent = `Manage Subscriptions for ${recipientName}`;
+  await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBody);
+  modal.style.display = 'block'; // Show modal
+}
+
+// Initializes the subscription UI components (Modal based)
 export function initSubscriptionsUI() {
-  // Assign functions to window object so they can be called from recipients-ui.js
-  window.loadSubscriptionsForRecipient = _loadSubscriptionsForRecipient;
-  window.clearSubscriptionProducts = _clearSubscriptionProducts;
+  // Create modal structure if it doesn't exist (basic version)
+  let modal = document.getElementById('subscriptionModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'subscriptionModal';
+    modal.className = 'modal'; // Basic styling class, assuming CSS handles visibility/layout
+    modal.innerHTML = `
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="subscriptionModalHeaderTitle">Manage Subscriptions</h5>
+            <button type="button" class="btn-close" id="subscriptionModalCloseButton" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="subscriptionModalBody">
+            <!-- Subscription products will be rendered here -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="subscriptionModalFooterCloseButton">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
 
-  const productListDiv = document.getElementById('subscription-product-list');
-  if (productListDiv) {
-    // Event delegation for subscription toggles and save buttons
-    productListDiv.addEventListener('click', (event) => {
+  // Event listeners for modal controls
+  const modalCloseButton = document.getElementById('subscriptionModalCloseButton');
+  const modalFooterCloseButton = document.getElementById('subscriptionModalFooterCloseButton');
+
+  const closeModal = () => { modal.style.display = 'none'; };
+  if(modalCloseButton) modalCloseButton.addEventListener('click', closeModal);
+  if(modalFooterCloseButton) modalFooterCloseButton.addEventListener('click', closeModal);
+
+  // Event delegation for dynamic content within the modal body
+  const modalBody = document.getElementById('subscriptionModalBody');
+  if (modalBody) {
+    modalBody.addEventListener('click', (event) => {
       if (event.target.classList.contains('save-subscription-settings-btn')) {
         handleSaveSubscriptionSettings(event);
       }
     });
-    productListDiv.addEventListener('change', (event) => {
+    modalBody.addEventListener('change', (event) => {
       if (event.target.classList.contains('subscription-toggle')) {
         handleSubscriptionToggle(event);
-        // Toggle visibility of settings based on checkbox state
-        // const productId = event.target.dataset.productId;
-        // const settingsDiv = document.getElementById(`settings-${productId}`);
-        // if (settingsDiv) {
-        //   settingsDiv.style.display = event.target.checked ? 'block' : 'none';
-        // }
       }
     });
   }
+
+  // Expose openSubscriptionModal to be called from recipients-ui.js
+  window.openSubscriptionModal = openSubscriptionModal;
+
+  // Remove old window assignments if they exist from previous version
+  if (window.loadSubscriptionsForRecipient) delete window.loadSubscriptionsForRecipient;
+  if (window.clearSubscriptionProducts) delete window.clearSubscriptionProducts;
 }
+
 
 // A basic fetchAPI function, assuming it's not globally available
 // If it is globally available from another script, this definition is not needed.

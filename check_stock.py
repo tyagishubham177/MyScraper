@@ -79,19 +79,50 @@ async def main():
                     # For longer running services, this should be updated per check.
                     # For this iteration, we'll use the current_utc_time defined at the start of main().
 
+                    # New frequency check logic
                     active_subscriptions_for_this_product = []
                     for sub in all_product_subscriptions:
                         if not isinstance(sub, dict):
                             print(f"Skipping invalid subscription object: {sub}")
                             continue
 
-                        # The API should provide defaults, but being defensive here.
-                        frequency = sub.get('frequency', 'daily')
-                        if await should_check_based_on_frequency(frequency, current_utc_time):
+                        # API should provide these with defaults. If missing, treat as 0.
+                        freq_days = sub.get('frequency_days', 0)
+                        freq_hours = sub.get('frequency_hours', 0)
+                        freq_minutes = sub.get('frequency_minutes', 0)
+                        last_checked_at_str = sub.get('last_checked_at')
+                        sub_id = sub.get('id', 'Unknown_ID')
+
+                        is_due = False
+                        if last_checked_at_str is None:
+                            is_due = True
+                            print(f"INFO: Subscription {sub_id} for product {product_id} has no last_checked_at, due for check.")
+                        else:
+                            try:
+                                last_checked_at_dt = isoparse(last_checked_at_str)
+                                if last_checked_at_dt.tzinfo is None:
+                                    last_checked_at_dt = last_checked_at_dt.replace(tzinfo=timezone.utc)
+
+                                if freq_days == 0 and freq_hours == 0 and freq_minutes == 0:
+                                    is_due = True
+                                    print(f"INFO: Subscription {sub_id} for product {product_id} has zero frequency, due for check on every run.")
+                                else:
+                                    next_due_dt = calculate_next_check_due(last_checked_at_dt, freq_days, freq_hours, freq_minutes)
+                                    if current_utc_time >= next_due_dt:
+                                        is_due = True
+                                        print(f"INFO: Subscription {sub_id} for product {product_id} is due. Next due: {next_due_dt.isoformat()}, Last checked: {last_checked_at_str}.")
+                                    # else: # Optional: log when not due
+                                        # print(f"DEBUG: Subscription {sub_id} for product {product_id} not due. Next due: {next_due_dt.isoformat()}, Last checked: {last_checked_at_str}.")
+                            except ValueError:
+                                print(f"ERROR: Could not parse last_checked_at_str: '{last_checked_at_str}' for subscription {sub_id}. Considering it due.")
+                                is_due = True
+
+                        if is_due:
+                            sub['_effective_check_time'] = current_utc_time
                             active_subscriptions_for_this_product.append(sub)
 
                     if not active_subscriptions_for_this_product:
-                        print(f"Product '{effective_product_name}' is in stock, but no subscriptions are due for a check based on frequency at {current_utc_time.strftime('%H:%M:%S %Z')}.")
+                        print(f"Product '{effective_product_name}' is in stock, but no subscriptions are due for a check based on new frequency logic at {current_utc_time.strftime('%H:%M:%S %Z')}.")
                         continue
 
                     # Check for active delays
@@ -152,32 +183,38 @@ async def main():
                             notification_time_utc = datetime.now(timezone.utc) # Fresh timestamp for updates
                             for sub_to_update in subscriptions_not_delayed:
                                 if sub_to_update.get('recipient_id') in subscribed_recipient_ids and sub_to_update.get('delay_on_stock'):
-                                    delay_duration_str = sub_to_update.get('delay_duration')
-                                    parsed_timedelta = parse_delay_duration(delay_duration_str)
+                                    # Retrieve granular delay fields
+                                    d_days = sub_to_update.get('delay_days', 0)
+                                    d_hours = sub_to_update.get('delay_hours', 0)
+                                    d_minutes = sub_to_update.get('delay_minutes', 0)
 
-                                    if parsed_timedelta:
-                                        last_in_stock_at_iso = notification_time_utc.isoformat()
-                                        delayed_until_calculated_dt = notification_time_utc + parsed_timedelta
-                                        delayed_until_iso = delayed_until_calculated_dt.isoformat()
+                                    if d_days == 0 and d_hours == 0 and d_minutes == 0:
+                                        print(f"INFO: Subscription {sub_to_update.get('id')} for product {product_id} has zero delay (D/H/M all zero). No delay will be applied.")
+                                        # Optionally, update last_in_stock_at without delayed_until if that's desired
+                                        # For now, just skip delay update.
+                                        continue
 
-                                        update_payload = {
-                                            "recipient_id": sub_to_update.get('recipient_id'),
-                                            "product_id": product_id, # product_id is from the outer loop
-                                            "last_in_stock_at": last_in_stock_at_iso,
-                                            "delayed_until": delayed_until_iso
-                                        }
-                                        update_url = f"{config.APP_BASE_URL}/api/subscriptions"
-                                        try:
-                                            async with session.post(update_url, json=update_payload) as response:
-                                                if response.status == 200 or response.status == 201:
-                                                    print(f"INFO: Successfully updated subscription for {sub_to_update.get('recipient_id')} product {product_id} with delay until {delayed_until_iso}.")
-                                                else:
-                                                    error_text = await response.text()
-                                                    print(f"ERROR: Failed to update subscription with delay for {sub_to_update.get('recipient_id')} product {product_id}: {response.status} - {error_text}")
-                                        except Exception as e_update:
-                                            print(f"ERROR: Exception during subscription update for {sub_to_update.get('recipient_id')} product {product_id}: {e_update}")
-                                    else:
-                                        print(f"ERROR: Could not parse delay_duration '{delay_duration_str}' for subscription {sub_to_update.get('id')}. Not updating timestamps.")
+                                    delay_timedelta = timedelta(days=d_days, hours=d_hours, minutes=d_minutes)
+                                    last_in_stock_at_iso = notification_time_utc.isoformat()
+                                    delayed_until_calculated_dt = notification_time_utc + delay_timedelta
+                                    delayed_until_iso = delayed_until_calculated_dt.isoformat()
+
+                                    update_payload = {
+                                        "recipient_id": sub_to_update.get('recipient_id'),
+                                        "product_id": product_id, # product_id is from the outer loop
+                                        "last_in_stock_at": last_in_stock_at_iso,
+                                        "delayed_until": delayed_until_iso
+                                    }
+                                    update_url = f"{config.APP_BASE_URL}/api/subscriptions"
+                                    try:
+                                        async with session.post(update_url, json=update_payload) as response:
+                                            if response.status == 200 or response.status == 201:
+                                                print(f"INFO: Successfully updated subscription for {sub_to_update.get('recipient_id')} product {product_id} with delay until {delayed_until_iso}.")
+                                            else:
+                                                error_text = await response.text()
+                                                print(f"ERROR: Failed to update subscription with delay for {sub_to_update.get('recipient_id')} product {product_id}: {response.status} - {error_text}")
+                                    except Exception as e_update:
+                                        print(f"ERROR: Exception during subscription update for {sub_to_update.get('recipient_id')} product {product_id}: {e_update}")
                         else:
                             print("⚠️ Email configuration missing or invalid (EMAIL_HOST, EMAIL_SENDER), cannot send email.")
                     else:
@@ -188,66 +225,35 @@ async def main():
             except Exception as e:
                 print(f"🚨 An error occurred while processing product {product_name_api} (URL: {product_api_url}): {e}")
 
+            # Placeholder for updating last_checked_at for all subscriptions that were due for this product
+            # This happens regardless of whether the product was in stock or if notifications were sent,
+            # as a check was performed for these active subscriptions.
+            # Ensure 'active_subscriptions_for_this_product' was defined (it would be unless an early continue happened)
+            if 'active_subscriptions_for_this_product' in locals() and active_subscriptions_for_this_product:
+                print(f"INFO: Placeholder for updating last_checked_at for product {product_id}:")
+                for sub_to_log_check in active_subscriptions_for_this_product:
+                    sub_id_log = sub_to_log_check.get('id', 'Unknown_ID')
+                    # Ensure _effective_check_time was set
+                    if '_effective_check_time' in sub_to_log_check:
+                         effective_check_time_iso = sub_to_log_check.get('_effective_check_time').isoformat()
+                         print(f"  - Sub ID: {sub_id_log}, Would update last_checked_at to: {effective_check_time_iso}")
+                    else:
+                        # This case should ideally not happen if logic is correct
+                        print(f"  - Sub ID: {sub_id_log}, _effective_check_time not set, cannot log last_checked_at update.")
+
             # Respectful delay, ensure DELAY_BETWEEN_REQUESTS is defined in config
             delay = getattr(config, 'DELAY_BETWEEN_REQUESTS', 1) # Default to 1s if not defined
             await asyncio.sleep(delay)
 
     print("\nStock check finished.")
 
-def parse_delay_duration(duration_str: str) -> timedelta | None:
-    """
-    Parses a delay duration string (e.g., "1_day", "3_hours") into a timedelta object.
-    Returns None if parsing fails.
-    """
-    if not duration_str or not isinstance(duration_str, str):
-        return None
+def calculate_next_check_due(last_checked_at_dt: datetime, freq_days: int, freq_hours: int, freq_minutes: int) -> datetime:
+    """Calculates the next due time based on the last checked time and frequency components."""
+    if last_checked_at_dt.tzinfo is None: # Ensure last_checked_at_dt is offset-aware
+        print(f"Warning: last_checked_at_dt is naive: {last_checked_at_dt}. Assuming UTC.")
+        last_checked_at_dt = last_checked_at_dt.replace(tzinfo=timezone.utc)
 
-    parts = duration_str.lower().split('_')
-    if len(parts) != 2:
-        return None
-
-    try:
-        value = int(parts[0])
-        unit = parts[1]
-        if unit == "day" or unit == "days":
-            return timedelta(days=value)
-        elif unit == "hour" or unit == "hours":
-            return timedelta(hours=value)
-        else:
-            return None
-    except ValueError:
-        return None
-
-async def should_check_based_on_frequency(subscription_frequency: str, current_time_utc: datetime) -> bool:
-    """
-    Determines if a stock check should be performed based on the subscription frequency and current UTC time.
-    Baseline for checks is midnight UTC.
-    """
-    # Ensure current_time_utc is offset-aware (which it should be if datetime.now(timezone.utc) was used)
-    if current_time_utc.tzinfo is None or current_time_utc.tzinfo.utcoffset(current_time_utc) is None:
-        print(f"Warning: current_time_utc is naive. Assuming UTC for frequency check: {current_time_utc}")
-        # Potentially, make it aware: current_time_utc = current_time_utc.replace(tzinfo=timezone.utc)
-
-    hour = current_time_utc.hour
-    minute = current_time_utc.minute # Check if it's close to the hour mark
-    weekday = current_time_utc.weekday() # Monday is 0, Sunday is 6
-
-    # Allow a small window for the check (e.g., first 5 minutes of the hour)
-    # This helps if the script doesn't run exactly at 00 minutes.
-    is_at_hour_mark = (minute < 5)
-
-    if subscription_frequency == "hourly":
-        return is_at_hour_mark
-    elif subscription_frequency == "every_2_hours":
-        return hour % 2 == 0 and is_at_hour_mark
-    elif subscription_frequency == "daily":
-        return hour == 0 and is_at_hour_mark # Midnight
-    elif subscription_frequency == "weekly":
-        # Check on Monday (weekday == 0) at midnight UTC
-        return weekday == 0 and hour == 0 and is_at_hour_mark
-    else:
-        print(f"Warning: Unknown frequency '{subscription_frequency}'. Defaulting to no check.")
-        return False
+    return last_checked_at_dt + timedelta(days=freq_days, hours=freq_hours, minutes=freq_minutes)
 
 if __name__ == "__main__":
     asyncio.run(main())

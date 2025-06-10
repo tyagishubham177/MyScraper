@@ -1,5 +1,13 @@
 import { kv } from '@vercel/kv';
 
+// Default values for new granular frequency and delay settings
+const DEFAULT_FREQUENCY_DAYS = 1;
+const DEFAULT_FREQUENCY_HOURS = 0;
+const DEFAULT_FREQUENCY_MINUTES = 0;
+const DEFAULT_DELAY_DAYS = 1;
+const DEFAULT_DELAY_HOURS = 0;
+const DEFAULT_DELAY_MINUTES = 0;
+
 // KV Helper functions
 async function getFromKV(key) {
   try {
@@ -52,16 +60,37 @@ export default async function handler(req, res) {
         if (existingSubscription) {
           // Update existing subscription
           let updated = false;
-          if (req.body.frequency !== undefined) {
-            existingSubscription.frequency = req.body.frequency;
+          // Update new granular fields if provided
+          if (req.body.frequency_days !== undefined) {
+            existingSubscription.frequency_days = parseInt(req.body.frequency_days, 10);
             updated = true;
           }
+          if (req.body.frequency_hours !== undefined) {
+            existingSubscription.frequency_hours = parseInt(req.body.frequency_hours, 10);
+            updated = true;
+          }
+          if (req.body.frequency_minutes !== undefined) {
+            // TODO: Add validation for 5-minute steps if strictly needed, for now, accept value
+            existingSubscription.frequency_minutes = parseInt(req.body.frequency_minutes, 10);
+            updated = true;
+          }
+          if (req.body.delay_days !== undefined) {
+            existingSubscription.delay_days = parseInt(req.body.delay_days, 10);
+            updated = true;
+          }
+          if (req.body.delay_hours !== undefined) {
+            existingSubscription.delay_hours = parseInt(req.body.delay_hours, 10);
+            updated = true;
+          }
+          if (req.body.delay_minutes !== undefined) {
+            // TODO: Add validation for 5-minute steps
+            existingSubscription.delay_minutes = parseInt(req.body.delay_minutes, 10);
+            updated = true;
+          }
+
+          // Update other existing fields
           if (req.body.delay_on_stock !== undefined) {
             existingSubscription.delay_on_stock = req.body.delay_on_stock;
-            updated = true;
-          }
-          if (req.body.delay_duration !== undefined) {
-            existingSubscription.delay_duration = req.body.delay_duration;
             updated = true;
           }
           if (req.body.last_in_stock_at !== undefined) {
@@ -72,31 +101,46 @@ export default async function handler(req, res) {
             existingSubscription.delayed_until = req.body.delayed_until;
             updated = true;
           }
-
-          // Ensure other fields like id, recipient_id, product_id are not accidentally overwritten
-          // by ensuring they are not part of the update logic from req.body unless specifically intended
-          // (which they are not for this particular update feature)
+          if (req.body.last_checked_at !== undefined) { // New field for frequency logic
+            existingSubscription.last_checked_at = req.body.last_checked_at;
+            updated = true;
+          }
 
           if (updated) {
-            await saveToKV('subscriptions', currentSubscriptions); // currentSubscriptions contains the modified existingSubscription
+            // If any of the new granular fields were part of the update,
+            // delete the old frequency/delay_duration fields to clean up data model
+            if (req.body.frequency_days !== undefined || req.body.frequency_hours !== undefined || req.body.frequency_minutes !== undefined) {
+              delete existingSubscription.frequency;
+            }
+            if (req.body.delay_days !== undefined || req.body.delay_hours !== undefined || req.body.delay_minutes !== undefined) {
+              delete existingSubscription.delay_duration;
+            }
+            await saveToKV('subscriptions', currentSubscriptions);
             return res.status(200).json(existingSubscription);
           } else {
-            // No fields were updated, but subscription exists
-            return res.status(200).json({ message: 'Subscription exists, no update fields provided.', subscription: existingSubscription });
+            // No fields relevant to this API were updated, but subscription exists.
+            // We might still want to return the transformed version if only GET does transformation.
+            // However, current logic is fine: if no *updateable* fields are sent, this path is taken.
+            // For consistency, if GET transforms, this could too, but problem asks for update logic.
+            return res.status(200).json({ message: 'Subscription exists, no recognized update fields provided.', subscription: existingSubscription });
           }
         } else {
           // Create new subscription
           const newSubscription = {
-            id: String(Date.now()), // Simple ID generation
+            id: String(Date.now()),
             recipient_id: recipient_id,
             product_id: product_id,
-            frequency: req.body.frequency || "daily",
+            frequency_days: req.body.frequency_days ?? DEFAULT_FREQUENCY_DAYS,
+            frequency_hours: req.body.frequency_hours ?? DEFAULT_FREQUENCY_HOURS,
+            frequency_minutes: req.body.frequency_minutes ?? DEFAULT_FREQUENCY_MINUTES, // TODO: Validate step
             delay_on_stock: req.body.delay_on_stock !== undefined ? req.body.delay_on_stock : false,
-            delay_duration: req.body.delay_duration || "1_day",
+            delay_days: req.body.delay_days ?? DEFAULT_DELAY_DAYS,
+            delay_hours: req.body.delay_hours ?? DEFAULT_DELAY_HOURS,
+            delay_minutes: req.body.delay_minutes ?? DEFAULT_DELAY_MINUTES, // TODO: Validate step
             last_in_stock_at: null,
             delayed_until: null,
+            last_checked_at: null, // New field for frequency logic
           };
-
           currentSubscriptions.push(newSubscription);
           await saveToKV('subscriptions', currentSubscriptions);
           res.status(201).json(newSubscription);
@@ -140,16 +184,72 @@ export default async function handler(req, res) {
         const { recipient_id, product_id } = req.query;
         let subscriptions = await getFromKV('subscriptions');
 
-        // Helper to add default fields to subscriptions if they are missing
+        // Helper to add default fields and perform on-the-fly migration for GET requests
         const addDefaultSubscriptionFields = (subscription) => {
-          return {
-            ...subscription,
-            frequency: subscription.frequency || "daily",
-            delay_on_stock: subscription.delay_on_stock !== undefined ? subscription.delay_on_stock : false,
-            delay_duration: subscription.delay_duration || "1_day",
-            last_in_stock_at: subscription.last_in_stock_at || null,
-            delayed_until: subscription.delayed_until || null,
-          };
+          let newSub = { ...subscription }; // Create a mutable copy
+
+          // Migration for frequency
+          if (newSub.frequency) {
+            const oldFreq = newSub.frequency.toLowerCase();
+            if (oldFreq === "hourly") {
+              newSub.frequency_days = 0;
+              newSub.frequency_hours = 1;
+              newSub.frequency_minutes = 0;
+            } else if (oldFreq === "every_2_hours") {
+              newSub.frequency_days = 0;
+              newSub.frequency_hours = 2;
+              newSub.frequency_minutes = 0;
+            } else if (oldFreq === "daily") {
+              newSub.frequency_days = 1;
+              newSub.frequency_hours = 0;
+              newSub.frequency_minutes = 0;
+            } else if (oldFreq === "weekly") {
+              newSub.frequency_days = 7;
+              newSub.frequency_hours = 0;
+              newSub.frequency_minutes = 0;
+            }
+            delete newSub.frequency; // Remove old field from the object being returned
+          }
+
+          // Migration for delay_duration
+          if (newSub.delay_duration) {
+            const parts = newSub.delay_duration.toLowerCase().split('_');
+            if (parts.length === 2) {
+              try {
+                const value = parseInt(parts[0], 10);
+                const unit = parts[1];
+                if (unit === "day" || unit === "days") {
+                  newSub.delay_days = value;
+                  newSub.delay_hours = 0;
+                  newSub.delay_minutes = 0;
+                } else if (unit === "hour" || unit === "hours") {
+                  newSub.delay_days = 0;
+                  newSub.delay_hours = value;
+                  newSub.delay_minutes = 0;
+                }
+              } catch (e) {
+                // Parsing failed, old field might remain if not deleted, defaults will apply below
+              }
+            }
+            delete newSub.delay_duration; // Remove old field
+          }
+
+          // Apply defaults for new granular fields if not set (either directly or via migration)
+          newSub.frequency_days = newSub.frequency_days ?? DEFAULT_FREQUENCY_DAYS;
+          newSub.frequency_hours = newSub.frequency_hours ?? DEFAULT_FREQUENCY_HOURS;
+          newSub.frequency_minutes = newSub.frequency_minutes ?? DEFAULT_FREQUENCY_MINUTES;
+
+          newSub.delay_days = newSub.delay_days ?? DEFAULT_DELAY_DAYS;
+          newSub.delay_hours = newSub.delay_hours ?? DEFAULT_DELAY_HOURS;
+          newSub.delay_minutes = newSub.delay_minutes ?? DEFAULT_DELAY_MINUTES;
+
+          // Ensure other fields are correctly defaulted
+          newSub.delay_on_stock = newSub.delay_on_stock ?? false;
+          newSub.last_in_stock_at = newSub.last_in_stock_at || null;
+          newSub.delayed_until = newSub.delayed_until || null;
+          newSub.last_checked_at = newSub.last_checked_at || null; // New field for frequency logic
+
+          return newSub;
         };
 
         if (recipient_id && product_id) {
