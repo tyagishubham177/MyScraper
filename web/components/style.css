@@ -717,3 +717,20 @@
 #subscription-product-list .form-check-label {
   margin-left: 0;
 }
+
+/* Styling for settings offcanvas so it matches the blurred card look */
+#settingsPane.offcanvas {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(209, 213, 219, 0.3);
+  color: #333333;
+}
+
+#settingsPane .offcanvas-header {
+  border-bottom: 1px solid rgba(209, 213, 219, 0.3);
+}
+
+#settingsPane .offcanvas-title {
+  color: #333333;
+}
