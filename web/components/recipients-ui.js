@@ -45,8 +45,8 @@ function renderRecipientsList(recipients) {
 
     const emailSpan = document.createElement('span');
     emailSpan.textContent = recipient.email;
-    emailSpan.style.cursor = 'pointer';
-    emailSpan.title = 'Click to manage subscriptions';
+    // emailSpan.style.cursor = 'pointer'; // Removed: Span is not directly clickable for subs
+    // emailSpan.title = 'Click to manage subscriptions'; // Removed
 
     const buttonsDiv = document.createElement('div');
     buttonsDiv.className = 'buttons-div'; // Added class for potential styling
@@ -154,20 +154,12 @@ function handleManageSubscriptions(recipientId, recipientEmail) {
 
   window.selectedRecipient = { id: recipientId, email: recipientEmail };
 
-  const subscriptionsSection = document.getElementById('recipient-subscriptions-section');
-  const titleEmailSpan = document.getElementById('selected-recipient-email');
-
-  if (titleEmailSpan) {
-    titleEmailSpan.textContent = recipientEmail;
-  }
-  subscriptionsSection.style.display = 'block';
-
-  // Notify subscriptions-ui.js to load/refresh its content
-  // This can be done via a custom event or by directly calling a function if available
-  if (window.loadSubscriptionsForRecipient) {
-    window.loadSubscriptionsForRecipient(recipientId);
+  // Notify subscriptions-ui.js to open its modal
+  if (window.openSubscriptionModal) {
+    window.openSubscriptionModal(recipientId, recipientEmail);
   } else {
-    console.warn('loadSubscriptionsForRecipient function not found on window. Subscriptions UI might not update.');
+    console.warn('openSubscriptionModal function not found on window. Subscriptions UI cannot be opened.');
+    alert('Subscription management UI is currently unavailable.');
   }
 }
 
@@ -206,7 +198,7 @@ export function initRecipientsUI() {
 
       if (target.classList.contains('delete-recipient-btn')) {
         if (recipientId) handleDeleteRecipient(recipientId);
-      } else if (target.classList.contains('manage-subscriptions-btn') || target.tagName === 'SPAN') {
+      } else if (target.classList.contains('manage-subscriptions-btn')) { // Only button triggers
          if (recipientId && recipientEmail) handleManageSubscriptions(recipientId, recipientEmail);
       }
     });
