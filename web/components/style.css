@@ -718,7 +718,7 @@
   height: 1.25em;
   background-color: #fff;
   border: 1px solid #adb5bd;
-  border-radius: 0.25em; /* Slightly rounded square */
+  border-radius: 0; /* Sharp corners */
   position: relative;
   cursor: pointer;
   vertical-align: middle; /* Helps align with label text */

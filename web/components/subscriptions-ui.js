@@ -5,6 +5,164 @@ let initialSubscriptionDataForModal = '';
 // Global variable to store the set of initially subscribed product IDs for the current modal view
 let initialSubscribedProductIds = new Set();
 
+// --- Calculate Next Check Times Function ---
+function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours, frequencyMinutes, count = 4) {
+  const times = [];
+  let baseTime;
+
+  if (lastCheckedAtISO) {
+    baseTime = new Date(lastCheckedAtISO);
+  } else {
+    baseTime = new Date(); // Use current time if no last_checked_at
+  }
+
+  // Ensure baseTime is a valid date
+  if (isNaN(baseTime.getTime())) {
+    console.error("Invalid baseTime in calculateNextCheckTimes", lastCheckedAtISO);
+    baseTime = new Date(); // Fallback to current time
+  }
+
+  let isDefaultInterval = false;
+  if (frequencyDays === 0 && frequencyHours === 0 && frequencyMinutes === 0) {
+    // Default to 15-minute intervals if all frequencies are zero
+    frequencyMinutes = 15;
+    isDefaultInterval = true;
+    // If lastCheckedAtISO is null (new subscription) and it's default,
+    // we want to show upcoming slots from NOW, not from a fixed past time.
+    if (!lastCheckedAtISO) {
+        baseTime = new Date();
+    }
+  }
+
+  const today = new Date();
+  const currentDay = today.getFullYear() * 10000 + today.getMonth() * 100 + today.getDate();
+
+  for (let i = 0; i < count; i++) {
+    let nextDue;
+    if (i === 0 && !isDefaultInterval) {
+      // For the first calculation, and not using default 15min interval,
+      // the next due is based on last_checked_at + frequency
+      nextDue = new Date(baseTime.getTime());
+      nextDue.setDate(nextDue.getDate() + frequencyDays);
+      nextDue.setHours(nextDue.getHours() + frequencyHours);
+      nextDue.setMinutes(nextDue.getMinutes() + frequencyMinutes);
+    } else if (i === 0 && isDefaultInterval) {
+        // If it's default interval, and it's the first one,
+        // we want to find the *next* 15-min slot from baseTime (which could be now).
+        nextDue = new Date(baseTime.getTime());
+        const minutes = nextDue.getMinutes();
+        const remainder = minutes % 15;
+        if (remainder === 0 && lastCheckedAtISO) { // if lastCheckedAtISO is defined, it means it was checked at exactly :00, :15, :30, :45
+            nextDue.setMinutes(minutes + 15);
+        } else if (remainder === 0 && !lastCheckedAtISO) { // if it's a new sub, and current time is exactly :00, :15...
+             // no change, this is a valid slot.
+        }
+        else {
+            nextDue.setMinutes(minutes + (15 - remainder));
+        }
+        nextDue.setSeconds(0);
+        nextDue.setMilliseconds(0);
+
+    } else {
+      // For subsequent times, or if it's the default interval from the start
+      const previousTime = new Date(times[times.length - 1].rawTime); // Get the last added Date object
+      nextDue = new Date(previousTime.getTime());
+      if (isDefaultInterval) {
+        nextDue.setMinutes(nextDue.getMinutes() + 15);
+      } else {
+        nextDue.setDate(nextDue.getDate() + frequencyDays);
+        nextDue.setHours(nextDue.getHours() + frequencyHours);
+        nextDue.setMinutes(nextDue.getMinutes() + frequencyMinutes);
+      }
+    }
+
+    const nextDueDay = nextDue.getFullYear() * 10000 + nextDue.getMonth() * 100 + nextDue.getDate();
+
+    if (nextDueDay === currentDay) {
+      const hours = nextDue.getHours().toString().padStart(2, '0');
+      const minutes = nextDue.getMinutes().toString().padStart(2, '0');
+      times.push({ formattedTime: `${hours}:${minutes}`, rawTime: nextDue });
+    } else if (nextDueDay > currentDay && times.length === 0) {
+      // If the very first calculated time is already on a future day,
+      // indicate that no checks are scheduled for today.
+      // For now, we just return empty, but could add a specific marker.
+      return []; // No times for today
+    } else if (nextDueDay > currentDay) {
+      // Stop if we've crossed into the next day and already have some times for today
+      break;
+    }
+    // If nextDueDay < currentDay (e.g. last_checked_at is old), we still calculate forward
+    // until we reach currentDay or futureDay.
+  }
+
+  // If using default 15 min interval and no last_checked_at,
+  // ensure the first time is not in the past.
+  if (isDefaultInterval && !lastCheckedAtISO) {
+    const now = new Date();
+    while (times.length > 0 && times[0].rawTime < now) {
+      // Recalculate the first time based on the removed time + 15 mins
+      const lastRemovedRawTime = times.shift().rawTime;
+      const newFirstDue = new Date(lastRemovedRawTime.getTime());
+      newFirstDue.setMinutes(newFirstDue.getMinutes() + 15);
+
+      const newFirstDueDay = newFirstDue.getFullYear() * 10000 + newFirstDue.getMonth() * 100 + newFirstDue.getDate();
+      if (newFirstDueDay === currentDay) {
+          const hours = newFirstDue.getHours().toString().padStart(2, '0');
+          const minutes = newFirstDue.getMinutes().toString().padStart(2, '0');
+          times.unshift({ formattedTime: `${hours}:${minutes}`, rawTime: newFirstDue }); // Add to the beginning
+      } else {
+          // If the new time is not today, stop adding.
+          break;
+      }
+      // If we shifted all times out, we need to re-populate based on the last one
+      if (times.length === 0) {
+          let baseForRepopulate = new Date(newFirstDue.getTime());
+           // if the newFirstDue itself was not today, we need to start from 'now' for repopulation.
+          if (newFirstDueDay !== currentDay) {
+            baseForRepopulate = new Date(); // reset to now
+            const currentMinutes = baseForRepopulate.getMinutes();
+            const remainder = currentMinutes % 15;
+            if (remainder !== 0) {
+                 baseForRepopulate.setMinutes(currentMinutes + (15 - remainder));
+            }
+            baseForRepopulate.setSeconds(0);
+            baseForRepopulate.setMilliseconds(0);
+          }
+
+
+          const hours = baseForRepopulate.getHours().toString().padStart(2, '0');
+          const minutes = baseForRepopulate.getMinutes().toString().padStart(2, '0');
+          // Check if this re-calculated time is for today before adding
+          const repopulateDay = baseForRepopulate.getFullYear() * 10000 + baseForRepopulate.getMonth() * 100 + baseForRepopulate.getDate();
+          if (repopulateDay === currentDay) {
+            times.push({ formattedTime: `${hours}:${minutes}`, rawTime: baseForRepopulate });
+          }
+
+
+          // Re-populate subsequent times if the first one was valid
+          if (times.length > 0) {
+              while(times.length < count) {
+                  const previousTimeRaw = times[times.length - 1].rawTime;
+                  const nextInterval = new Date(previousTimeRaw.getTime());
+                  nextInterval.setMinutes(nextInterval.getMinutes() + 15);
+
+                  const nextIntervalDay = nextInterval.getFullYear() * 10000 + nextInterval.getMonth() * 100 + nextInterval.getDate();
+                  if (nextIntervalDay === currentDay) {
+                      const h = nextInterval.getHours().toString().padStart(2, '0');
+                      const m = nextInterval.getMinutes().toString().padStart(2, '0');
+                      times.push({ formattedTime: `${h}:${m}`, rawTime: nextInterval });
+                  } else {
+                      break; // Stop if next interval is not today
+                  }
+              }
+          }
+      }
+    }
+  }
+
+
+  return times.map(t => t.formattedTime);
+}
 
 // --- Toast Notification Function ---
 function showToastNotification(message, type = 'info', duration = 4000) {
@@ -220,7 +378,7 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     const delayLabel = document.createElement('label');
     delayLabel.className = 'form-check-label small ms-2';
     delayLabel.setAttribute('for', `delay-stock-${product.id}`);
-    delayLabel.textContent = 'Delay notifications if item is out of stock?';
+    delayLabel.textContent = "Snooze notifications for this product after it's found in stock:";
     delayToggleCol.appendChild(delayCheckbox);
     delayToggleCol.appendChild(delayLabel);
     delayRow.appendChild(delayToggleCol);
@@ -260,6 +418,44 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
 
     settingsGrid.appendChild(delayRow);
     settingsGrid.appendChild(delayDurationRow);
+
+    // --- Add Next Check Times Display ---
+    const nextTimesRow = document.createElement('div');
+    nextTimesRow.className = 'row mt-2 mb-2 align-items-center'; // Added mt-2 for spacing
+    const nextTimesLabelCol = document.createElement('div');
+    nextTimesLabelCol.className = 'col-md-3 col-lg-2'; // Adjusted column for label
+    nextTimesLabelCol.innerHTML = `<label class="form-label small">Next checks (today):</label>`;
+    nextTimesRow.appendChild(nextTimesLabelCol);
+
+    const nextTimesValuesCol = document.createElement('div');
+    nextTimesValuesCol.className = 'col-md-9 col-lg-10'; // Adjusted column for values
+    const nextTimesDiv = document.createElement('div');
+    nextTimesDiv.id = `next-check-times-${product.id}`;
+    nextTimesDiv.className = 'd-flex flex-wrap'; // Use flex for horizontal layout and wrapping
+
+    const calculatedTimes = calculateNextCheckTimes(
+      currentSubscription.last_checked_at,
+      currentSubscription.frequency_days,
+      currentSubscription.frequency_hours,
+      currentSubscription.frequency_minutes
+    );
+
+    if (calculatedTimes.length > 0) {
+      calculatedTimes.forEach(time => {
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'badge bg-secondary me-1 mb-1'; // Bootstrap badge for styling
+        timeSpan.textContent = time;
+        nextTimesDiv.appendChild(timeSpan);
+      });
+    } else {
+      nextTimesDiv.textContent = 'None scheduled for today.';
+      nextTimesDiv.className = 'small text-muted'; // Style for this message
+    }
+    nextTimesValuesCol.appendChild(nextTimesDiv);
+    nextTimesRow.appendChild(nextTimesValuesCol);
+    settingsGrid.appendChild(nextTimesRow);
+    // --- End Next Check Times Display ---
+
 
     // Set initial visibility of settings based on main checkbox
     settingsGrid.style.display = mainCheckbox.checked ? 'block' : 'none';
