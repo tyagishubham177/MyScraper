@@ -171,10 +171,23 @@ function handleManageSubscriptions(recipientId, recipientEmail) {
   }
 }
 
+// Handles closing the manage subscriptions section
+function handleCloseSubscriptions() {
+  const subscriptionsSection = document.getElementById('recipient-subscriptions-section');
+  if (subscriptionsSection) {
+    subscriptionsSection.style.display = 'none';
+  }
+  window.selectedRecipient = { id: null, email: null };
+  if (window.clearSubscriptionProducts) {
+    window.clearSubscriptionProducts();
+  }
+}
+
 // Initializes the recipient UI components
 export function initRecipientsUI() {
   const addRecipientBtn = document.getElementById('add-recipient-btn');
   const recipientsList = document.getElementById('recipients-list');
+  const closeSubscriptionsBtn = document.getElementById('close-subscriptions-btn');
 
   if (addRecipientBtn) {
     addRecipientBtn.addEventListener('click', handleAddRecipient);
@@ -197,6 +210,10 @@ export function initRecipientsUI() {
          if (recipientId && recipientEmail) handleManageSubscriptions(recipientId, recipientEmail);
       }
     });
+  }
+
+  if (closeSubscriptionsBtn) {
+    closeSubscriptionsBtn.addEventListener('click', handleCloseSubscriptions);
   }
 
   fetchRecipients(); // Load initial list
