@@ -12,7 +12,36 @@ const DEFAULT_DELAY_MINUTES = 0;
 async function getFromKV(key) {
   try {
     const data = await kv.get(key);
-    return data ? data : [];
+    if (!data) return [];
+
+    if (Array.isArray(data)) {
+      let migrated = false;
+      for (const sub of data) {
+        if (sub.recipientId && !sub.recipient_id) {
+          sub.recipient_id = sub.recipientId;
+          delete sub.recipientId;
+          migrated = true;
+        }
+        if (sub.productId && !sub.product_id) {
+          sub.product_id = sub.productId;
+          delete sub.productId;
+          migrated = true;
+        }
+        if (typeof sub.delay_on_stock === 'string') {
+          sub.delay_on_stock = sub.delay_on_stock === 'true';
+          migrated = true;
+        }
+      }
+      if (migrated) {
+        try {
+          await kv.set(key, data);
+        } catch (e) {
+          console.error(`Error persisting migrated ${key} to KV:`, e);
+        }
+      }
+    }
+
+    return data;
   } catch (error) {
     console.error(`Error fetching ${key} from KV:`, error);
     return []; // Return empty array on error to prevent breaking main logic
@@ -52,14 +81,37 @@ export default async function handler(req, res) {
           return res.status(404).json({ message: 'Product not found' });
         }
 
+        let delayOnStockBody = req.body.delay_on_stock;
+        if (typeof delayOnStockBody === 'string') {
+          delayOnStockBody = delayOnStockBody === 'true';
+        }
+
         const currentSubscriptions = await getFromKV('subscriptions');
         const existingSubscription = currentSubscriptions.find(
-          s => s.recipient_id === recipient_id && s.product_id === product_id
+          s =>
+            (s.recipient_id === recipient_id || s.recipientId === recipient_id) &&
+            (s.product_id === product_id || s.productId === product_id)
         );
 
         if (existingSubscription) {
           // Update existing subscription
           let updated = false;
+
+          // Normalize any legacy field names
+          if (existingSubscription.recipientId && !existingSubscription.recipient_id) {
+            existingSubscription.recipient_id = existingSubscription.recipientId;
+            delete existingSubscription.recipientId;
+            updated = true;
+          }
+          if (existingSubscription.productId && !existingSubscription.product_id) {
+            existingSubscription.product_id = existingSubscription.productId;
+            delete existingSubscription.productId;
+            updated = true;
+          }
+          if (typeof existingSubscription.delay_on_stock === 'string') {
+            existingSubscription.delay_on_stock = existingSubscription.delay_on_stock === 'true';
+            updated = true;
+          }
           // Update new granular fields if provided
           if (req.body.frequency_days !== undefined) {
             existingSubscription.frequency_days = parseInt(req.body.frequency_days, 10);
@@ -89,8 +141,8 @@ export default async function handler(req, res) {
           }
 
           // Update other existing fields
-          if (req.body.delay_on_stock !== undefined) {
-            existingSubscription.delay_on_stock = req.body.delay_on_stock;
+          if (delayOnStockBody !== undefined) {
+            existingSubscription.delay_on_stock = delayOnStockBody;
             updated = true;
           }
           if (req.body.last_in_stock_at !== undefined) {
@@ -133,7 +185,7 @@ export default async function handler(req, res) {
             frequency_days: req.body.frequency_days ?? DEFAULT_FREQUENCY_DAYS,
             frequency_hours: req.body.frequency_hours ?? DEFAULT_FREQUENCY_HOURS,
             frequency_minutes: req.body.frequency_minutes ?? DEFAULT_FREQUENCY_MINUTES, // TODO: Validate step
-            delay_on_stock: req.body.delay_on_stock !== undefined ? req.body.delay_on_stock : false,
+            delay_on_stock: delayOnStockBody !== undefined ? delayOnStockBody : false,
             delay_days: req.body.delay_days ?? DEFAULT_DELAY_DAYS,
             delay_hours: req.body.delay_hours ?? DEFAULT_DELAY_HOURS,
             delay_minutes: req.body.delay_minutes ?? DEFAULT_DELAY_MINUTES, // TODO: Validate step
@@ -164,7 +216,10 @@ export default async function handler(req, res) {
         const initialCount = currentSubscriptions.length;
 
         const updatedSubscriptions = currentSubscriptions.filter(
-          s => !(s.recipient_id === recipient_id && s.product_id === product_id)
+          s => !(
+            (s.recipient_id === recipient_id || s.recipientId === recipient_id) &&
+            (s.product_id === product_id || s.productId === product_id)
+          )
         );
 
         if (updatedSubscriptions.length === initialCount) {
@@ -187,6 +242,16 @@ export default async function handler(req, res) {
         // Helper to add default fields and perform on-the-fly migration for GET requests
         const addDefaultSubscriptionFields = (subscription) => {
           let newSub = { ...subscription }; // Create a mutable copy
+
+          // Migrate legacy field names if present
+          if (newSub.recipientId && !newSub.recipient_id) {
+            newSub.recipient_id = newSub.recipientId;
+            delete newSub.recipientId;
+          }
+          if (newSub.productId && !newSub.product_id) {
+            newSub.product_id = newSub.productId;
+            delete newSub.productId;
+          }
 
           // Migration for frequency
           if (newSub.frequency) {
@@ -232,6 +297,10 @@ export default async function handler(req, res) {
               }
             }
             delete newSub.delay_duration; // Remove old field
+          }
+
+          if (typeof newSub.delay_on_stock === 'string') {
+            newSub.delay_on_stock = newSub.delay_on_stock === 'true';
           }
 
           // Apply defaults for new granular fields if not set (either directly or via migration)
