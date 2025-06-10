@@ -41,14 +41,15 @@ function formatDisplayString(dateObj, isToday) {
 }
 
 // --- Calculate Next Check Times Function (Refined Plan) ---
-function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours, frequencyMinutes, maxFutureChecks = 4) {
+function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours, frequencyMinutes, maxFutureChecks = 9) { // Changed default to 9
   const checkEvents = [];
   const now = new Date();
 
-  function isToday(dateObj) {
-    return dateObj.getFullYear() === now.getFullYear() &&
-           dateObj.getMonth() === now.getMonth() &&
-           dateObj.getDate() === now.getDate();
+  // Helper function, already defined globally but good for clarity if this function were standalone
+  function _isToday(dateObj, referenceDate) {
+    return dateObj.getFullYear() === referenceDate.getFullYear() &&
+           dateObj.getMonth() === referenceDate.getMonth() &&
+           dateObj.getDate() === referenceDate.getDate();
   }
 
   let calculationBaseDate = new Date(now.getTime()); // Use a copy of 'now'
@@ -56,11 +57,13 @@ function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours
   if (lastCheckedAtISO) {
     const lastCheckedDate = new Date(lastCheckedAtISO);
     if (!isNaN(lastCheckedDate.getTime())) {
-      const displayString = formatDisplayString(lastCheckedDate, isToday(lastCheckedDate));
+      const todayStatus = _isToday(lastCheckedDate, now);
+      const displayString = formatDisplayString(lastCheckedDate, todayStatus);
       checkEvents.push({
         timeString: displayString,
         dateObject: new Date(lastCheckedDate.getTime()), // Store a copy
         isPastEvent: true,
+        isToday: todayStatus,
       });
       calculationBaseDate = new Date(lastCheckedDate.getTime()); // Base future calculations on this
     } else {
@@ -81,10 +84,12 @@ function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours
             nextCheckTime.setMinutes(nextCheckTime.getMinutes() + 15); // Advance
             nextCheckTime = floorTo15MinuteInterval(nextCheckTime); // Re-floor
         }
-         checkEvents.push({
-            timeString: formatDisplayString(nextCheckTime, isToday(nextCheckTime)),
+        const todayStatus = _isToday(nextCheckTime, now);
+        checkEvents.push({
+            timeString: formatDisplayString(nextCheckTime, todayStatus),
             dateObject: nextCheckTime,
             isPastEvent: false,
+            isToday: todayStatus,
         });
     }
     return checkEvents;
@@ -153,13 +158,15 @@ function calculateNextCheckTimes(lastCheckedAtISO, frequencyDays, frequencyHours
     // Ensure the slot is actually in the future relative to 'now'
     // (especially for the very first future slot after all adjustments)
     if (nextCheckTime.getTime() > now.getTime()) {
-        const displayString = formatDisplayString(nextCheckTime, isToday(nextCheckTime));
+        const todayStatus = _isToday(nextCheckTime, now);
+        const displayString = formatDisplayString(nextCheckTime, todayStatus);
         // Avoid duplicate times if frequency is very small compared to 15-min interval
         if (!checkEvents.some(e => e.dateObject.getTime() === nextCheckTime.getTime())) {
             checkEvents.push({
                 timeString: displayString,
                 dateObject: new Date(nextCheckTime.getTime()), // Store a copy
                 isPastEvent: false,
+                isToday: todayStatus,
             });
             futureChecksCount++;
         }
@@ -446,85 +453,67 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     settingsGrid.appendChild(delayRow);
     settingsGrid.appendChild(delayDurationRow);
 
-    // --- Display Last Checked Time and Check Schedule ---
-    const nowForTodayCheck = new Date();
-    function isEventToday(dateObj) {
-        return dateObj.getFullYear() === nowForTodayCheck.getFullYear() &&
-               dateObj.getMonth() === nowForTodayCheck.getMonth() &&
-               dateObj.getDate() === nowForTodayCheck.getDate();
-    }
+    // --- Merged Check Times Display ---
+    const checkEventsRow = document.createElement('div');
+    checkEventsRow.className = 'row mt-2 mb-2 align-items-start'; // align-items-start for better label align if text wraps
+    const checkEventsLabelCol = document.createElement('div');
+    checkEventsLabelCol.className = 'col-md-3 col-lg-2';
+    checkEventsLabelCol.innerHTML = `<label class="form-label small fw-semibold">Event Log & Schedule:</label>`;
+    checkEventsRow.appendChild(checkEventsLabelCol);
 
-    const checkEvents = calculateNextCheckTimes(
+    const checkEventsValuesCol = document.createElement('div');
+    checkEventsValuesCol.className = 'col-md-9 col-lg-10';
+
+    const allCheckEvents = calculateNextCheckTimes(
         currentSubscription.last_checked_at,
         currentSubscription.frequency_days,
         currentSubscription.frequency_hours,
         currentSubscription.frequency_minutes
     );
 
-    // Last Checked Display
-    const lastCheckedRow = document.createElement('div');
-    lastCheckedRow.className = 'row mt-2 mb-1 align-items-center';
-    const lastCheckedLabelCol = document.createElement('div');
-    lastCheckedLabelCol.className = 'col-md-3 col-lg-2';
-    lastCheckedLabelCol.innerHTML = `<label class="form-label small fw-semibold">Last Checked:</label>`;
-    lastCheckedRow.appendChild(lastCheckedLabelCol);
+    const checkTimesBadgesDiv = document.createElement('div');
+    checkTimesBadgesDiv.className = 'd-flex flex-wrap';
 
-    const lastCheckedValueCol = document.createElement('div');
-    lastCheckedValueCol.className = 'col-md-9 col-lg-10';
-    const pastEvent = checkEvents.find(event => event.isPastEvent);
-    if (pastEvent) {
-        lastCheckedValueCol.textContent = pastEvent.timeString;
-        lastCheckedValueCol.className += ' small';
+    if (allCheckEvents.length === 0) {
+        const noEventsMsg = document.createElement('span');
+        noEventsMsg.textContent = 'Not scheduled.';
+        noEventsMsg.className = 'small text-muted';
+        checkTimesBadgesDiv.appendChild(noEventsMsg);
     } else {
-        lastCheckedValueCol.textContent = 'Never';
-        lastCheckedValueCol.className += ' small text-muted';
-    }
-    lastCheckedRow.appendChild(lastCheckedValueCol);
-    settingsGrid.appendChild(lastCheckedRow);
+        const hasPastEvent = allCheckEvents.some(event => event.isPastEvent);
+        if (!currentSubscription.last_checked_at && !hasPastEvent) {
+            const neverCheckedMsg = document.createElement('div');
+            neverCheckedMsg.textContent = 'Never checked. Expected schedule:';
+            neverCheckedMsg.className = 'small text-muted mb-1'; // Add margin bottom
+            checkEventsValuesCol.appendChild(neverCheckedMsg); // Prepend message
+        }
 
-    // Check Schedule Display
-    const scheduleRow = document.createElement('div');
-    scheduleRow.className = 'row mb-2 align-items-center';
-    const scheduleLabelCol = document.createElement('div');
-    scheduleLabelCol.className = 'col-md-3 col-lg-2';
-    scheduleLabelCol.innerHTML = `<label class="form-label small fw-semibold">Check Schedule:</label>`;
-    scheduleRow.appendChild(scheduleLabelCol);
-
-    const scheduleValuesCol = document.createElement('div');
-    scheduleValuesCol.className = 'col-md-9 col-lg-10';
-    const scheduleTimesDiv = document.createElement('div');
-    scheduleTimesDiv.className = 'd-flex flex-wrap';
-
-    const futureEvents = checkEvents.filter(event => !event.isPastEvent);
-
-    if (futureEvents.length > 0) {
-        futureEvents.forEach(event => {
+        allCheckEvents.forEach(event => {
             const timeSpan = document.createElement('span');
-            timeSpan.className = 'badge me-1 mb-1'; // Base badge class
+            // Using badge class for consistent padding/look, but removing default bg
+            timeSpan.className = 'badge me-1 mb-1';
             timeSpan.textContent = event.timeString;
+            timeSpan.style.marginRight = '5px'; // Explicit margin
 
-            if (isEventToday(event.dateObject)) {
-                timeSpan.classList.add('bg-primary'); // Future and today
-            } else {
-                timeSpan.classList.add('bg-info'); // Future but not today
+            if (event.isPastEvent) {
+                timeSpan.style.color = 'white'; // Ensure text is visible on gray
+                timeSpan.style.backgroundColor = 'gray';
+            } else { // Future event
+                if (event.isToday) {
+                    timeSpan.style.color = 'white'; // Ensure text is visible
+                    timeSpan.style.backgroundColor = 'seagreen';
+                } else {
+                    timeSpan.style.color = 'black'; // Ensure text is visible on lightgreen
+                    timeSpan.style.backgroundColor = 'lightgreen';
+                }
             }
-            scheduleTimesDiv.appendChild(timeSpan);
+            checkTimesBadgesDiv.appendChild(timeSpan);
         });
-    } else if (!pastEvent && futureEvents.length === 0) { // No past, no future (e.g. zero frequency, new sub)
-        scheduleTimesDiv.textContent = 'Not scheduled (adjust frequency).';
-        scheduleTimesDiv.className = 'small text-muted';
-    } else if (pastEvent && futureEvents.length === 0) { // Has past, but no future (e.g. frequency leads to times > 2 days away)
-        scheduleTimesDiv.textContent = 'No further checks scheduled soon.';
-        scheduleTimesDiv.className = 'small text-muted';
-    } else { // Should not happen if logic is correct, but as a fallback
-        scheduleTimesDiv.textContent = 'No checks scheduled.';
-        scheduleTimesDiv.className = 'small text-muted';
     }
-
-    scheduleValuesCol.appendChild(scheduleTimesDiv);
-    scheduleRow.appendChild(scheduleValuesCol);
-    settingsGrid.appendChild(scheduleRow);
-    // --- End Display Last Checked Time and Check Schedule ---
+    checkEventsValuesCol.appendChild(checkTimesBadgesDiv);
+    checkEventsRow.appendChild(checkEventsValuesCol);
+    settingsGrid.appendChild(checkEventsRow);
+    // --- End Merged Check Times Display ---
 
     // Set initial visibility of settings based on main checkbox
     settingsGrid.style.display = mainCheckbox.checked ? 'block' : 'none';
