@@ -54,4 +54,36 @@ export function initPage() {
   fetchRuns();
   initTilt();
   initBackground();
+  initCollapsibleInteractions(); // Initialize collapse interactions
+}
+
+export function initCollapsibleInteractions() {
+  const recipientCollapse = document.getElementById('recipientManagementCollapse');
+  const productCollapse = document.getElementById('productManagementCollapse');
+
+  const recipientButton = document.querySelector('[data-bs-target="#recipientManagementCollapse"]');
+  const productButton = document.querySelector('[data-bs-target="#productManagementCollapse"]');
+
+  const setupCollapseIcon = (collapseEl, buttonEl) => {
+    if (!collapseEl || !buttonEl) return;
+    const icon = buttonEl.querySelector('i.lucide');
+    if (!icon) return;
+
+    collapseEl.addEventListener('show.bs.collapse', function () {
+      icon.setAttribute('data-lucide', 'chevron-up');
+      if (window.lucide) {
+        window.lucide.createIcons(); // Re-render icons
+      }
+    });
+
+    collapseEl.addEventListener('hide.bs.collapse', function () {
+      icon.setAttribute('data-lucide', 'chevron-down');
+      if (window.lucide) {
+        window.lucide.createIcons(); // Re-render icons
+      }
+    });
+  };
+
+  setupCollapseIcon(recipientCollapse, recipientButton);
+  setupCollapseIcon(productCollapse, productButton);
 }

@@ -25,6 +25,19 @@
       align-items: flex-start; /* Align card to top when scrollable */
     }
 
+    /* Default dark text color for card elements */
+    .card p,
+    .card label,
+    .card h1,
+    .card h2,
+    .card h3,
+    .card h4,
+    .card h5,
+    .card li,
+    .card .form-label { /* Added .form-label for Bootstrap forms */
+        color: #333333;
+    }
+
 
     @keyframes gradientAnimation {
       0% {
@@ -82,16 +95,16 @@
     /* Neumorphic Button Styling & Ripple Effect */
     .btn-neumorphic {
       border-radius: 20px !important; /* Softer corners, !important to override Bootstrap if needed */
-      background: rgba(224, 224, 224, 0.10) !important; /* Light background for neumorphic effect on darkish bg */
+      background: rgba(230, 230, 230, 0.25) !important; /* Slightly darker background */
       padding: 12px 20px !important;
       font-weight: 600 !important;
       transition: all 0.15s ease-in-out !important;
-      border: none !important; /* Remove bootstrap border */
+      border: 1px solid rgba(0, 0, 0, 0.1) !important; /* Subtle border */
       box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.2), -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
       position: relative !important; /* For ripple */
       overflow: hidden !important; /* To contain ripple */
-      color: #fff !important; /* Default text color for neumorphic buttons */
-      text-shadow: 0 0 3px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.5); /* Subtle shadow for readability */
+      color: #333333 !important; /* Default dark text color for neumorphic buttons */
+      text-shadow: none; /* Remove text shadow if switching to dark text */
     }
 
     .btn-neumorphic:hover {
@@ -248,9 +261,10 @@
     .card h1.text-primary {
         text-shadow: 0 0 4px rgba(0, 0, 0, 0.2); /* Subtle dark shadow for primary text */
     }
-    .card p { /* For general paragraph text inside the card */
-        text-shadow: 0 0 2px rgba(0,0,0,0.1); /* Very subtle shadow for general text if needed */
-    }
+    /* Removed text-shadow for general paragraph text as default text color is now dark */
+    /* .card p {
+        text-shadow: 0 0 2px rgba(0,0,0,0.1);
+    } */
 
 
     @keyframes spin {
@@ -365,12 +379,12 @@
 #recipient-form .form-control,
 #product-form .form-control {
     background-color: rgba(255, 255, 255, 0.2); /* Lighter inputs */
-    color: #fff;
+    color: #333333; /* Dark text for inputs */
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 #recipient-form .form-control::placeholder,
 #product-form .form-control::placeholder {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(0, 0, 0, 0.5); /* Darker placeholder text */
 }
 #recipient-form .btn,
 #product-form .btn {
@@ -388,7 +402,7 @@
 
 #recipient-subscriptions-section h4 {
     margin-bottom: 1rem;
-    color: #f8f9fa; /* Lighter text for title */
+    color: #333333; /* Dark text for title */
 }
 #recipient-subscriptions-section #selected-recipient-email{
     font-weight: bold;
@@ -403,7 +417,7 @@
 
 #subscription-product-list .form-check-label {
     margin-left: 0.5rem; /* Space between checkbox and label */
-    color: #e9ecef; /* Lighter text for product names in subscription list */
+    color: #333333; /* Dark text for product names in subscription list */
 }
 #subscription-product-list .form-check-input {
     border-color: rgba(255,255,255,0.5);
@@ -431,4 +445,256 @@
         margin-left: 0;
         margin-right: 0;
     }
+}
+
+/* Additional Responsive Styles for Mobile Friendliness */
+
+@media (max-width: 768px) {
+  .card h1, .card .h1 { font-size: 1.75rem; }
+  .card h2, .card .h2 { font-size: 1.5rem; }
+  .card h3, .card .h3 { font-size: 1.3rem; }
+  .card h4, .card .h4 { font-size: 1.15rem; }
+  .card h5, .card .h5 { font-size: 1.1rem; }
+
+  /* Adjust body font size if overall smaller text is desired */
+  /* body { font-size: 0.95rem; } */
+}
+
+@media (max-width: 576px) {
+  .card h1, .card .h1 { font-size: 1.5rem; }
+  .card h2, .card .h2 { font-size: 1.25rem; }
+  .card h3, .card .h3 { font-size: 1.15rem; }
+  .card h4, .card .h4 { font-size: 1.05rem; }
+  .card h5, .card .h5 { font-size: 1rem; }
+  .card p, .card li, .card .form-label, .card .form-check-label { font-size: 0.9rem; }
+
+  .btn, .btn-neumorphic { /* Affects all buttons including neumorphic */
+    font-size: 0.9rem !important; /* Ensure override if btn-neumorphic has its own font-size */
+    padding: 10px 15px !important;
+  }
+
+  #recipients-list .list-group-item .btn,
+  #products-list .list-group-item .btn {
+    padding: 0.3rem 0.6rem !important; /* More specific selector for padding */
+    font-size: 0.8rem !important;
+  }
+
+  .btn .lucide {
+     margin-right: 0.2rem; /* Reduce space slightly */
+     width: 1em; /* Ensure icon scales with button font size */
+     height: 1em;
+  }
+
+  .card-body {
+    padding: 1rem; /* Reduce padding from Bootstrap's default 1.25rem if needed */
+  }
+  /* Example: Adjust container padding if global py-4 is too much, though Bootstrap's is usually fine */
+  /* .container.py-4 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  } */
+
+  /* FAB adjustments for smaller screens */
+  .fab {
+    width: 48px;
+    height: 48px;
+    bottom: 15px;
+    right: 15px;
+  }
+  .fab i, .fab svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 420px) { /* Adjusted from 400px to give a little more room before stacking */
+  #recipient-form .input-group {
+    flex-direction: column;
+  }
+  #recipient-form .input-group .form-control {
+    margin-bottom: 0.5rem;
+    border-radius: .375rem !important; /* Bootstrap's default form-control border-radius */
+  }
+  #recipient-form .input-group .btn {
+    width: 100%;
+  }
+
+  /* Reduce font size even further for very small devices if necessary */
+  .card p, .card li, .card .form-label, .card .form-check-label { font-size: 0.85rem; }
+  .btn, .btn-neumorphic {
+    font-size: 0.85rem !important;
+    padding: 8px 12px !important;
+  }
+  #recipients-list .list-group-item .btn,
+  #products-list .list-group-item .btn {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Styling for new icon buttons in lists */
+
+/* This rule was for the general collapse button, will be replaced by a more specific one below. */
+/* .btn[data-bs-toggle="collapse"] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+} */
+
+/* Collapsible Section Trigger Buttons in Management Accordion */
+#managementAccordion > .btn[data-bs-toggle="collapse"] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #e9ecef; /* Slightly darker, more like an active header */
+  color: #212529; /* Standard dark text */
+  border: 1px solid #ced4da; /* Slightly darker border */
+  text-align: left;
+  box-shadow: none !important;
+  font-weight: 600; /* A bit bolder for header feel */
+  width: 100%;
+  padding: 0.75rem 1.25rem; /* More like card-header padding */
+  border-radius: .375rem; /* Standard Bootstrap card/button radius */
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  /* margin-bottom is handled by Bootstrap's .mb-2 class on the button in HTML */
+}
+
+#managementAccordion > .btn[data-bs-toggle="collapse"]:hover {
+  background-color: #dee2e6; /* Lighten slightly on hover, or darken if preferred */
+  border-color: #adb5bd;
+}
+
+#managementAccordion > .btn[data-bs-toggle="collapse"]:focus,
+#managementAccordion > .btn[data-bs-toggle="collapse"].focus { /* .focus class for JS-triggered focus */
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Standard Bootstrap focus shadow */
+}
+
+
+#managementAccordion > .btn[data-bs-toggle="collapse"] .lucide {
+  color: #212529; /* Match text color */
+  /* transition: transform 0.2s ease-in-out; -- For rotating icon, not used with data-lucide swap */
+}
+
+/* Hide H2 titles inside the collapsible cards as buttons serve as headers */
+/* This rule should remain as it is */
+#recipientManagementCollapse .card-body h2.text-primary,
+#productManagementCollapse .card-body h2.text-primary {
+  display: none;
+}
+
+.list-group-item .btn-manage-icon,
+.list-group-item .btn-delete-icon {
+  padding: 0.35rem 0.5rem; /* Comfortable tap target */
+  line-height: 1; /* Ensure icon is centered */
+  vertical-align: middle; /* Align button with other elements if needed */
+}
+
+.list-group-item .btn-manage-icon .lucide,
+.list-group-item .btn-delete-icon .lucide {
+  width: 1em; /* Icon size relative to button's font size */
+  height: 1em;
+  vertical-align: middle; /* Better icon alignment within button */
+}
+
+/* Specific color for Manage button icon (using Bootstrap's outline-primary by default now) */
+/* .list-group-item .btn-manage-icon { */
+  /* color: var(--bs-primary); */ /* Already handled by btn-outline-primary */
+  /* border-color: var(--bs-primary); */ /* Already handled by btn-outline-primary */
+/* } */
+/* .list-group-item .btn-manage-icon:hover { */
+  /* background-color: var(--bs-primary-bg-subtle); */ /* Bootstrap handles hover for outline buttons */
+/* } */
+
+/* Ensure delete button is styled as danger (using Bootstrap's outline-danger by default now) */
+/* .list-group-item .btn-delete-icon { */
+  /* color: var(--bs-danger); */ /* Already handled by btn-outline-danger */
+  /* border-color: var(--bs-danger); */ /* Already handled by btn-outline-danger */
+/* } */
+/* .list-group-item .btn-delete-icon:hover { */
+  /* background-color: var(--bs-danger-bg-subtle); */ /* Bootstrap handles hover for outline buttons */
+/* } */
+
+/* Adjust spacing between icon buttons */
+.list-group-item .buttons-div .btn + .btn { /* Targets subsequent buttons within .buttons-div */
+    margin-left: 0.35rem; /* Ensure spacing, me-2 is 0.5rem, this is slightly less for icon buttons */
+}
+
+/* Override default .btn .lucide margin if it's too large for icon-only buttons */
+.list-group-item .btn-manage-icon .lucide,
+.list-group-item .btn-delete-icon .lucide {
+    margin-right: 0 !important; /* Remove margin for icon-only buttons */
+}
+
+/* Ensure .buttons-div itself is aligned correctly since list-group-item is d-flex justify-content-between */
+.list-group-item > .buttons-div {
+    /* align-self: center; */ /* Example: if vertical centering is needed */
+    /* margin-left: auto; */ /* This would push to the far right, but justify-content-between already handles separation */
+}
+
+/* Styling for Edit Product icon button */
+.list-group-item .btn-edit-icon {
+  padding: 0.35rem 0.5rem;
+  line-height: 1;
+  /* color: var(--bs-secondary); -- Already set by btn-outline-secondary */
+  /* border-color: var(--bs-secondary); -- Already set by btn-outline-secondary */
+}
+.list-group-item .btn-edit-icon .lucide {
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+  margin-right: 0 !important; /* Override default if any */
+}
+/* .list-group-item .btn-edit-icon:hover { */
+  /* background-color: var(--bs-gray-200); -- Bootstrap handles this for outline buttons */
+/* } */
+
+/* Styling for product URL snippet */
+.list-group-item small.text-muted a {
+  text-decoration: none; /* Remove underline from link snippet */
+  color: inherit; /* Inherit color from .text-muted */
+}
+.list-group-item small.text-muted a:hover {
+  text-decoration: underline;
+  color: var(--bs-primary); /* Highlight link on hover */
+}
+.lucide-small { /* For smaller icons like external-link in text */
+   width: 0.8em;
+   height: 0.8em;
+   margin-left: 0.2em;
+   vertical-align: baseline; /* Align better with text */
+}
+
+/* Ensure modal text is dark */
+.modal-content {
+   color: #333333; /* Default dark text color */
+}
+.modal-content .form-label { /* Specifically for labels within modal */
+   color: #333333;
+}
+/* Ensure modal inputs also have dark text if not inheriting */
+.modal-content .form-control {
+    color: #333333;
+}
+.modal-content .form-control::placeholder {
+    color: rgba(0, 0, 0, 0.5); /* Darker placeholder text for modal inputs */
+}
+
+/* Refinements for Subscription Product List Checkboxes */
+#subscription-product-list .list-group-item.form-check {
+  display: flex; /* Use flexbox for alignment */
+  align-items: center; /* Vertically center checkbox and label text */
+  /* padding-top: 0.5rem; */ /* Retain existing padding or adjust if needed */
+  /* padding-bottom: 0.5rem; */
+}
+
+#subscription-product-list .form-check-input {
+  margin-top: 0; /* Reset Bootstrap's default margin-top for form-check-input if it misaligns */
+  /* The align-items: center on the parent should handle most vertical alignment needs.
+     If specific pixel adjustments are needed, they can be added here, but flex alignment is preferred. */
+}
+
+#subscription-product-list .form-check-label {
+  /* margin-left: 0.5rem; */ /* Retain existing margin or adjust if needed */
+  /* No specific changes usually needed here if parent uses flex align-items: center */
 }

@@ -49,17 +49,20 @@ function renderRecipientsList(recipients) {
     emailSpan.title = 'Click to manage subscriptions';
 
     const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'buttons-div'; // Added class for potential styling
 
     const manageBtn = document.createElement('button');
-    manageBtn.className = 'btn btn-sm btn-outline-info me-2 manage-subscriptions-btn';
-    manageBtn.innerHTML = '<i class="lucide lucide-settings-2" data-lucide="settings-2"></i> Manage';
+    manageBtn.className = 'btn btn-sm btn-outline-primary me-2 manage-subscriptions-btn btn-manage-icon'; // Changed to btn-outline-primary and added icon class
+    manageBtn.innerHTML = '<i data-lucide="settings-2"></i>'; // Icon only
+    manageBtn.title = 'Manage Subscriptions'; // Add title for accessibility
     manageBtn.setAttribute('data-recipient-id', recipient.id);
     manageBtn.setAttribute('data-recipient-email', recipient.email);
 
 
     const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn btn-sm btn-outline-danger delete-recipient-btn';
-    deleteBtn.innerHTML = '<i class="lucide lucide-trash-2" data-lucide="trash-2"></i> Delete';
+    deleteBtn.className = 'btn btn-sm btn-outline-danger delete-recipient-btn btn-delete-icon'; // Added icon class
+    deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>'; // Icon only
+    deleteBtn.title = 'Delete Recipient'; // Add title for accessibility
     deleteBtn.setAttribute('data-recipient-id', recipient.id);
 
     buttonsDiv.appendChild(manageBtn);

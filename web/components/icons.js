@@ -1,9 +1,18 @@
 export function initIcons() {
   function initLucideIcons(retries = 5) {
     if (typeof lucide !== 'undefined' && lucide.createIcons) {
-      try { lucide.createIcons(); } catch (e) {}
+      try {
+        console.log('Attempting lucide.createIcons()'); // Add log
+        lucide.createIcons();
+        console.log('lucide.createIcons() called successfully.'); // Add log
+      } catch (e) {
+        console.error('Error calling lucide.createIcons():', e); // Log the error
+      }
     } else if (retries > 0) {
+      console.log(`lucide not ready, retrying initLucideIcons. Retries left: ${retries -1}`);
       setTimeout(() => initLucideIcons(retries - 1), 200);
+    } else {
+      console.error('lucide.createIcons() not available after multiple retries.');
     }
   }
   initLucideIcons();
