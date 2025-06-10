@@ -66,7 +66,7 @@ export function initCollapsibleInteractions() {
 
   const setupCollapseIcon = (collapseEl, buttonEl) => {
     if (!collapseEl || !buttonEl) return;
-    const icon = buttonEl.querySelector('i.lucide');
+    const icon = buttonEl.querySelector("i[data-lucide]");
     if (!icon) return;
 
     collapseEl.addEventListener('show.bs.collapse', function () {
