@@ -126,17 +126,37 @@ export default async function handler(req, res) {
             existingSubscription.frequency_minutes = parseInt(req.body.frequency_minutes, 10);
             updated = true;
           }
+
+          // Handle delay_days
           if (req.body.delay_days !== undefined) {
-            existingSubscription.delay_days = parseInt(req.body.delay_days, 10);
+            const parsedValue = parseInt(req.body.delay_days, 10);
+            if (!isNaN(parsedValue)) {
+                existingSubscription.delay_days = parsedValue;
+            } else {
+                existingSubscription.delay_days = DEFAULT_DELAY_DAYS;
+            }
             updated = true;
           }
+
+          // Handle delay_hours
           if (req.body.delay_hours !== undefined) {
-            existingSubscription.delay_hours = parseInt(req.body.delay_hours, 10);
+            const parsedValue = parseInt(req.body.delay_hours, 10);
+            if (!isNaN(parsedValue)) {
+                existingSubscription.delay_hours = parsedValue;
+            } else {
+                existingSubscription.delay_hours = DEFAULT_DELAY_HOURS;
+            }
             updated = true;
           }
+
+          // Handle delay_minutes
           if (req.body.delay_minutes !== undefined) {
-            // TODO: Add validation for 5-minute steps
-            existingSubscription.delay_minutes = parseInt(req.body.delay_minutes, 10);
+            const parsedValue = parseInt(req.body.delay_minutes, 10);
+            if (!isNaN(parsedValue)) {
+                existingSubscription.delay_minutes = parsedValue;
+            } else {
+                existingSubscription.delay_minutes = DEFAULT_DELAY_MINUTES;
+            }
             updated = true;
           }
 
@@ -186,9 +206,9 @@ export default async function handler(req, res) {
             frequency_hours: req.body.frequency_hours ?? DEFAULT_FREQUENCY_HOURS,
             frequency_minutes: req.body.frequency_minutes ?? DEFAULT_FREQUENCY_MINUTES, // TODO: Validate step
             delay_on_stock: delayOnStockBody !== undefined ? delayOnStockBody : false,
-            delay_days: req.body.delay_days ?? DEFAULT_DELAY_DAYS,
-            delay_hours: req.body.delay_hours ?? DEFAULT_DELAY_HOURS,
-            delay_minutes: req.body.delay_minutes ?? DEFAULT_DELAY_MINUTES, // TODO: Validate step
+            delay_days: (req.body.delay_days === undefined || req.body.delay_days === null || isNaN(parseInt(req.body.delay_days, 10))) ? DEFAULT_DELAY_DAYS : parseInt(req.body.delay_days, 10),
+            delay_hours: (req.body.delay_hours === undefined || req.body.delay_hours === null || isNaN(parseInt(req.body.delay_hours, 10))) ? DEFAULT_DELAY_HOURS : parseInt(req.body.delay_hours, 10),
+            delay_minutes: (req.body.delay_minutes === undefined || req.body.delay_minutes === null || isNaN(parseInt(req.body.delay_minutes, 10))) ? DEFAULT_DELAY_MINUTES : parseInt(req.body.delay_minutes, 10), // TODO: Validate step
             last_in_stock_at: null,
             delayed_until: null,
             last_checked_at: null, // New field for frequency logic

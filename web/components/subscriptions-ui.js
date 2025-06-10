@@ -682,9 +682,8 @@ async function handleSaveAllSubscriptionSettings() {
   }
 
 
-  // Optionally, refresh the modal to show the persisted state
-  if (errorCount === 0 && recipientId && modalBodyElement) {
-    // Only reload fully if no errors, to show pristine server state
+  // Always attempt to refresh the modal to show the persisted state from the server
+  if (recipientId && modalBodyElement) {
     await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement);
   }
 
@@ -693,8 +692,8 @@ async function handleSaveAllSubscriptionSettings() {
     saveBtn.disabled = false;
     saveBtn.innerHTML = originalBtnText;
   }
-  // After saving (or attempting to save), re-capture the form state and update button
-  storeInitialFormState(); // Current state becomes the new initial state
+  // After saving AND refreshing, re-capture the form state and update button
+  storeInitialFormState(); // Current state (fresh from server) becomes the new initial state
   updateSaveButtonState(); // Update button based on this new initial state
 }
 

@@ -173,9 +173,12 @@ async def main():
                                         notification_time_utc = datetime.now(timezone.utc)
                                         for sub_to_update in subscriptions_to_notify: # Only update those who were to be notified
                                             if sub_to_update.get('recipient_id') in subscribed_recipient_ids and sub_to_update.get('delay_on_stock'):
-                                                d_days = sub_to_update.get('delay_days', 0)
-                                                d_hours = sub_to_update.get('delay_hours', 0)
-                                                d_minutes = sub_to_update.get('delay_minutes', 0)
+                                                d_days = sub_to_update.get('delay_days')
+                                                d_days = d_days if d_days is not None else 0
+                                                d_hours = sub_to_update.get('delay_hours')
+                                                d_hours = d_hours if d_hours is not None else 0
+                                                d_minutes = sub_to_update.get('delay_minutes')
+                                                d_minutes = d_minutes if d_minutes is not None else 0
 
                                                 if d_days == 0 and d_hours == 0 and d_minutes == 0:
                                                     print(f"INFO: Subscription {sub_to_update.get('id')} for product {product_id} has zero delay_on_stock duration. No delay applied.")
