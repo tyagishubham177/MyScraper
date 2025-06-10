@@ -507,12 +507,21 @@
   }
 }
 
+#recipient-form .input-group .form-control {
+  margin-right: 0.5rem;
+}
+
+#recipient-form .input-group .btn {
+  margin-left: 0;
+}
+
 @media (max-width: 420px) { /* Adjusted from 400px to give a little more room before stacking */
   #recipient-form .input-group {
     flex-direction: column;
   }
   #recipient-form .input-group .form-control {
     margin-bottom: 0.5rem;
+    margin-right: 0;
     border-radius: .375rem !important; /* Bootstrap's default form-control border-radius */
   }
   #recipient-form .input-group .btn {
@@ -695,17 +704,33 @@
 #subscription-product-list .list-group-item.form-check {
   display: flex; /* Use flexbox for alignment */
   align-items: center; /* Vertically center checkbox and label text */
-  /* padding-top: 0.5rem; */ /* Retain existing padding or adjust if needed */
-  /* padding-bottom: 0.5rem; */
+  padding-left: 1rem; /* Remove default form-check padding */
 }
 
 #subscription-product-list .form-check-input {
-  margin-top: 0; /* Reset Bootstrap's default margin-top for form-check-input if it misaligns */
-  /* The align-items: center on the parent should handle most vertical alignment needs.
-     If specific pixel adjustments are needed, they can be added here, but flex alignment is preferred. */
+  position: static;
+  float: none;
+  margin: 0 0.5rem 0 0;
+  /* The align-items: center on the parent should handle most vertical alignment needs. */
 }
 
 #subscription-product-list .form-check-label {
-  /* margin-left: 0.5rem; */ /* Retain existing margin or adjust if needed */
-  /* No specific changes usually needed here if parent uses flex align-items: center */
+  margin-left: 0;
+}
+
+/* Styling for settings offcanvas so it matches the blurred card look */
+#settingsPane.offcanvas {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(209, 213, 219, 0.3);
+  color: #333333;
+}
+
+#settingsPane .offcanvas-header {
+  border-bottom: 1px solid rgba(209, 213, 219, 0.3);
+}
+
+#settingsPane .offcanvas-title {
+  color: #333333;
 }
