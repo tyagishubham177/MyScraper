@@ -128,32 +128,35 @@ export default async function handler(req, res) {
           }
 
           // Handle delay_days
-          const delayDays = parseInt(req.body.delay_days, 10);
-          if (req.body.delay_days !== undefined && req.body.delay_days !== null && !isNaN(delayDays)) {
-            existingSubscription.delay_days = delayDays;
-            updated = true;
-          } else if (req.body.delay_days === undefined || req.body.delay_days === null) {
-            existingSubscription.delay_days = DEFAULT_DELAY_DAYS;
+          if (req.body.delay_days !== undefined) {
+            const parsedValue = parseInt(req.body.delay_days, 10);
+            if (!isNaN(parsedValue)) {
+                existingSubscription.delay_days = parsedValue;
+            } else {
+                existingSubscription.delay_days = DEFAULT_DELAY_DAYS;
+            }
             updated = true;
           }
 
           // Handle delay_hours
-          const delayHours = parseInt(req.body.delay_hours, 10);
-          if (req.body.delay_hours !== undefined && req.body.delay_hours !== null && !isNaN(delayHours)) {
-            existingSubscription.delay_hours = delayHours;
-            updated = true;
-          } else if (req.body.delay_hours === undefined || req.body.delay_hours === null) {
-            existingSubscription.delay_hours = DEFAULT_DELAY_HOURS;
+          if (req.body.delay_hours !== undefined) {
+            const parsedValue = parseInt(req.body.delay_hours, 10);
+            if (!isNaN(parsedValue)) {
+                existingSubscription.delay_hours = parsedValue;
+            } else {
+                existingSubscription.delay_hours = DEFAULT_DELAY_HOURS;
+            }
             updated = true;
           }
 
           // Handle delay_minutes
-          const delayMinutes = parseInt(req.body.delay_minutes, 10);
-          if (req.body.delay_minutes !== undefined && req.body.delay_minutes !== null && !isNaN(delayMinutes)) {
-            existingSubscription.delay_minutes = delayMinutes;
-            updated = true;
-          } else if (req.body.delay_minutes === undefined || req.body.delay_minutes === null) {
-            existingSubscription.delay_minutes = DEFAULT_DELAY_MINUTES;
+          if (req.body.delay_minutes !== undefined) {
+            const parsedValue = parseInt(req.body.delay_minutes, 10);
+            if (!isNaN(parsedValue)) {
+                existingSubscription.delay_minutes = parsedValue;
+            } else {
+                existingSubscription.delay_minutes = DEFAULT_DELAY_MINUTES;
+            }
             updated = true;
           }
 
