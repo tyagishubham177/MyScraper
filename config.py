@@ -13,6 +13,9 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_RECIPIENTS = os.getenv("EMAIL_RECIPIENTS")
 
+# Allow a flexible window for scheduled job runs
+RUN_OFFSET_MINUTES = 15
+
 # Base URL for the application itself, used for constructing absolute URLs if needed
 APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:3000")
 # ——————————————————————————————————————————
