@@ -3,6 +3,7 @@ from datetime import datetime, timezone, time, timedelta
 from dateutil.parser import isoparse
 import aiohttp
 import config
+from config import RUN_OFFSET_MINUTES # Import the new variable
 import notifications
 import scraper
 
@@ -104,7 +105,7 @@ async def main():
                             # print(f"DEBUG: Subscription {sub_id} for product {product_id} has zero frequency, due for check.")
                         else:
                             next_due_dt = calculate_next_check_due(last_checked_at_dt, freq_days, freq_hours, freq_minutes)
-                            if current_utc_time >= next_due_dt:
+                            if current_utc_time >= (next_due_dt - timedelta(minutes=RUN_OFFSET_MINUTES)): # Use RUN_OFFSET_MINUTES
                                 is_due = True
                                 # print(f"DEBUG: Subscription {sub_id} for product {product_id} is due. Next due: {next_due_dt.isoformat()}, Last checked: {last_checked_at_str}.")
                     except ValueError:
