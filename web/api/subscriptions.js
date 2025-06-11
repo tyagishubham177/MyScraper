@@ -114,16 +114,18 @@ export default async function handler(req, res) {
           }
           // Update new granular fields if provided
           if (req.body.frequency_days !== undefined) {
-            existingSubscription.frequency_days = parseInt(req.body.frequency_days, 10);
+            const parsedValue = parseInt(req.body.frequency_days, 10);
+            existingSubscription.frequency_days = isNaN(parsedValue) ? DEFAULT_FREQUENCY_DAYS : parsedValue;
             updated = true;
           }
           if (req.body.frequency_hours !== undefined) {
-            existingSubscription.frequency_hours = parseInt(req.body.frequency_hours, 10);
+            const parsedValue = parseInt(req.body.frequency_hours, 10);
+            existingSubscription.frequency_hours = isNaN(parsedValue) ? DEFAULT_FREQUENCY_HOURS : parsedValue;
             updated = true;
           }
           if (req.body.frequency_minutes !== undefined) {
-            // TODO: Add validation for 5-minute steps if strictly needed, for now, accept value
-            existingSubscription.frequency_minutes = parseInt(req.body.frequency_minutes, 10);
+            const parsedValue = parseInt(req.body.frequency_minutes, 10);
+            existingSubscription.frequency_minutes = isNaN(parsedValue) ? DEFAULT_FREQUENCY_MINUTES : parsedValue;
             updated = true;
           }
 
