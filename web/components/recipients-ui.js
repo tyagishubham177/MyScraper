@@ -4,6 +4,45 @@ window.selectedRecipient = {
   email: null,
 };
 
+const recipientErrorTimers = {}; // To store timeout IDs for recipient error messages
+
+function displayRecipientError(elementId, message, timeout = 5000) {
+  const errorElement = document.getElementById(elementId);
+  if (!errorElement) {
+    console.warn(`Error element with ID ${elementId} not found.`);
+    alert(message); // Fallback
+    return;
+  }
+
+  if (recipientErrorTimers[elementId]) {
+    clearTimeout(recipientErrorTimers[elementId]);
+  }
+
+  errorElement.innerHTML = message;
+  errorElement.classList.add('alert', 'alert-danger');
+  errorElement.style.display = 'block';
+
+  recipientErrorTimers[elementId] = setTimeout(() => {
+    errorElement.innerHTML = '';
+    errorElement.classList.remove('alert', 'alert-danger');
+    errorElement.style.display = 'none';
+    delete recipientErrorTimers[elementId];
+  }, timeout);
+}
+
+function clearRecipientError(elementId) {
+  const errorElement = document.getElementById(elementId);
+  if (!errorElement) return;
+
+  if (recipientErrorTimers[elementId]) {
+    clearTimeout(recipientErrorTimers[elementId]);
+    delete recipientErrorTimers[elementId];
+  }
+  errorElement.innerHTML = '';
+  errorElement.classList.remove('alert', 'alert-danger');
+  errorElement.style.display = 'none';
+}
+
 // Function to make API calls (can be generalized later)
 async function fetchAPI(url, options) {
   const response = await fetch(url, options);
@@ -94,30 +133,17 @@ async function handleAddRecipient(event) {
   event.preventDefault();
   const emailInput = document.getElementById('recipient-email');
   const email = emailInput.value.trim();
-  const errorMessageEl = document.getElementById('add-recipient-error-message');
+  const errorElementId = 'add-recipient-error-message';
 
-  // Clear previous error messages
-  if (errorMessageEl) {
-    errorMessageEl.innerHTML = '';
-    errorMessageEl.classList.remove('alert', 'alert-danger');
-  }
+  // Clear previous error messages immediately
+  clearRecipientError(errorElementId);
 
   if (!email) {
-    if (errorMessageEl) {
-      errorMessageEl.innerHTML = 'Please enter an email address.';
-      errorMessageEl.classList.add('alert', 'alert-danger');
-    } else {
-      alert('Please enter an email address.');
-    }
+    displayRecipientError(errorElementId, 'Please enter an email address.');
     return;
   }
   if (!/\S+@\S+\.\S+/.test(email)) {
-    if (errorMessageEl) {
-      errorMessageEl.innerHTML = 'Please enter a valid email address.';
-      errorMessageEl.classList.add('alert', 'alert-danger');
-    } else {
-      alert('Please enter a valid email address.');
-    }
+    displayRecipientError(errorElementId, 'Please enter a valid email address.');
     return;
   }
 
@@ -128,19 +154,11 @@ async function handleAddRecipient(event) {
       body: JSON.stringify({ email }),
     });
     emailInput.value = ''; // Clear input
-    if (errorMessageEl) { // Clear error message on success
-      errorMessageEl.innerHTML = '';
-      errorMessageEl.classList.remove('alert', 'alert-danger');
-    }
+    clearRecipientError(errorElementId); // Clear error message on success
     fetchRecipients(); // Refresh list
   } catch (error) {
     console.error('Error adding recipient:', error);
-    if (errorMessageEl) {
-      errorMessageEl.innerHTML = error.message;
-      errorMessageEl.classList.add('alert', 'alert-danger');
-    } else {
-      alert(`Failed to add recipient: ${error.message}`);
-    }
+    displayRecipientError(errorElementId, error.message);
   }
 }
 

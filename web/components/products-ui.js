@@ -3,6 +3,49 @@
 // If not, it should be defined here similar to how it was in recipients-ui.js.
 // async function fetchAPI(url, options) { ... }
 
+const errorTimers = {}; // To store timeout IDs for error messages
+
+function displayError(elementId, message, timeout = 5000) {
+  const errorElement = document.getElementById(elementId);
+  if (!errorElement) {
+    console.warn(`Error element with ID ${elementId} not found.`);
+    // Fallback to alert if element doesn't exist, though ideally it always should.
+    alert(message);
+    return;
+  }
+
+  // Clear existing timeout for this element
+  if (errorTimers[elementId]) {
+    clearTimeout(errorTimers[elementId]);
+  }
+
+  errorElement.innerHTML = message;
+  errorElement.classList.add('alert', 'alert-danger');
+  errorElement.style.display = 'block'; // Ensure it's visible
+
+  // Set new timeout
+  errorTimers[elementId] = setTimeout(() => {
+    errorElement.innerHTML = '';
+    errorElement.classList.remove('alert', 'alert-danger');
+    errorElement.style.display = 'none'; // Hide it again
+    delete errorTimers[elementId]; // Remove timer ID once done
+  }, timeout);
+}
+
+function clearError(elementId) {
+  const errorElement = document.getElementById(elementId);
+  if (!errorElement) return;
+
+  if (errorTimers[elementId]) {
+    clearTimeout(errorTimers[elementId]);
+    delete errorTimers[elementId];
+  }
+  errorElement.innerHTML = '';
+  errorElement.classList.remove('alert', 'alert-danger');
+  errorElement.style.display = 'none'; // Ensure it's hidden
+}
+
+
 // Renders the list of products
 function renderProductsList(products) {
   const productsListEl = document.getElementById('products-list');
@@ -79,35 +122,24 @@ async function handleAddProduct(event) {
   event.preventDefault();
   const nameInput = document.getElementById('product-name');
   const urlInput = document.getElementById('product-url');
+  const nameInput = document.getElementById('product-name');
+  const urlInput = document.getElementById('product-url');
   const name = nameInput.value.trim();
   const url = urlInput.value.trim();
-  const errorMessageEl = document.getElementById('add-product-error-message');
+  const errorElementId = 'add-product-error-message';
 
-  // Clear previous error messages
-  if (errorMessageEl) {
-    errorMessageEl.innerHTML = '';
-    errorMessageEl.classList.remove('alert', 'alert-danger');
-  }
+  // Clear previous error messages immediately before new validation/action
+  clearError(errorElementId);
 
   if (!name || !url) {
-    if (errorMessageEl) {
-      errorMessageEl.innerHTML = 'Please enter both product name and URL.';
-      errorMessageEl.classList.add('alert', 'alert-danger');
-    } else {
-      alert('Please enter both product name and URL.');
-    }
+    displayError(errorElementId, 'Please enter both product name and URL.');
     return;
   }
   // Basic URL validation
   try {
     new URL(url);
   } catch (_) {
-    if (errorMessageEl) {
-      errorMessageEl.innerHTML = 'Please enter a valid URL.';
-      errorMessageEl.classList.add('alert', 'alert-danger');
-    } else {
-      alert('Please enter a valid URL.');
-    }
+    displayError(errorElementId, 'Please enter a valid URL.');
     return;
   }
 
@@ -119,19 +151,11 @@ async function handleAddProduct(event) {
     });
     nameInput.value = ''; // Clear input
     urlInput.value = '';  // Clear input
-    if (errorMessageEl) { // Clear error message on success
-      errorMessageEl.innerHTML = '';
-      errorMessageEl.classList.remove('alert', 'alert-danger');
-    }
+    clearError(errorElementId); // Clear error message on success
     fetchProducts(); // Refresh list
   } catch (error) {
     console.error('Error adding product:', error);
-    if (errorMessageEl) {
-      errorMessageEl.innerHTML = error.message;
-      errorMessageEl.classList.add('alert', 'alert-danger');
-    } else {
-      alert(`Failed to add product: ${error.message}`);
-    }
+    displayError(errorElementId, error.message);
   }
 }
 
@@ -212,34 +236,22 @@ export function initProductsUI() {
     saveChangesBtn.addEventListener('click', async function () {
       const editProductModalEl = document.getElementById('editProductModal'); // Get modal element for hiding
       const productId = document.getElementById('edit-product-id').value;
+      const productId = document.getElementById('edit-product-id').value;
       const name = document.getElementById('edit-product-name').value.trim();
       const url = document.getElementById('edit-product-url').value.trim();
-      const errorModalMessageEl = document.getElementById('edit-product-error-message');
+      const errorModalElementId = 'edit-product-error-message';
 
       // Clear previous error messages in modal
-      if (errorModalMessageEl) {
-        errorModalMessageEl.innerHTML = '';
-        errorModalMessageEl.classList.remove('alert', 'alert-danger');
-      }
+      clearError(errorModalElementId);
 
       if (!name || !url) {
-        if (errorModalMessageEl) {
-          errorModalMessageEl.innerHTML = 'Please enter both product name and URL.';
-          errorModalMessageEl.classList.add('alert', 'alert-danger');
-        } else {
-          alert('Please enter both product name and URL.');
-        }
+        displayError(errorModalElementId, 'Please enter both product name and URL.');
         return;
       }
       try {
         new URL(url); // Basic URL validation
       } catch (_) {
-        if (errorModalMessageEl) {
-          errorModalMessageEl.innerHTML = 'Please enter a valid URL.';
-          errorModalMessageEl.classList.add('alert', 'alert-danger');
-        } else {
-          alert('Please enter a valid URL.');
-        }
+        displayError(errorModalElementId, 'Please enter a valid URL.');
         return;
       }
 
@@ -267,19 +279,11 @@ export function initProductsUI() {
           }
         }
         // Clear error message on success
-        if (errorModalMessageEl) {
-          errorModalMessageEl.innerHTML = '';
-          errorModalMessageEl.classList.remove('alert', 'alert-danger');
-        }
+        clearError(errorModalElementId);
 
       } catch (error) {
         console.error('Error updating product:', error);
-        if (errorModalMessageEl) {
-          errorModalMessageEl.innerHTML = error.message;
-          errorModalMessageEl.classList.add('alert', 'alert-danger');
-        } else {
-          alert(`Failed to update product: ${error.message}`);
-        }
+        displayError(errorModalElementId, error.message);
         // Optionally, do not hide the modal on error, so the user can retry or correct.
       }
     });
