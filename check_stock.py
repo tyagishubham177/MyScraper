@@ -1,5 +1,9 @@
 import asyncio
 from datetime import datetime, timezone, time, timedelta
+try:
+    import pytz
+except ImportError:
+    pytz = None
 from dateutil.parser import isoparse
 import aiohttp
 import config
@@ -325,10 +329,29 @@ async def main():
     print("\nStock check finished.")
 
     # Send summary email
-    run_timestamp = datetime.now(timezone.utc)
-    run_timestamp_str = run_timestamp.strftime('%Y-%m-%d %H:%M:%S %Z')
-    summary_subject = f"Stock Check Summary: {run_timestamp_str} - {total_actual_notifications_sent} User Notifications Sent"
+    run_timestamp_utc = datetime.now(timezone.utc) # Ensure it's UTC
 
+    # Convert to IST
+    ist_timezone_offset = timedelta(hours=5, minutes=30)
+    if pytz:
+        try:
+            ist_tz = pytz.timezone('Asia/Kolkata')
+            run_timestamp_ist = run_timestamp_utc.astimezone(ist_tz)
+        except pytz.UnknownTimeZoneError:
+            print("Warning: pytz could not find 'Asia/Kolkata'. Falling back to fixed offset for IST.")
+            fixed_ist_tz = timezone(ist_timezone_offset)
+            run_timestamp_ist = run_timestamp_utc.replace(tzinfo=timezone.utc).astimezone(fixed_ist_tz)
+    else: # pytz is not available
+        print("Warning: pytz library not available. Using fixed offset for IST.")
+        fixed_ist_tz = timezone(ist_timezone_offset)
+        run_timestamp_ist = run_timestamp_utc.replace(tzinfo=timezone.utc).astimezone(fixed_ist_tz)
+
+    # Format the IST timestamp
+    # Desired format: "DD-Month-YYYY / HH:MM AM/PM, IST"
+    month_name = run_timestamp_ist.strftime('%B')
+    run_timestamp_str = run_timestamp_ist.strftime(f'%d-{month_name}-%Y / %I:%M %p') + ", IST"
+
+    summary_subject = f"Stock Check Summary: {run_timestamp_str} - {total_actual_notifications_sent} User Notifications Sent"
     summary_body = format_summary_email_body(run_timestamp_str, summary_email_data, total_actual_notifications_sent)
 
     if config.EMAIL_SENDER: # Check if a sender email is configured (used as recipient for summary)
