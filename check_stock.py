@@ -354,29 +354,32 @@ async def main():
     summary_subject = f"Stock Check Summary: {run_timestamp_str} - {total_actual_notifications_sent} User Notifications Sent"
     summary_body = format_summary_email_body(run_timestamp_str, summary_email_data, total_actual_notifications_sent)
 
-    if config.EMAIL_SENDER: # Check if a sender email is configured (used as recipient for summary)
-        summary_recipient_list = [config.EMAIL_SENDER]
-        print(f"\nAttempting to send summary email to: {config.EMAIL_SENDER}")
-        try:
-            notifications.send_email_notification(
-                subject=summary_subject,
-                body=summary_body,
-                sender=config.EMAIL_SENDER, # Assuming summary is sent from the primary sender identity
-                recipients=summary_recipient_list,
-                host=config.EMAIL_HOST,
-                port=config.EMAIL_PORT,
-                username=config.EMAIL_HOST_USER,
-                password=config.EMAIL_HOST_PASSWORD
-            )
-            print("✅ Summary email sent successfully.")
-        except Exception as e:
-            print(f"🚨 Error sending summary email: {e}")
+    if total_actual_notifications_sent > 0:
+        if config.EMAIL_SENDER: # Check if a sender email is configured (used as recipient for summary)
+            summary_recipient_list = [config.EMAIL_SENDER]
+            print(f"\nAttempting to send summary email to: {config.EMAIL_SENDER}")
+            try:
+                notifications.send_email_notification(
+                    subject=summary_subject,
+                    body=summary_body,
+                    sender=config.EMAIL_SENDER, # Assuming summary is sent from the primary sender identity
+                    recipients=summary_recipient_list,
+                    host=config.EMAIL_HOST,
+                    port=config.EMAIL_PORT,
+                    username=config.EMAIL_HOST_USER,
+                    password=config.EMAIL_HOST_PASSWORD
+                )
+                print("✅ Summary email sent successfully.")
+            except Exception as e:
+                print(f"🚨 Error sending summary email: {e}")
+        else:
+            print("\n⚠️ EMAIL_SENDER not configured in config.py. Skipping summary email.")
+            # Optionally, print the summary body to console if not sending email
+            # print("\n--- Summary Email Body (Not Sent) ---")
+            # print(summary_body)
+            # print("--- End of Summary Email Body ---")
     else:
-        print("\n⚠️ EMAIL_SENDER not configured in config.py. Skipping summary email.")
-        # Optionally, print the summary body to console if not sending email
-        # print("\n--- Summary Email Body (Not Sent) ---")
-        # print(summary_body)
-        # print("--- End of Summary Email Body ---")
+        print("No user notifications were sent. Skipping summary email.")
 
 def calculate_next_check_due(last_checked_at_dt: datetime, freq_days: int, freq_hours: int, freq_minutes: int) -> datetime:
     """Calculates the next due time based on the last checked time and frequency components."""
