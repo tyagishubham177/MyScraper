@@ -22,21 +22,45 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     return;
   }
 
-  const subscriptionsMap = new Map(recipientSubscriptions.map(sub => [sub.product_id, sub]));
+  const subscribedProductIds = new Set(recipientSubscriptions.map(sub => sub.product_id));
+  const subscribedProducts = [];
+  const nonSubscribedProducts = [];
 
   allProducts.forEach(product => {
+    if (subscribedProductIds.has(product.id)) {
+      subscribedProducts.push(product);
+    } else {
+      nonSubscribedProducts.push(product);
+    }
+  });
+
+  const sortedProducts = [...subscribedProducts, ...nonSubscribedProducts];
+
+  const subscriptionsMap = new Map(recipientSubscriptions.map(sub => [sub.product_id, sub]));
+
+  sortedProducts.forEach(product => {
     let currentSubscription = subscriptionsMap.get(product.id);
     const isNewSubscription = !subscriptionsMap.has(product.id);
 
-    if (isNewSubscription || currentSubscription.frequency_days === undefined) {
-      currentSubscription = currentSubscription || {}; // Ensure it's an object if it was truly undefined
+    if (isNewSubscription) {
+      currentSubscription = {}; // Initialize for a new subscription
       currentSubscription.frequency_days = 0;
-      currentSubscription.frequency_hours = 1;
-      currentSubscription.frequency_minutes = 0;
-      currentSubscription.delay_on_stock = true;
-      currentSubscription.delay_days = 1;
-      currentSubscription.delay_hours = 0;
-      currentSubscription.delay_minutes = 0;
+      currentSubscription.frequency_hours = 0;
+      currentSubscription.frequency_minutes = 15;
+      currentSubscription.delay_on_stock = false;
+      currentSubscription.delay_days = 0; // Default delay days
+      currentSubscription.delay_hours = 0; // Default delay hours
+      currentSubscription.delay_minutes = 0; // Default delay minutes
+    } else if (currentSubscription.frequency_days === undefined) {
+      // This handles existing subscriptions that might have incomplete data (fallback)
+      // Though ideally, all existing subscriptions should have these fields.
+      currentSubscription.frequency_days = currentSubscription.frequency_days || 0;
+      currentSubscription.frequency_hours = currentSubscription.frequency_hours || 1;
+      currentSubscription.frequency_minutes = currentSubscription.frequency_minutes || 0;
+      currentSubscription.delay_on_stock = currentSubscription.delay_on_stock === undefined ? true : currentSubscription.delay_on_stock;
+      currentSubscription.delay_days = currentSubscription.delay_days || 1;
+      currentSubscription.delay_hours = currentSubscription.delay_hours || 0;
+      currentSubscription.delay_minutes = currentSubscription.delay_minutes || 0;
     }
 
 
