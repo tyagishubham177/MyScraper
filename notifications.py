@@ -49,6 +49,75 @@ def format_long_message(product_name: str, url: str) -> str:
     """
     return html_body
 
+def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, total_notifications_sent: int) -> str:
+    """Formats the HTML body for the summary email."""
+    html_output = f"""<html>
+<head>
+    <style>
+        body {{ font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }}
+        .container {{ background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
+        h1, h2 {{ color: #333333; }}
+        p {{ color: #555555; line-height: 1.6; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+        th, td {{ border: 1px solid #dddddd; text-align: left; padding: 8px; }}
+        th {{ background-color: #f2f2f2; }}
+        .footer {{ margin-top: 20px; font-size: 0.9em; color: #777; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stock Check Run Summary</h1>
+        <p><strong>Run Timestamp:</strong> {run_timestamp_str}</p>
+        <p><strong>Total User Notifications Sent:</strong> {total_notifications_sent}</p>
+        <h2>Details:</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Product URL</th>
+                    <th>Subscribed User Email</th>
+                    <th>Notification Status</th>
+                </tr>
+            </thead>
+            <tbody>
+"""
+
+    for product_data in summary_data_list:
+        product_name = product_data.get('product_name', 'N/A')
+        product_url = product_data.get('product_url', '#')
+        subscriptions = product_data.get('subscriptions', [])
+
+        if not subscriptions: # Handle case with no subscriptions for a product
+            html_output += f"""
+    <tr>
+        <td>{product_name}</td>
+        <td><a href="{product_url}">{product_url}</a></td>
+        <td colspan="2">No subscriptions for this product.</td>
+    </tr>
+"""
+        else:
+            for sub_info in subscriptions:
+                user_email = sub_info.get('user_email', 'N/A')
+                status = sub_info.get('status', 'N/A')
+                html_output += f"""
+    <tr>
+        <td>{product_name}</td>
+        <td><a href="{product_url}">{product_url}</a></td>
+        <td>{user_email}</td>
+        <td>{status}</td>
+    </tr>
+"""
+
+    html_output += """
+            </tbody>
+        </table>
+        <p class="footer">This is an automated summary email.</p>
+    </div>
+</body>
+</html>
+"""
+    return html_output
+
 def format_short_message(product_name: str) -> str:
     return f"ALERT: {product_name.strip()} is back in stock!"
 
