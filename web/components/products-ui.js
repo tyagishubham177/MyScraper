@@ -122,8 +122,6 @@ async function handleAddProduct(event) {
   event.preventDefault();
   const nameInput = document.getElementById('product-name');
   const urlInput = document.getElementById('product-url');
-  const nameInput = document.getElementById('product-name');
-  const urlInput = document.getElementById('product-url');
   const name = nameInput.value.trim();
   const url = urlInput.value.trim();
   const errorElementId = 'add-product-error-message';
@@ -235,7 +233,6 @@ export function initProductsUI() {
   if (saveChangesBtn) {
     saveChangesBtn.addEventListener('click', async function () {
       const editProductModalEl = document.getElementById('editProductModal'); // Get modal element for hiding
-      const productId = document.getElementById('edit-product-id').value;
       const productId = document.getElementById('edit-product-id').value;
       const name = document.getElementById('edit-product-name').value.trim();
       const url = document.getElementById('edit-product-url').value.trim();
