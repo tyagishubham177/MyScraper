@@ -78,3 +78,17 @@ export function extractCheckStockLog(logText) {
   }
   return trimmed;
 }
+
+export async function fetchAPI(url, options) {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+    const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    error.response = response;
+    throw error;
+  }
+  if (response.status === 204) { // No Content
+    return null;
+  }
+  return response.json();
+}

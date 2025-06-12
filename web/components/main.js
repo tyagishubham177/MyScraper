@@ -4,7 +4,7 @@ import {initParticles} from './particles-config.js';
 import {initIcons} from './icons.js';
 import {initRecipientsUI} from './recipients-ui.js';
 import {initProductsUI} from './products-ui.js';
-import {initSubscriptionsUI} from './subscriptions-ui.js';
+import './subscriptions-ui.js'; // Ensures subscriptions UI is initialized
 
 document.addEventListener('DOMContentLoaded', () => {
   initParticles();
@@ -12,5 +12,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initIcons();
   initRecipientsUI();
   initProductsUI();
-  initSubscriptionsUI();
+  // initSubscriptionsUI(); // This is now self-initializing via the import above
 });
