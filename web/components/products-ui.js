@@ -3,6 +3,49 @@
 // If not, it should be defined here similar to how it was in recipients-ui.js.
 // async function fetchAPI(url, options) { ... }
 
+const errorTimers = {}; // To store timeout IDs for error messages
+
+function displayError(elementId, message, timeout = 5000) {
+  const errorElement = document.getElementById(elementId);
+  if (!errorElement) {
+    console.warn(`Error element with ID ${elementId} not found.`);
+    // Fallback to alert if element doesn't exist, though ideally it always should.
+    alert(message);
+    return;
+  }
+
+  // Clear existing timeout for this element
+  if (errorTimers[elementId]) {
+    clearTimeout(errorTimers[elementId]);
+  }
+
+  errorElement.innerHTML = message;
+  errorElement.classList.add('alert', 'alert-danger');
+  errorElement.style.display = 'block'; // Ensure it's visible
+
+  // Set new timeout
+  errorTimers[elementId] = setTimeout(() => {
+    errorElement.innerHTML = '';
+    errorElement.classList.remove('alert', 'alert-danger');
+    errorElement.style.display = 'none'; // Hide it again
+    delete errorTimers[elementId]; // Remove timer ID once done
+  }, timeout);
+}
+
+function clearError(elementId) {
+  const errorElement = document.getElementById(elementId);
+  if (!errorElement) return;
+
+  if (errorTimers[elementId]) {
+    clearTimeout(errorTimers[elementId]);
+    delete errorTimers[elementId];
+  }
+  errorElement.innerHTML = '';
+  errorElement.classList.remove('alert', 'alert-danger');
+  errorElement.style.display = 'none'; // Ensure it's hidden
+}
+
+
 // Renders the list of products
 function renderProductsList(products) {
   const productsListEl = document.getElementById('products-list');
@@ -81,19 +124,22 @@ async function handleAddProduct(event) {
   const urlInput = document.getElementById('product-url');
   const name = nameInput.value.trim();
   const url = urlInput.value.trim();
+  const errorElementId = 'add-product-error-message';
+
+  // Clear previous error messages immediately before new validation/action
+  clearError(errorElementId);
 
   if (!name || !url) {
-    alert('Please enter both product name and URL.');
+    displayError(errorElementId, 'Please enter both product name and URL.');
     return;
   }
   // Basic URL validation
   try {
     new URL(url);
   } catch (_) {
-    alert('Please enter a valid URL.');
+    displayError(errorElementId, 'Please enter a valid URL.');
     return;
   }
-
 
   try {
     await window.fetchAPI('/api/products', {
@@ -103,10 +149,11 @@ async function handleAddProduct(event) {
     });
     nameInput.value = ''; // Clear input
     urlInput.value = '';  // Clear input
+    clearError(errorElementId); // Clear error message on success
     fetchProducts(); // Refresh list
   } catch (error) {
     console.error('Error adding product:', error);
-    alert(`Failed to add product: ${error.message}`);
+    displayError(errorElementId, error.message);
   }
 }
 
@@ -189,15 +236,19 @@ export function initProductsUI() {
       const productId = document.getElementById('edit-product-id').value;
       const name = document.getElementById('edit-product-name').value.trim();
       const url = document.getElementById('edit-product-url').value.trim();
+      const errorModalElementId = 'edit-product-error-message';
+
+      // Clear previous error messages in modal
+      clearError(errorModalElementId);
 
       if (!name || !url) {
-        alert('Please enter both product name and URL.');
+        displayError(errorModalElementId, 'Please enter both product name and URL.');
         return;
       }
       try {
         new URL(url); // Basic URL validation
       } catch (_) {
-        alert('Please enter a valid URL.');
+        displayError(errorModalElementId, 'Please enter a valid URL.');
         return;
       }
 
@@ -220,18 +271,16 @@ export function initProductsUI() {
           if (modalInstance) {
             modalInstance.hide();
           } else {
-            // Fallback if modal instance is not found, though less ideal.
-            // This might indicate an issue with Bootstrap's initialization or timing.
-            // For robustness, one might try to re-initialize and hide.
-            // However, if Bootstrap is loaded and initialized correctly, getInstance should work.
             console.warn('Modal instance not found for #editProductModal, attempting to hide via new instance.');
             new bootstrap.Modal(editProductModalEl).hide();
           }
         }
+        // Clear error message on success
+        clearError(errorModalElementId);
 
       } catch (error) {
         console.error('Error updating product:', error);
-        alert(`Failed to update product: ${error.message}`);
+        displayError(errorModalElementId, error.message);
         // Optionally, do not hide the modal on error, so the user can retry or correct.
       }
     });
