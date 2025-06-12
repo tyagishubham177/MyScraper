@@ -75,36 +75,86 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
                 <tr>
                     <th>Product Name</th>
                     <th>Product URL</th>
-                    <th>Subscribed User Email</th>
-                    <th>Notification Status</th>
+                    <th>Subscribed User Emails (CSV)</th>
+                    <th>Overall Product Status</th>
                 </tr>
             </thead>
             <tbody>
 """
+
+    ignorable_statuses = {
+        "Skipped - Subscription Not Due",
+        "Skipped - Invalid Subscription Object",
+        "Error fetching subscriptions",
+        "Not Sent - Delayed",
+        "Not Sent - Scraping Error",
+        "Skipped - Status Unknown"
+    }
+
+    failed_notification_for_instock_statuses = {
+        "Not Sent - Email Send Error",
+        "Not Sent - Recipient Email Missing",
+        "Not Sent - Email Config Missing"
+    }
 
     for product_data in summary_data_list:
         product_name = product_data.get('product_name', 'N/A')
         product_url = product_data.get('product_url', '#')
         subscriptions = product_data.get('subscriptions', [])
 
-        if not subscriptions: # Handle case with no subscriptions for a product
-            html_output += f"""
-    <tr>
-        <td>{product_name}</td>
-        <td><a href="{product_url}">{product_url}</a></td>
-        <td colspan="2">No subscriptions for this product.</td>
-    </tr>
-"""
+        user_emails_list = []
+        failed_to_notify_list = []
+        is_in_stock_attempted = False  # True if any notification attempt was made (Sent, OOS, or specific failures)
+        all_out_of_stock = True  # Assume all OOS until an in-stock or failed (but attempted) notification is found
+
+        if not subscriptions:
+            subscribed_emails_csv = "N/A"
+            product_status_overall = "No subscriptions for this product."
         else:
             for sub_info in subscriptions:
                 user_email = sub_info.get('user_email', 'N/A')
-                status = sub_info.get('status', 'N/A')
-                html_output += f"""
+                if user_email not in user_emails_list: # Avoid duplicate emails in the list
+                    user_emails_list.append(user_email)
+
+                current_sub_status = sub_info.get('status', 'N/A')
+
+                if current_sub_status == "Sent":
+                    is_in_stock_attempted = True
+                    all_out_of_stock = False
+                elif current_sub_status == "Not Sent - Out of Stock":
+                    is_in_stock_attempted = True
+                    # all_out_of_stock remains true if this is the status for all relevant subs
+                elif current_sub_status in failed_notification_for_instock_statuses:
+                    is_in_stock_attempted = True
+                    all_out_of_stock = False # Product was in stock, but notification failed
+                    if user_email not in failed_to_notify_list:
+                         failed_to_notify_list.append(user_email)
+                elif current_sub_status not in ignorable_statuses:
+                    # Any other non-ignorable status means we can't definitively say all were OOS
+                    all_out_of_stock = False
+
+            subscribed_emails_csv = ", ".join(user_emails_list) if user_emails_list else "N/A"
+
+            # Determine product_status_overall
+            if not is_in_stock_attempted and all_out_of_stock: # This implies all subscriptions were ignorable
+                 product_status_overall = "Status inconclusive (e.g., all subscriptions skipped/delayed)"
+            elif all_out_of_stock and is_in_stock_attempted:
+                product_status_overall = "Out of stock"
+            elif is_in_stock_attempted:
+                if failed_to_notify_list:
+                    product_status_overall = f"Failed to notify: {', '.join(failed_to_notify_list)}"
+                else:
+                    product_status_overall = "Notification sent" # Implies in stock and successfully notified or no one to notify
+            else: # Should ideally be covered by the first condition, but as a fallback
+                product_status_overall = "Status inconclusive (e.g., all subscriptions skipped/delayed)"
+
+
+        html_output += f"""
     <tr>
         <td>{product_name}</td>
         <td><a href="{product_url}">{product_url}</a></td>
-        <td>{user_email}</td>
-        <td>{status}</td>
+        <td>{subscribed_emails_csv}</td>
+        <td>{product_status_overall}</td>
     </tr>
 """
 
