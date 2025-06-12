@@ -81,19 +81,35 @@ async function handleAddProduct(event) {
   const urlInput = document.getElementById('product-url');
   const name = nameInput.value.trim();
   const url = urlInput.value.trim();
+  const errorMessageEl = document.getElementById('add-product-error-message');
+
+  // Clear previous error messages
+  if (errorMessageEl) {
+    errorMessageEl.innerHTML = '';
+    errorMessageEl.classList.remove('alert', 'alert-danger');
+  }
 
   if (!name || !url) {
-    alert('Please enter both product name and URL.');
+    if (errorMessageEl) {
+      errorMessageEl.innerHTML = 'Please enter both product name and URL.';
+      errorMessageEl.classList.add('alert', 'alert-danger');
+    } else {
+      alert('Please enter both product name and URL.');
+    }
     return;
   }
   // Basic URL validation
   try {
     new URL(url);
   } catch (_) {
-    alert('Please enter a valid URL.');
+    if (errorMessageEl) {
+      errorMessageEl.innerHTML = 'Please enter a valid URL.';
+      errorMessageEl.classList.add('alert', 'alert-danger');
+    } else {
+      alert('Please enter a valid URL.');
+    }
     return;
   }
-
 
   try {
     await window.fetchAPI('/api/products', {
@@ -103,10 +119,19 @@ async function handleAddProduct(event) {
     });
     nameInput.value = ''; // Clear input
     urlInput.value = '';  // Clear input
+    if (errorMessageEl) { // Clear error message on success
+      errorMessageEl.innerHTML = '';
+      errorMessageEl.classList.remove('alert', 'alert-danger');
+    }
     fetchProducts(); // Refresh list
   } catch (error) {
     console.error('Error adding product:', error);
-    alert(`Failed to add product: ${error.message}`);
+    if (errorMessageEl) {
+      errorMessageEl.innerHTML = error.message;
+      errorMessageEl.classList.add('alert', 'alert-danger');
+    } else {
+      alert(`Failed to add product: ${error.message}`);
+    }
   }
 }
 
@@ -189,15 +214,32 @@ export function initProductsUI() {
       const productId = document.getElementById('edit-product-id').value;
       const name = document.getElementById('edit-product-name').value.trim();
       const url = document.getElementById('edit-product-url').value.trim();
+      const errorModalMessageEl = document.getElementById('edit-product-error-message');
+
+      // Clear previous error messages in modal
+      if (errorModalMessageEl) {
+        errorModalMessageEl.innerHTML = '';
+        errorModalMessageEl.classList.remove('alert', 'alert-danger');
+      }
 
       if (!name || !url) {
-        alert('Please enter both product name and URL.');
+        if (errorModalMessageEl) {
+          errorModalMessageEl.innerHTML = 'Please enter both product name and URL.';
+          errorModalMessageEl.classList.add('alert', 'alert-danger');
+        } else {
+          alert('Please enter both product name and URL.');
+        }
         return;
       }
       try {
         new URL(url); // Basic URL validation
       } catch (_) {
-        alert('Please enter a valid URL.');
+        if (errorModalMessageEl) {
+          errorModalMessageEl.innerHTML = 'Please enter a valid URL.';
+          errorModalMessageEl.classList.add('alert', 'alert-danger');
+        } else {
+          alert('Please enter a valid URL.');
+        }
         return;
       }
 
@@ -220,18 +262,24 @@ export function initProductsUI() {
           if (modalInstance) {
             modalInstance.hide();
           } else {
-            // Fallback if modal instance is not found, though less ideal.
-            // This might indicate an issue with Bootstrap's initialization or timing.
-            // For robustness, one might try to re-initialize and hide.
-            // However, if Bootstrap is loaded and initialized correctly, getInstance should work.
             console.warn('Modal instance not found for #editProductModal, attempting to hide via new instance.');
             new bootstrap.Modal(editProductModalEl).hide();
           }
         }
+        // Clear error message on success
+        if (errorModalMessageEl) {
+          errorModalMessageEl.innerHTML = '';
+          errorModalMessageEl.classList.remove('alert', 'alert-danger');
+        }
 
       } catch (error) {
         console.error('Error updating product:', error);
-        alert(`Failed to update product: ${error.message}`);
+        if (errorModalMessageEl) {
+          errorModalMessageEl.innerHTML = error.message;
+          errorModalMessageEl.classList.add('alert', 'alert-danger');
+        } else {
+          alert(`Failed to update product: ${error.message}`);
+        }
         // Optionally, do not hide the modal on error, so the user can retry or correct.
       }
     });
