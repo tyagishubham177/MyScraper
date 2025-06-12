@@ -4,6 +4,9 @@ import { kv } from '@vercel/kv';
 async function getProductsFromKV() {
   try {
     const productsData = await kv.get('products');
+    if (productsData) {
+      productsData.sort((a, b) => a.name.localeCompare(b.name));
+    }
     return productsData ? productsData : [];
   } catch (error) {
     console.error('Error fetching products from KV:', error);
