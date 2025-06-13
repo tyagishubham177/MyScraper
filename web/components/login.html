@@ -1,0 +1,33 @@
+<div id="login-popup" style="display: none;">
+  <div class="login-container">
+    <div class="login-role-selector">
+      <button id="admin-role-btn"><i data-lucide="shield" class="me-1"></i>Admin</button>
+      <button id="user-role-btn"><i data-lucide="user" class="me-1"></i>User</button>
+    </div>
+    <div id="admin-section">
+      <div class="input-icon-wrapper">
+        <i data-lucide="mail" class="input-icon"></i>
+        <input type="email" id="admin-email" placeholder="Email">
+      </div>
+      <div class="input-icon-wrapper">
+        <i data-lucide="lock" class="input-icon"></i>
+        <input type="password" id="admin-password" placeholder="Password">
+      </div>
+      <p id="admin-error-message" class="error-message" style="display: none;"></p>
+      <button id="admin-login-btn"><i data-lucide="log-in" class="me-1"></i>Login</button>
+    </div>
+    <div id="user-section" style="display: none;">
+      <h4 class="user-login-header" style="margin-bottom: 1.5rem;">Enter your email to login</h4>
+      <div class="input-icon-wrapper" id="user-email-wrapper">
+        <i data-lucide="mail" class="input-icon"></i>
+        <input type="email" id="user-email" placeholder="Email">
+      </div>
+      <button id="user-login-btn" class="btn btn-primary w-100 mt-3 mb-3"><i data-lucide="log-in" class="me-1"></i>Login / Check Email</button>
+      <p id="user-error-message" style="display: none; color: red; margin-top: 10px; text-align: center;"></p>
+      <div id="user-contact-links" style="display: none;">
+        <button id="user-mail-btn" class="btn btn-outline-primary contact-link-btn" type="button"><i data-lucide="mail" class="me-1"></i>Email Admin</button>
+        <a href="https://www.reddit.com/message/compose/?to=ShooBum-T&subject=User%20Registration%20Request" target="_blank" id="user-reddit-link" class="btn btn-outline-danger contact-link-btn"><i data-lucide="message-circle" class="me-1"></i>Message Admin</a>
+      </div>
+    </div>
+  </div>
+</div>

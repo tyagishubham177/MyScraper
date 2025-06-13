@@ -1,5 +1,19 @@
-export function initLogin() {
-  const loginPopup = document.getElementById('login-popup');
+export async function initLogin() {
+  let loginPopup = document.getElementById('login-popup');
+  if (!loginPopup) {
+    try {
+      const res = await fetch('components/login.html');
+      const html = await res.text();
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = html.trim();
+      document.body.prepend(wrapper.firstElementChild);
+    } catch (e) {
+      console.error('Failed to load login UI:', e);
+      return;
+    }
+    loginPopup = document.getElementById('login-popup');
+  }
+
   const mainAppContent = document.getElementById('main-app-content');
 
   const adminRoleBtn = document.getElementById('admin-role-btn');
