@@ -1,0 +1,192 @@
+/* Overall Login Popup */
+#login-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6); /* Darker semi-transparent background */
+  display: flex; /* Changed from 'block' to 'flex' for centering */
+  align-items: center;
+  justify-content: center;
+  z-index: 1050; /* Ensure it's above Bootstrap modals (usually 1040-1050) */
+  font-family: 'Inter', sans-serif;
+}
+
+/* Login Container Box */
+.login-container {
+  background-color: #ffffff; /* White background */
+  padding: 30px;
+  border-radius: 12px; /* Softer rounded corners */
+  max-width: 450px; /* Slightly adjusted max-width */
+  width: 90%;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Enhanced box shadow */
+  text-align: center; /* Center text and inline elements */
+}
+
+/* Role Selector */
+.login-role-selector {
+  display: flex;
+  justify-content: center; /* Center buttons */
+  margin-bottom: 25px;
+  border-radius: 8px; /* Rounded corners for the group */
+  overflow: hidden; /* Ensure child button borders don't stick out */
+  border: 1px solid #dee2e6; /* Light border around the selector */
+}
+
+.login-role-selector button {
+  flex-grow: 1; /* Make buttons take equal width */
+  padding: 12px 15px;
+  border: none; /* Remove individual button borders */
+  background-color: #f8f9fa; /* Light background for non-active */
+  color: #495057;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-weight: 500;
+}
+
+.login-role-selector button:not(:last-child) {
+  border-right: 1px solid #dee2e6; /* Separator line */
+}
+
+.login-role-selector button.active {
+  background-color: #007bff; /* Bootstrap primary blue */
+  color: white;
+}
+
+.login-role-selector button:hover:not(.active) {
+  background-color: #e9ecef; /* Slight hover effect for non-active */
+}
+
+/* Input Fields */
+#admin-section input[type="email"],
+#admin-section input[type="password"],
+#user-section input[type="email"] {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border: 1px solid #ced4da;
+  border-radius: 8px; /* Rounded corners for inputs */
+  box-sizing: border-box; /* Ensure padding doesn't affect width */
+  font-size: 1rem;
+}
+
+#admin-section input[type="email"]:focus,
+#admin-section input[type="password"]:focus,
+#user-section input[type="email"]:focus {
+  border-color: #80bdff; /* Highlight focus */
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Buttons within the form */
+#admin-login-btn,
+#user-reg-yes,
+#user-reg-no,
+#user-contact-admin-btn {
+  width: 100%; /* Make buttons full width */
+  padding: 12px 15px;
+  border: none;
+  border-radius: 8px;
+  background-color: #007bff; /* Primary color for main action */
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  margin-top: 10px; /* Add some space above buttons */
+}
+
+#admin-login-btn:hover,
+#user-reg-yes:hover,
+#user-reg-no:hover,
+#user-contact-admin-btn:hover {
+  background-color: #0056b3; /* Darker shade on hover */
+}
+
+/* Specific button styling for Yes/No */
+#user-reg-yes,
+#user-reg-no {
+  background-color: #28a745; /* Green for "Yes" */
+  margin-bottom: 10px; /* Space between Yes and No */
+}
+#user-reg-yes:hover {
+  background-color: #1e7e34;
+}
+
+#user-reg-no {
+  background-color: #dc3545; /* Red for "No" */
+}
+#user-reg-no:hover {
+  background-color: #c82333;
+}
+
+
+/* "Are you registered?" text */
+#user-section p {
+  margin-bottom: 15px;
+  font-size: 1rem;
+  color: #333;
+}
+
+/* Contact Admin Button - if different styling is needed */
+#user-contact-admin-btn {
+  background-color: #17a2b8; /* Info color */
+  margin-top: 15px; /* Space above contact admin button */
+}
+#user-contact-admin-btn:hover {
+  background-color: #117a8b;
+}
+
+/* Contact Links Section */
+#user-contact-links {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee; /* Separator line */
+}
+
+#user-contact-links a {
+  display: block; /* Make links take full width for easier clicking */
+  padding: 10px 0;
+  color: #007bff;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+#user-contact-links a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+#user-contact-links a + a {
+  margin-top: 8px; /* Space between links */
+}
+
+/* Utility class for hiding elements */
+.hidden {
+  display: none !important;
+}
+
+/* Styling for the active class on role buttons (already handled by .login-role-selector button.active) */
+/* but if you need to override something or add more: */
+/*
+.login-role-selector button.active {
+  font-weight: bold;
+}
+*/
+
+/* Add some spacing if elements are directly one after another in a section */
+#admin-section > input + input { /* If password directly follows email */
+    margin-top: 0; /* Handled by margin-bottom on inputs already */
+}
+#admin-section > input + button { /* If button directly follows last input */
+    margin-top: 10px;
+}
+
+#user-section > button + input[type="email"], /* If email input follows "Yes" button */
+#user-section > button + button, /* If "No" button follows "Yes" button */
+#user-section > input[type="email"] + button, /* If contact admin button follows email input */
+#user-section > button + div#user-contact-links { /* If contact links div follows "No" button */
+    margin-top: 15px;
+}
