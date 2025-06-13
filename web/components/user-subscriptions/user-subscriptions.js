@@ -178,4 +178,4 @@ export async function initUserSubscriptionsUI() {
   render();
 }
 
-document.addEventListener('DOMContentLoaded', initUserSubscriptionsUI);
+// Initialization is handled by the page that loads this component

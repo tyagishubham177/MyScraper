@@ -387,6 +387,10 @@
     margin-left: 0.5rem; /* Space between checkbox and label */
     color: #333333; /* Dark text for product names in subscription list */
 }
+#subscriptions-ui .list-wrapper {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+}
 #subscription-product-list .form-check-input {
     /* border-color: rgba(255,255,255,0.5); */ /* Conflicting border, handled by more specific rule */
 }
