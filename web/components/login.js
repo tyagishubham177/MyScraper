@@ -107,22 +107,18 @@ export function initLogin() {
         return;
       }
 
-      // Placeholder Email Check
-      if (email.toLowerCase() === 'test@example.com') {
-        // This email is considered "not registered"
-        if (userErrorMessage) {
-          userErrorMessage.textContent = 'Email not registered.';
-          userErrorMessage.style.display = 'block';
-        }
-        if (userContactAdminText) userContactAdminText.style.display = 'block'; // Show contact admin text
-        if (userContactLinks) userContactLinks.style.display = 'block'; // Show contact links
-      } else {
-        // Any other email is considered "registered"
-        if (userErrorMessage) userErrorMessage.style.display = 'none';
-        if (userContactAdminText) userContactAdminText.style.display = 'none';
-        if (userContactLinks) userContactLinks.style.display = 'none';
-        showMainApp(); // Proceed to main application
+      // Always show "not registered" flow after email submission
+      if (userErrorMessage) {
+        userErrorMessage.textContent = 'Email not registered. Please contact admin to register.';
+        userErrorMessage.style.display = 'block';
       }
+      if (userContactAdminText) {
+        userContactAdminText.style.display = 'block'; // Or 'inline', 'flex' as appropriate for the <p> tag. 'block' is fine.
+      }
+      if (userContactLinks) {
+        userContactLinks.style.display = 'block'; // Or 'flex' as appropriate for the <div>. 'block' is fine.
+      }
+      // Ensure showMainApp() is NOT called here
     });
   }
 
