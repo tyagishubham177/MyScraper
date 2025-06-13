@@ -246,12 +246,37 @@ export async function initUserSubscriptionsUI() {
   });
 
   function filterProducts(term) {
+  console.log('[FilterDebug] filterProducts called with term:', term);
     const items = allList.querySelectorAll('li');
-    const lower = term.toLowerCase();
-    items.forEach(item => {
-      const title = item.dataset.name || item.querySelector('strong')?.textContent.toLowerCase() || '';
-      item.style.display = title.includes(lower) ? '' : 'none';
+  const searchWords = term.toLowerCase().split(' ').filter(word => word.length > 0);
+  console.log('[FilterDebug] searchWords:', searchWords);
+
+  let shownCount = 0;
+  let hiddenCount = 0;
+
+  items.forEach((item, index) => {
+    const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
+
+    let allWordsMatch = false;
+    if (searchWords.length === 0) {
+      allWordsMatch = true; // Show all if search is empty
+    } else {
+      allWordsMatch = searchWords.every(word => title.includes(word));
+    }
+
+    if (index < 5) { // Log details for the first 5 items for brevity
+      console.log(`[FilterDebug] Item ${index}: Title: "${title}", Matches: ${allWordsMatch}`);
+    }
+
+    if (allWordsMatch) {
+      item.classList.remove('product-item-hidden');
+      shownCount++;
+    } else {
+      item.classList.add('product-item-hidden');
+      hiddenCount++;
+    }
     });
+  console.log(`[FilterDebug] Filtering complete. Shown: ${shownCount}, Hidden: ${hiddenCount} (Total: ${items.length})`);
   }
 
   if (searchInput) {
