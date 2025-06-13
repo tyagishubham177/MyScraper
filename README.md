@@ -41,7 +41,7 @@ The workflow definition lives in `.github/workflows/schedule.yml` and runs every
 
 ## Optional web interface
 
-The `web/` folder contains a very small HTML page and three API endpoints that can be deployed to [Vercel](https://vercel.com). The page lets you enable or disable the scheduled GitHub Action and check its current status.
+The `web/` folder contains a very small HTML page and several API endpoints that can be deployed to [Vercel](https://vercel.com). The page shows recent workflow runs and displays whether the scheduled GitHub Action is enabled.
 
 ### Deploying the UI
 
@@ -54,13 +54,13 @@ The `web/` folder contains a very small HTML page and three API endpoints that c
    - `ADMIN_EMAIL` – admin login email.
    - `ADMIN_PASSWORD_HASH` – bcrypt hash of the admin password.
    - `JWT_SECRET` – secret used to sign admin session tokens.
-4. Deploy the project. Visiting the deployed URL will display buttons to enable/disable the workflow and a **Check status** button to see if it is currently active.
+4. Deploy the project. Visiting the deployed URL will show the workflow status and recent runs.
 
 ## Files
 
 - `check_stock.py` – main Playwright script that performs the stock check and sends notifications.
 - `requirements.txt` – Python dependencies: `playwright`, `beautifulsoup4` and `requests`.
 - `.github/workflows/schedule.yml` – GitHub Actions workflow that installs dependencies, runs the script and uploads screenshots.
-- `web/` – optional Vercel front‑end for toggling the workflow.
+- `web/` – optional Vercel front‑end for monitoring the workflow.
 
 With this setup you can monitor Amul's store for the elusive lassi pack and get an instant alert on your phone as soon as it becomes available.
