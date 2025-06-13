@@ -247,10 +247,20 @@ export async function initUserSubscriptionsUI() {
 
   function filterProducts(term) {
     const items = allList.querySelectorAll('li');
-    const lower = term.toLowerCase();
+  // Split the search term into words, convert to lowercase, and filter out empty strings
+  const searchWords = term.toLowerCase().split(' ').filter(word => word.length > 0);
+
     items.forEach(item => {
-      const title = item.dataset.name || item.querySelector('strong')?.textContent.toLowerCase() || '';
-      item.style.display = title.includes(lower) ? '' : 'none';
+    // Ensure title is fetched correctly, defaulting to an empty string if not found
+    const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
+
+    if (searchWords.length === 0) {
+      item.style.display = ''; // Show all if search is empty
+    } else {
+      // Check if all search words are present in the title
+      const allWordsMatch = searchWords.every(word => title.includes(word));
+      item.style.display = allWordsMatch ? '' : 'none';
+    }
     });
   }
 
