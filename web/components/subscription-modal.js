@@ -259,41 +259,51 @@ async function handleSaveAllSubscriptionSettings() {
   }
 
   const productItems = modalBodyElement.querySelectorAll('.list-group-item');
-  const apiCallPromises = [];
+  const results = [];
 
-  productItems.forEach(item => {
+  for (const item of productItems) {
     const mainCheckbox = item.querySelector('.subscription-toggle');
-    if (!mainCheckbox) return;
+    if (!mainCheckbox) continue;
+
     const productId = mainCheckbox.dataset.productId;
     const isSubscribed = mainCheckbox.checked;
 
-    if (isSubscribed) {
-      const frequency_days = parseInt(document.getElementById(`freq-days-${productId}`).value, 10);
-      const frequency_hours = parseInt(document.getElementById(`freq-hours-${productId}`).value, 10);
-      const frequency_minutes = parseInt(document.getElementById(`freq-mins-${productId}`).value, 10);
-      const delay_on_stock = document.getElementById(`delay-stock-${productId}`).checked;
-      const delay_days = parseInt(document.getElementById(`delay-days-${productId}`).value, 10);
-      const delay_hours = parseInt(document.getElementById(`delay-hours-${productId}`).value, 10);
-      const delay_minutes = parseInt(document.getElementById(`delay-mins-${productId}`).value, 10);
-      const payload = {
-        recipient_id: recipientId, product_id: productId,
-        frequency_days, frequency_hours, frequency_minutes,
-        delay_on_stock, delay_days, delay_hours, delay_minutes,
-      };
-      apiCallPromises.push(() => fetchAPI('/api/subscriptions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-      }).then(data => ({ productId, status: 'fulfilled', data }))
-         .catch(error => ({ productId, status: 'rejected', reason: error })));
-    } else if (initialSubscribedProductIds.has(productId)) {
-      const payload = { recipient_id: recipientId, product_id: productId };
-      apiCallPromises.push(() => fetchAPI('/api/subscriptions', {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-      }).then(data => ({ productId, status: 'fulfilled', data, operation: 'deleted' }))
-         .catch(error => ({ productId, status: 'rejected', reason: error })));
+    try {
+      if (isSubscribed) {
+        const frequency_days = parseInt(document.getElementById(`freq-days-${productId}`).value, 10);
+        const frequency_hours = parseInt(document.getElementById(`freq-hours-${productId}`).value, 10);
+        const frequency_minutes = parseInt(document.getElementById(`freq-mins-${productId}`).value, 10);
+        const delay_on_stock = document.getElementById(`delay-stock-${productId}`).checked;
+        const delay_days = parseInt(document.getElementById(`delay-days-${productId}`).value, 10);
+        const delay_hours = parseInt(document.getElementById(`delay-hours-${productId}`).value, 10);
+        const delay_minutes = parseInt(document.getElementById(`delay-mins-${productId}`).value, 10);
+        const payload = {
+          recipient_id: recipientId, product_id: productId,
+          frequency_days, frequency_hours, frequency_minutes,
+          delay_on_stock, delay_days, delay_hours, delay_minutes,
+        };
+        const data = await fetchAPI('/api/subscriptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        results.push({ productId, success: true, data });
+      } else if (initialSubscribedProductIds.has(productId)) {
+        const payload = { recipient_id: recipientId, product_id: productId };
+        const data = await fetchAPI('/api/subscriptions', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        results.push({ productId, success: true, data, operation: 'deleted' });
+      }
+    } catch (error) {
+      showToastNotification(`Failed to update product ${productId}: ${error.message}`, 'error');
+      results.push({ productId, success: false, error });
     }
-  });
+  }
 
-  if (apiCallPromises.length === 0) {
+  if (results.length === 0) {
     showToastNotification("No changes to save.", 'info');
     if (saveBtn) {
       saveBtn.disabled = false;
@@ -303,28 +313,24 @@ async function handleSaveAllSubscriptionSettings() {
     updateSaveButtonStateHelper(initialSubscriptionDataForModal);
     return;
   }
-
-  const results = await Promise.allSettled(apiCallPromises.map(p => p()));
   let successCount = 0;
   let errorCount = 0;
   const errorMessages = [];
 
   results.forEach(result => {
-    if (result.status === 'fulfilled' && result.value.status === 'fulfilled') {
+    if (result.success) {
       successCount++;
-    } else if (result.status === 'fulfilled' && result.value.status === 'rejected') {
+    } else {
       errorCount++;
-      errorMessages.push(`Product ID ${result.value.productId}: ${result.value.reason.message || 'Failed operation'}`);
-    } else if (result.status === 'rejected') {
-      errorCount++;
-      errorMessages.push(`Operation failed: ${result.reason.message || 'Unknown error'}`);
+      const msg = result.error && result.error.message ? result.error.message : 'Unknown error';
+      errorMessages.push(`Product ID ${result.productId}: ${msg}`);
     }
   });
 
   let feedbackMessage = "";
   if (successCount > 0) feedbackMessage += `${successCount} subscription operation(s) processed successfully. `;
   if (errorCount > 0) feedbackMessage += `Encountered ${errorCount} error(s): ${errorMessages.join('; ')}.`;
-  else if (successCount === 0 && errorCount === 0 && apiCallPromises.length > 0) feedbackMessage = "Operations processed, but no specific success/error status was captured.";
+  else if (successCount === 0 && errorCount === 0 && results.length > 0) feedbackMessage = "Operations processed, but no specific success/error status was captured.";
 
   let toastType = 'info';
   if (errorCount > 0 && successCount > 0) toastType = 'warning';
@@ -332,7 +338,7 @@ async function handleSaveAllSubscriptionSettings() {
   else if (successCount > 0 && errorCount === 0) toastType = 'success';
 
   if (feedbackMessage.trim()) showToastNotification(feedbackMessage.trim(), toastType);
-  else if (apiCallPromises.length === 0) { /* Already handled */ }
+  else if (results.length === 0) { /* Already handled */ }
   else showToastNotification("Processing complete.", toastType);
 
   if (recipientId && modalBodyElement) {
