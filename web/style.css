@@ -960,9 +960,19 @@ button, .btn {
 
 /* Fun greeting styling */
 #welcome-msg {
-  font-size: 2.5rem;
   font-weight: 700;
+  transition: all 0.6s ease;
+}
+
+#welcome-msg.initial {
+  font-size: 2.5rem;
+  text-align: center;
   animation: welcomeBounce 1.2s ease;
+}
+
+#welcome-msg.shrunk {
+  font-size: 1.75rem;
+  text-align: start;
 }
 
 @keyframes welcomeBounce {
