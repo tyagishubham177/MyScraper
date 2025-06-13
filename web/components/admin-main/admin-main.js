@@ -9,7 +9,7 @@ import '../subscription/subscriptions-ui.js';
 document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('authToken');
   if (!token) {
-    window.location.href = '../index.html';
+    window.location.href = '../../index.html';
     return;
   }
   initParticles();
@@ -17,4 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initIcons();
   initRecipientsUI();
   initProductsUI();
+
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('authToken');
+      window.location.href = '../../index.html';
+    });
+  }
 });
