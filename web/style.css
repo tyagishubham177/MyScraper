@@ -524,6 +524,10 @@ button, .btn {
   opacity: 0.6;
 }
 
+#subscriptions-info-toggle {
+  cursor: pointer;
+}
+
 @media (max-width: 420px) {
   /* Wrap subscription controls so time inputs and remove button fit */
   #user-subscribed-list .d-flex.align-items-center {
