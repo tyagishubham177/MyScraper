@@ -36,7 +36,7 @@ export async function initUserSubscriptionsUI() {
     li.dataset.productId = product.id;
     li.innerHTML = `
       <div class="d-flex justify-content-between align-items-center">
-        <span>${product.name}</span>
+        <a href="${product.url}" target="_blank" class="prod-name text-decoration-none">${product.name} <i data-lucide="external-link" class="lucide-small ms-1"></i></a>
         <div class="d-flex align-items-center">
           <input type="time" class="form-control form-control-sm me-2 sub-start" value="${sub.start_time || '00:00'}">
           <input type="time" class="form-control form-control-sm me-2 sub-end" value="${sub.end_time || '23:59'}">
@@ -50,7 +50,7 @@ export async function initUserSubscriptionsUI() {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.dataset.productId = product.id;
-    li.innerHTML = `<span>${product.name}</span><button class="btn btn-sm btn-outline-primary sub-btn"><i data-lucide="plus"></i></button>`;
+    li.innerHTML = `<a href="${product.url}" target="_blank" class="prod-name text-decoration-none">${product.name} <i data-lucide="external-link" class="lucide-small ms-1"></i></a><button class="btn btn-sm btn-outline-primary sub-btn"><i data-lucide="plus"></i></button>`;
     return li;
   }
 
@@ -134,7 +134,8 @@ export async function initUserSubscriptionsUI() {
   function filterProducts(term) {
     const items = allList.querySelectorAll('li');
     items.forEach(item => {
-      const name = item.querySelector('span').textContent.toLowerCase();
+      const nameEl = item.querySelector('.prod-name');
+      const name = nameEl ? nameEl.textContent.toLowerCase() : '';
       item.style.display = name.includes(term.toLowerCase()) ? '' : 'none';
     });
   }
