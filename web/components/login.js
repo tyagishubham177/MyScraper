@@ -20,6 +20,7 @@ export function initLogin() {
   const userErrorMessage = document.getElementById('user-error-message');
   // const userContactAdminText = document.getElementById('user-contact-admin-btn'); // REMOVED - Element deleted from HTML
   const userContactLinks = document.getElementById('user-contact-links');
+  const userMailBtn = document.getElementById('user-mail-btn');
 
   // REMOVE: Old user registration button declarations (userRegYesBtn, userRegNoBtn)
   // const userRegYesBtn = document.getElementById('user-reg-yes');
@@ -43,6 +44,10 @@ export function initLogin() {
     if (userErrorMessage) userErrorMessage.style.display = 'none';
     // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
     if (userContactLinks) userContactLinks.style.display = 'none';
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
   }
 
   function showMainApp() {
@@ -131,8 +136,22 @@ export function initLogin() {
       // }
       if (userContactLinks) {
         userContactLinks.style.display = 'block'; // Or 'flex' as appropriate for the <div>. 'block' is fine.
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
       }
       // Ensure showMainApp() is NOT called here
+    });
+  }
+
+  if (userMailBtn) {
+    userMailBtn.addEventListener('click', () => {
+      const to = 'linktracker03@gmail.com';
+      const subject = encodeURIComponent('Register Amul tracker email');
+      const typedEmail = userEmailInput ? userEmailInput.value.trim() : '';
+      const body = encodeURIComponent(`Hey there!\nPlease register my email : ${typedEmail}`);
+      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
+      window.open(url, '_blank');
     });
   }
 
