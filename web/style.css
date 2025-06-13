@@ -520,6 +520,14 @@ button, .btn {
   }
 }
 
+#user-subscribed-list li.paused {
+  opacity: 0.6;
+}
+
+#subscriptions-info-toggle {
+  cursor: pointer;
+}
+
 @media (max-width: 420px) {
   /* Wrap subscription controls so time inputs and remove button fit */
   #user-subscribed-list .d-flex.align-items-center {
@@ -532,6 +540,9 @@ button, .btn {
     margin-bottom: 0.5rem;
   }
   #user-subscribed-list .d-flex.align-items-center .unsub-btn {
+    align-self: flex-end;
+  }
+  #user-subscribed-list .d-flex.align-items-center .pause-btn {
     align-self: flex-end;
   }
 
