@@ -5,7 +5,7 @@ import {initIcons} from '../icons/icons.js';
 import { initLogin } from '../login/login.js'; // Import initLogin
 import {initRecipientsUI} from '../recipients-ui/recipients-ui.js';
 import {initProductsUI} from '../products-ui/products-ui.js';
-import '../subscriptions-ui/subscriptions-ui.js'; // Ensures subscriptions UI is initialized
+import '../subscription/subscriptions-ui.js'; // Ensures subscriptions UI is initialized
 
 document.addEventListener('DOMContentLoaded', () => {
   initLogin(); // Initialize and show the login popup
