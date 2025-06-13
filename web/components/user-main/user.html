@@ -14,28 +14,23 @@
   <div class="container py-5">
     <h1 class="mb-4">User Dashboard</h1>
     <p id="welcome-msg" class="mb-3"></p>
-    <p>More features coming soon…</p>
-    <button id="logout-btn" class="btn btn-secondary mt-3">Logout</button>
+    <div id="user-subscriptions-container"></div>
   </div>
-  <button type="button" class="fab" id="feedbackFab" aria-label="Contact">
-    <i data-lucide="plus"></i>
+  <button type="button" class="fab" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
+    <i data-lucide="settings-2"></i>
   </button>
 
-  <div class="modal" id="feedbackModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Get in touch</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p>Want to request a new product or send feedback? Reach out via Gmail or Reddit.</p>
-          <div class="d-flex gap-2">
-            <a href="#" id="feedbackGmail" class="btn btn-outline-primary flex-fill"><i data-lucide="mail" class="me-1"></i>Gmail</a>
-            <a href="https://www.reddit.com/message/compose/?to=ShooBum-T&subject=Feedback" target="_blank" id="feedbackReddit" class="btn btn-outline-danger flex-fill"><i data-lucide="message-circle" class="me-1"></i>Reddit</a>
-          </div>
-        </div>
-      </div>
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="settingsPane" aria-labelledby="settingsPaneLabel">
+    <div class="offcanvas-header">
+      <h5 id="settingsPaneLabel" class="offcanvas-title">Settings</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <button type="button" id="logout-btn" class="btn btn-secondary w-100 mb-3"><i data-lucide="log-out" class="me-1"></i>Logout</button>
+      <h6 class="mb-2">Reach Out</h6>
+      <p class="small text-body-secondary">Send a message for bugs, feedback or new product requests.</p>
+      <a href="#" id="feedbackGmail" class="btn btn-outline-primary w-100 mb-2"><i data-lucide="mail" class="me-1"></i>Gmail</a>
+      <a href="https://www.reddit.com/message/compose/?to=ShooBum-T&subject=Feedback" target="_blank" id="feedbackReddit" class="btn btn-outline-danger w-100"><i data-lucide="message-circle" class="me-1"></i>Reddit</a>
     </div>
   </div>
   <script>
@@ -56,12 +51,19 @@
   <script type="module">
     import { initParticles } from "../particles-config/particles-config.js";
     import { initIcons } from "../icons/icons.js";
-    document.addEventListener("DOMContentLoaded", () => {
+    import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
+
+    document.addEventListener("DOMContentLoaded", async () => {
       initParticles();
       initIcons();
-      const fab = document.getElementById('feedbackFab');
-      const modal = new bootstrap.Modal(document.getElementById('feedbackModal'));
-      fab.addEventListener('click', () => modal.show());
+      const container = document.getElementById('user-subscriptions-container');
+      try {
+        const res = await fetch('../user-subscriptions/user-subscriptions.html');
+        container.innerHTML = await res.text();
+      } catch (e) {
+        console.error('Failed to load subscription UI', e);
+      }
+      initUserSubscriptionsUI();
       const gmailLink = document.getElementById('feedbackGmail');
       gmailLink.addEventListener('click', (e) => {
         e.preventDefault();
@@ -71,7 +73,7 @@
         const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
         window.open(url, '_blank');
       });
-    });
+   });
   </script>
 </body>
 </html>
