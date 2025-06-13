@@ -247,11 +247,15 @@ export async function initUserSubscriptionsUI() {
 
   function filterProducts(term) {
     const items = allList.querySelectorAll('li');
-    const tokens = term.toLowerCase().split(/\s+/).filter(Boolean);
+    const lower = term.toLowerCase();
+    const tokens = lower.split(/\s+/).filter(Boolean);
+    const condensed = lower.replace(/[\s-]+/g, '');
     items.forEach(item => {
       const title = item.dataset.name || item.querySelector('strong')?.textContent.toLowerCase() || '';
-      const match = tokens.every(t => title.includes(t));
-      item.style.display = match ? '' : 'none';
+      const condensedTitle = title.replace(/[\s-]+/g, '');
+      const tokenMatch = tokens.length === 0 || tokens.every(t => title.includes(t));
+      const substringMatch = condensed && condensedTitle.includes(condensed);
+      item.style.display = tokenMatch || substringMatch ? '' : 'none';
     });
   }
 
