@@ -247,10 +247,11 @@ export async function initUserSubscriptionsUI() {
 
   function filterProducts(term) {
     const items = allList.querySelectorAll('li');
-    const lower = term.toLowerCase();
+    const tokens = term.toLowerCase().split(/\s+/).filter(Boolean);
     items.forEach(item => {
       const title = item.dataset.name || item.querySelector('strong')?.textContent.toLowerCase() || '';
-      item.style.display = title.includes(lower) ? '' : 'none';
+      const match = tokens.every(t => title.includes(t));
+      item.style.display = match ? '' : 'none';
     });
   }
 
