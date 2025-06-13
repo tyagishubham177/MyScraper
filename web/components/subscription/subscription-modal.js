@@ -17,7 +17,20 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
   }
 
   const subscribedProductIds = new Set(recipientSubscriptions.map(sub => sub.product_id));
-  const sortedProducts = [...allProducts].sort((a, b) => a.name.localeCompare(b.name));
+  const timeMap = {};
+  recipientSubscriptions.forEach(sub => {
+    timeMap[sub.product_id] = {
+      start: sub.start_time || '00:00',
+      end: sub.end_time || '23:59'
+    };
+  });
+  const sortedProducts = [...allProducts].sort((a, b) => {
+    const aSub = subscribedProductIds.has(a.id);
+    const bSub = subscribedProductIds.has(b.id);
+    if (aSub && !bSub) return -1;
+    if (!aSub && bSub) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   sortedProducts.forEach(product => {
     const listItem = document.createElement('div');
@@ -40,6 +53,24 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     mainToggleDiv.appendChild(mainCheckbox);
     mainToggleDiv.appendChild(mainLabel);
     listItem.appendChild(mainToggleDiv);
+
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'd-flex align-items-center ms-4';
+    const startInput = document.createElement('input');
+    startInput.type = 'time';
+    startInput.className = 'form-control form-control-sm sub-time-start me-2';
+    startInput.value = (timeMap[product.id]?.start) || '00:00';
+    startInput.dataset.productId = product.id;
+    const endInput = document.createElement('input');
+    endInput.type = 'time';
+    endInput.className = 'form-control form-control-sm sub-time-end';
+    endInput.value = (timeMap[product.id]?.end) || '23:59';
+    endInput.dataset.productId = product.id;
+    timeDiv.appendChild(startInput);
+    timeDiv.appendChild(endInput);
+    listItem.appendChild(timeDiv);
+
+    startInput.disabled = endInput.disabled = !mainCheckbox.checked;
 
     modalBodyElement.appendChild(listItem);
   });
@@ -72,9 +103,13 @@ async function handleSaveAllSubscriptionSettings() {
     if (!mainCheckbox) continue;
     const productId = mainCheckbox.dataset.productId;
     const isSubscribed = mainCheckbox.checked;
+    const startInput = item.querySelector('.sub-time-start');
+    const endInput = item.querySelector('.sub-time-end');
+    const startVal = startInput ? startInput.value : '00:00';
+    const endVal = endInput ? endInput.value : '23:59';
     try {
       if (isSubscribed) {
-        const payload = { recipient_id: recipientId, product_id: productId };
+        const payload = { recipient_id: recipientId, product_id: productId, start_time: startVal, end_time: endVal };
         const data = await fetchAPI('/api/subscriptions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -139,7 +174,16 @@ async function handleSaveAllSubscriptionSettings() {
   updateSaveButtonStateHelper(initialSubscriptionDataForModal);
 }
 
-function handleSubscriptionToggle() {
+function handleSubscriptionToggle(event) {
+  const checkbox = event.target.closest('.subscription-toggle');
+  if (checkbox) {
+    const item = checkbox.closest('.list-group-item');
+    const startInput = item.querySelector('.sub-time-start');
+    const endInput = item.querySelector('.sub-time-end');
+    if (startInput && endInput) {
+      startInput.disabled = endInput.disabled = !checkbox.checked;
+    }
+  }
   updateSaveButtonStateHelper(initialSubscriptionDataForModal);
 }
 
@@ -236,7 +280,9 @@ export function initSubscriptionsUI() {
   if (modalBody) {
     modalBody.addEventListener('change', event => {
       if (event.target.classList.contains('subscription-toggle')) {
-        handleSubscriptionToggle();
+        handleSubscriptionToggle(event);
+      } else if (event.target.classList.contains('sub-time-start') || event.target.classList.contains('sub-time-end')) {
+        updateSaveButtonStateHelper(initialSubscriptionDataForModal);
       }
     });
   }

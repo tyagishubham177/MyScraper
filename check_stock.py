@@ -1,10 +1,22 @@
 import asyncio
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, time as dt_time
 import aiohttp
 import config
 import notifications
 from notifications import format_summary_email_body
 import scraper
+
+
+def within_time_window(start_str: str, end_str: str, now: dt_time) -> bool:
+    fmt = "%H:%M"
+    try:
+        start = datetime.strptime(start_str, fmt).time()
+        end = datetime.strptime(end_str, fmt).time()
+    except Exception:
+        return True
+    if start <= end:
+        return start <= now <= end
+    return now >= start or now <= end
 
 async def fetch_api_data(session, url):
     try:
@@ -75,9 +87,18 @@ async def main():
             if in_stock:
                 print(f"✅ Product '{effective_name}' is IN STOCK.")
                 valid_emails = []
+                current_time = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).time()
                 for sub in subs:
                     rid = sub.get('recipient_id')
                     email = recipients_map.get(rid)
+                    start_t = sub.get('start_time', '00:00')
+                    end_t = sub.get('end_time', '23:59')
+                    if not within_time_window(start_t, end_t, current_time):
+                        if email:
+                            current_summary.append({'user_email': email, 'status': 'Skipped - Subscription Not Due'})
+                        else:
+                            current_summary.append({'user_email': 'Unknown', 'status': 'Skipped - Subscription Not Due'})
+                        continue
                     if email:
                         valid_emails.append(email)
                         current_summary.append({'user_email': email, 'status': 'Sent'})

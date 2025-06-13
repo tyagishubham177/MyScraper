@@ -38,7 +38,13 @@ export function getModalFormState() {
   modalBodyElement.querySelectorAll('.list-group-item').forEach(item => {
     const checkbox = item.querySelector('.subscription-toggle');
     if (!checkbox) return;
-    formData[checkbox.dataset.productId] = { subscribed: checkbox.checked };
+    const startInput = item.querySelector('.sub-time-start');
+    const endInput = item.querySelector('.sub-time-end');
+    formData[checkbox.dataset.productId] = {
+      subscribed: checkbox.checked,
+      start: startInput ? startInput.value : '00:00',
+      end: endInput ? endInput.value : '23:59'
+    };
   });
   return JSON.stringify(formData);
 }

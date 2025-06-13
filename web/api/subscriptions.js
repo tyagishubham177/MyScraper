@@ -25,10 +25,14 @@ export default async function handler(req, res) {
   switch (method) {
     case 'POST':
       try {
-        const { recipient_id, product_id } = req.body;
+        const { recipient_id, product_id, start_time, end_time } = req.body || {};
         if (!recipient_id || !product_id) {
           return res.status(400).json({ message: 'Recipient ID and Product ID are required' });
         }
+
+        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+        const start = timeRegex.test(start_time) ? start_time : '00:00';
+        const end = timeRegex.test(end_time) ? end_time : '23:59';
 
         const recipients = await getFromKV('recipients');
         if (!recipients.some(r => r.id === recipient_id)) {
@@ -40,13 +44,21 @@ export default async function handler(req, res) {
           return res.status(404).json({ message: 'Product not found' });
         }
 
-        const subs = await getFromKV('subscriptions');
+        let subs = await getFromKV('subscriptions');
+        subs = subs.map(s => ({
+          ...s,
+          start_time: s.start_time || '00:00',
+          end_time: s.end_time || '23:59'
+        }));
         const existing = subs.find(s => s.recipient_id === recipient_id && s.product_id === product_id);
         if (existing) {
+          existing.start_time = start;
+          existing.end_time = end;
+          await saveToKV('subscriptions', subs);
           return res.status(200).json(existing);
         }
 
-        const newSub = { id: String(Date.now()), recipient_id, product_id };
+        const newSub = { id: String(Date.now()), recipient_id, product_id, start_time: start, end_time: end };
         subs.push(newSub);
         await saveToKV('subscriptions', subs);
         res.status(201).json(newSub);
@@ -63,7 +75,12 @@ export default async function handler(req, res) {
           return res.status(400).json({ message: 'Recipient ID and Product ID are required in the request body' });
         }
 
-        const subs = await getFromKV('subscriptions');
+        let subs = await getFromKV('subscriptions');
+        subs = subs.map(s => ({
+          ...s,
+          start_time: s.start_time || '00:00',
+          end_time: s.end_time || '23:59'
+        }));
         const updated = subs.filter(s => !(s.recipient_id === recipient_id && s.product_id === product_id));
         if (updated.length === subs.length) {
           return res.status(404).json({ message: 'Subscription not found' });
