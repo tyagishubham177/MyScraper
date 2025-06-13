@@ -14,7 +14,7 @@
   <div class="container py-5">
     <h1 class="mb-4">User Dashboard</h1>
     <p id="welcome-msg" class="mb-3"></p>
-    <p>More features coming soon…</p>
+    <div id="user-subscriptions-container"></div>
     <button id="logout-btn" class="btn btn-secondary mt-3">Logout</button>
   </div>
   <button type="button" class="fab" id="feedbackFab" aria-label="Contact">
@@ -56,9 +56,19 @@
   <script type="module">
     import { initParticles } from "../particles-config/particles-config.js";
     import { initIcons } from "../icons/icons.js";
-    document.addEventListener("DOMContentLoaded", () => {
+    import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
+
+    document.addEventListener("DOMContentLoaded", async () => {
       initParticles();
       initIcons();
+      const container = document.getElementById('user-subscriptions-container');
+      try {
+        const res = await fetch('../user-subscriptions/user-subscriptions.html');
+        container.innerHTML = await res.text();
+      } catch (e) {
+        console.error('Failed to load subscription UI', e);
+      }
+      initUserSubscriptionsUI();
       const fab = document.getElementById('feedbackFab');
       const modal = new bootstrap.Modal(document.getElementById('feedbackModal'));
       fab.addEventListener('click', () => modal.show());
