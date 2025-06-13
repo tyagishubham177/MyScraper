@@ -957,3 +957,16 @@ button, .btn {
 .toast-notification .btn-close-toast:hover {
   opacity: 0.9;
 }
+
+/* Fun greeting styling */
+#welcome-msg {
+  font-size: 2.5rem;
+  font-weight: 700;
+  animation: welcomeBounce 1.2s ease;
+}
+
+@keyframes welcomeBounce {
+  0% { opacity: 0; transform: scale(0.9); }
+  60% { opacity: 1; transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
