@@ -1,6 +1,6 @@
-import {fetchStatus, showLoader} from './status.js';
-import {fetchRuns} from './runs.js';
-import {createRipple} from './utils.js';
+import {fetchStatus, showLoader} from '../status/status.js';
+import {fetchRuns} from '../runs/runs.js';
+import {createRipple} from '../utils/utils.js';
 
 export function initTilt() {
   const cardElement = document.querySelector('.card');

@@ -1,4 +1,4 @@
-import { API_LOGIN, API_USER_LOGIN } from '../config.js';
+import { API_LOGIN, API_USER_LOGIN } from '../config/config.js';
 
 export async function initLogin() {
   let loginPopup = document.getElementById('login-popup');
@@ -120,7 +120,7 @@ export async function initLogin() {
           const data = await res.json();
           localStorage.setItem('authToken', data.token);
           if (adminErrorMessage) adminErrorMessage.style.display = 'none';
-            window.location.href = "admin.html";
+            window.location.href = "components/admin-main/admin.html";
         } else {
           const result = await res.json().catch(() => ({}));
           if (adminErrorMessage) {
@@ -160,7 +160,7 @@ export async function initLogin() {
 
         if (res.ok) {
           localStorage.setItem('userEmail', email);
-          window.location.href = 'user.html';
+          window.location.href = 'components/user-main/user.html';
           return;
         }
 
@@ -201,11 +201,11 @@ export async function initLogin() {
 
   const existingToken = localStorage.getItem('authToken');
   if (existingToken) {
-  window.location.href = "admin.html";
+  window.location.href = "components/admin-main/admin.html";
   } else {
     const existingUser = localStorage.getItem('userEmail');
     if (existingUser) {
-      window.location.href = 'user.html';
+      window.location.href = 'components/user-main/user.html';
     } else {
       showLoginPopup();
     }
