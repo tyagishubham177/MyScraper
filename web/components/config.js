@@ -6,3 +6,4 @@ export const API_RUNS = '/api/runs';
 export const API_RUN = '/api/run';
 export const API_LOGS = '/api/logs';
 export const API_ARTIFACT = '/api/artifact';
+export const API_LOGIN = '/api/login';

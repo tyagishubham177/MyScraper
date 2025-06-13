@@ -1,3 +1,5 @@
+import { API_LOGIN } from './config.js';
+
 export async function initLogin() {
   let loginPopup = document.getElementById('login-popup');
   if (!loginPopup) {
@@ -103,7 +105,7 @@ export async function initLogin() {
   }
 
   if (adminLoginBtn) {
-    adminLoginBtn.addEventListener('click', () => {
+    adminLoginBtn.addEventListener('click', async () => {
       const email = adminEmailInput ? adminEmailInput.value.trim() : '';
       const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
 
@@ -115,12 +117,31 @@ export async function initLogin() {
         return;
       }
 
-      // Always show "Invalid credentials" error
-      if (adminErrorMessage) {
-        adminErrorMessage.textContent = 'Invalid credentials.';
-        adminErrorMessage.style.display = 'block';
+      try {
+        const res = await fetch(API_LOGIN, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('authToken', data.token);
+          if (adminErrorMessage) adminErrorMessage.style.display = 'none';
+          showMainApp();
+        } else {
+          const result = await res.json().catch(() => ({}));
+          if (adminErrorMessage) {
+            adminErrorMessage.textContent = result.message || 'Invalid credentials.';
+            adminErrorMessage.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        if (adminErrorMessage) {
+          adminErrorMessage.textContent = 'Login failed.';
+          adminErrorMessage.style.display = 'block';
+        }
       }
-      // Ensure showMainApp() is NOT called here
     });
   }
 
@@ -173,5 +194,10 @@ export async function initLogin() {
   // if (userRegYesBtn) { ... }
   // if (userRegNoBtn) { ... }
 
-  showLoginPopup(); // Initialize and show the popup
+  const existingToken = localStorage.getItem('authToken');
+  if (existingToken) {
+    showMainApp();
+  } else {
+    showLoginPopup(); // Initialize and show the popup
+  }
 }
