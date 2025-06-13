@@ -4,6 +4,8 @@
     'refresh-cw':'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.49-3.36L23 10"/><path d="M20.49 15a9 9 0 01-14.49 3.36L1 14"/>',
     'play-circle':'<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
     'stop-circle':'<circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/>',
+    'play':'<polygon points="5 3 19 12 5 21 5 3"/>',
+    'pause':'<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
     'chevron-down':'<polyline points="6 9 12 15 18 9"/>',
     'chevron-up':'<polyline points="18 15 12 9 6 15"/>',
     'user-plus':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="8" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/>',
