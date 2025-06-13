@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amul Watchdog Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="components/style.css">
+</head>
+<body>
+  <script>
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      window.location.href = "index.html";
+    }
+  </script>
+  <!-- Login UI moved to components/login.html -->
+  <div id="particles-js" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0;"></div>
+  <div id="particles-js-bg"></div> <!-- Div for animated gradient background -->
+  <div id="main-app-content">
+    <div class="container py-4">
+      <div class="row"> <!-- Single row for the two main columns -->
+        <div class="col-lg-5 mb-4"> <!-- Left Column for Amul Watchdog Control -->
+          <div class="card shadow-lg">
+          <div class="card-body text-center">
+            <h1 class="text-primary mb-4">Amul Watchdog Control</h1>
+        <p>
+          Workflow status:
+          <span id="status" class="fw-bold">Loading…</span><i data-lucide="info" class="ms-1"></i>
+          <div id="loader" class="spinner-border text-info ms-2" role="status" style="display:none;width:1.5rem;height:1.5rem;"><span class="visually-hidden">Loading...</span></div>
+        </p>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <button id="refresh" class="btn btn-secondary w-100 btn-neumorphic"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <h2 class="mb-0">Recent runs</h2>
+          <button id="refresh-runs" class="btn btn-sm btn-secondary btn-neumorphic"><i data-lucide="refresh-cw" class="me-1"></i>Refresh runs</button>
+        </div>
+        <div id="runsAccordion" class="accordion mt-2"></div>
+          </div>
+        </div>
+      </div> <!-- End of Left Column -->
+
+      <div class="col-lg-7 mb-4" id="managementAccordion"> <!-- Right Column for Management Sections -->
+        <!-- Recipient Management Trigger -->
+        <button class="btn btn-primary w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#recipientManagementCollapse" aria-expanded="false" aria-controls="recipientManagementCollapse">
+            Recipient Management <i data-lucide="chevron-down" class="ms-1"></i>
+        </button>
+        <!-- Recipient Management Collapsible Card -->
+        <div class="collapse" id="recipientManagementCollapse" data-bs-parent="#managementAccordion">
+            <div class="card shadow-lg mb-3">
+                <div class="card-body">
+                    <h2 class="text-primary mb-3 text-center">Recipient Management</h2>
+                    <form id="recipient-form" class="mb-3">
+                      <div class="input-group">
+                        <input type="email" class="form-control" id="recipient-email" placeholder="Enter recipient email" required>
+                        <button class="btn btn-primary btn-neumorphic" type="button" id="add-recipient-btn">
+                          <i data-lucide="user-plus" class="me-1"></i>Add Recipient
+                        </button>
+                      </div>
+                      <div id="add-recipient-error-message" class="mt-2"></div>
+                    </form>
+                    <div id="recipients-list-container">
+                      <h5 class="mt-3">Current Recipients:</h5>
+                      <ul id="recipients-list" class="list-group">
+                        <!-- Recipients will be listed here -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            No recipients yet.
+                        </li>
+                      </ul>
+                    </div>
+                    <div id="recipient-subscriptions-section" class="mt-4" style="display: none;">
+                      <h4 id="recipient-subscriptions-title" class="d-flex justify-content-between align-items-center">
+                        <span>Manage Subscriptions for <span id="selected-recipient-email"></span></span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="close-subscriptions-btn" title="Close">
+                          <i data-lucide="x"></i>
+                        </button>
+                      </h4>
+                      <div id="subscription-product-list" class="list-group">
+                        <!-- Available products with checkboxes will be listed here -->
+                      </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Management Trigger -->
+        <button class="btn btn-primary w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#productManagementCollapse" aria-expanded="false" aria-controls="productManagementCollapse">
+            Product Management <i data-lucide="chevron-down" class="ms-1"></i>
+        </button>
+        <!-- Product Management Collapsible Card -->
+        <div class="collapse" id="productManagementCollapse" data-bs-parent="#managementAccordion">
+            <div class="card shadow-lg mb-3">
+                <div class="card-body">
+                    <h2 class="text-primary mb-3 text-center">Product Management</h2>
+                    <form id="product-form" class="mb-3">
+                      <div class="mb-2">
+                        <label for="product-name" class="form-label">Product Name</label>
+                        <input type="text" class="form-control" id="product-name" placeholder="Enter product name" required>
+                      </div>
+                      <div class="mb-2">
+                        <label for="product-url" class="form-label">Product URL</label>
+                        <input type="url" class="form-control" id="product-url" placeholder="Enter product URL" required>
+                      </div>
+                      <button class="btn btn-primary btn-neumorphic w-100" type="button" id="add-product-btn">
+                        <i data-lucide="package-plus" class="me-1"></i>Add Product
+                      </button>
+                      <div id="add-product-error-message" class="mt-2"></div>
+                    </form>
+                    <div id="products-list-container">
+                      <h5 class="mt-3">Current Products:</h5>
+                      <ul id="products-list" class="list-group">
+                        <!-- Products will be listed here -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            No products yet.
+                        </li>
+                      </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div> <!-- End of Right Column -->
+    </div> <!-- End of main row -->
+  </div> <!-- End of container -->
+  </div> <!-- End of main-app-content -->
+  <button type="button" class="fab" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.6a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.36.17.77.26 1.18.26H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  </button>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="settingsPane" aria-labelledby="settingsPaneLabel">
+    <div class="offcanvas-header">
+      <h5 id="settingsPaneLabel" class="offcanvas-title">Settings</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <h6 class="mb-3">SMS Provider</h6>
+      <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="btn btn-primary w-100 mb-2">Transactional History</a>
+    </div>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-product-form">
+            <input type="hidden" id="edit-product-id">
+            <div class="mb-3">
+              <label for="edit-product-name" class="form-label">Product Name</label>
+              <input type="text" class="form-control" id="edit-product-name" required>
+            </div>
+            <div class="mb-3">
+              <label for="edit-product-url" class="form-label">Product URL</label>
+              <input type="url" class="form-control" id="edit-product-url" required>
+            </div>
+            <div id="edit-product-error-message" class="mt-2"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="save-product-changes-btn">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="particles.js"></script>
+  <script src="vanilla-tilt.min.js"></script>
+  <script src="lucide-icons.js"></script>
+  <script type="module" src="components/admin-main.js"></script>
+</body>
+</html>

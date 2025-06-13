@@ -66,14 +66,6 @@ export async function initLogin() {
     }
   }
 
-  function showMainApp() {
-    if (loginPopup) {
-      loginPopup.style.display = 'none';
-    }
-    if (mainAppContent) {
-      mainAppContent.style.display = 'block';
-    }
-  }
 
   if (adminRoleBtn) {
     adminRoleBtn.addEventListener('click', () => {
@@ -128,7 +120,7 @@ export async function initLogin() {
           const data = await res.json();
           localStorage.setItem('authToken', data.token);
           if (adminErrorMessage) adminErrorMessage.style.display = 'none';
-          showMainApp();
+            window.location.href = "admin.html";
         } else {
           const result = await res.json().catch(() => ({}));
           if (adminErrorMessage) {
@@ -209,7 +201,7 @@ export async function initLogin() {
 
   const existingToken = localStorage.getItem('authToken');
   if (existingToken) {
-    showMainApp();
+  window.location.href = "admin.html";
   } else {
     const existingUser = localStorage.getItem('userEmail');
     if (existingUser) {
