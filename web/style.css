@@ -8,18 +8,22 @@
       height: 100%;
       overflow-y: auto; /* Allow scrolling on html element */
     }
-    body {
-      font-family: 'Inter', Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center; /* This centers the card when content is short */
-      justify-content: center;
-      position: relative; /* Needed for z-indexing of particles-js */
-      overflow-x: hidden; /* Prevent horizontal scrollbars */
-      overflow-y: auto;   /* Allow vertical scrolling for the body */
-      padding-top: 2rem; /* Add some padding if card is very tall */
-      padding-bottom: 2rem; /* Add some padding if card is very tall */
-    }
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center; /* This centers the card when content is short */
+  justify-content: center;
+  position: relative; /* Needed for z-indexing of particles-js */
+  overflow-x: hidden; /* Prevent horizontal scrollbars */
+  overflow-y: auto;   /* Allow vertical scrolling for the body */
+  padding-top: 2rem; /* Add some padding if card is very tall */
+  padding-bottom: 2rem; /* Add some padding if card is very tall */
+}
+
+button, .btn {
+  touch-action: manipulation;
+}
     /* Adjust alignment when body needs to scroll */
     body.is-scrollable {
       align-items: flex-start; /* Align card to top when scrollable */
@@ -513,6 +517,30 @@
   #products-list .list-group-item .btn {
     padding: 0.25rem 0.5rem !important;
     font-size: 0.75rem !important;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Wrap subscription controls so time inputs and remove button fit */
+  #user-subscribed-list .d-flex.align-items-center {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #user-subscribed-list .d-flex.align-items-center input[type="time"] {
+    width: 100%;
+    margin-right: 0 !important; /* Override .me-2 */
+    margin-bottom: 0.5rem;
+  }
+  #user-subscribed-list .d-flex.align-items-center .unsub-btn {
+    align-self: flex-end;
+  }
+
+  /* Allow long title to wrap with close button below */
+  #recipient-subscriptions-title {
+    flex-wrap: wrap;
+  }
+  #recipient-subscriptions-title #close-subscriptions-btn {
+    margin-top: 0.5rem;
   }
 }
 
