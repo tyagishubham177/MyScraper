@@ -12,33 +12,38 @@ export function initLogin() {
   const adminPasswordInput = document.getElementById('admin-password');
   const adminLoginBtn = document.getElementById('admin-login-btn');
 
-  const userRegYesBtn = document.getElementById('user-reg-yes');
-  const userRegNoBtn = document.getElementById('user-reg-no');
-  // const userEmailInput = document.getElementById('user-email'); // Direct input no longer needed for show/hide
-  const userEmailWrapper = document.getElementById('user-email-wrapper'); // Get the wrapper
-  const userContactAdminBtn = document.getElementById('user-contact-admin-btn');
+  // User section elements
+  const userEmailInput = document.getElementById('user-email'); // Reference to the actual input field
+  const userEmailWrapper = document.getElementById('user-email-wrapper'); // Wrapper for email input + icon
+  const userLoginBtn = document.getElementById('user-login-btn');
+  const userErrorMessage = document.getElementById('user-error-message');
+  const userContactAdminText = document.getElementById('user-contact-admin-btn'); // This is the <p> tag
   const userContactLinks = document.getElementById('user-contact-links');
 
-  // Function to show the login popup
+  // REMOVE: Old user registration button declarations (userRegYesBtn, userRegNoBtn)
+  // const userRegYesBtn = document.getElementById('user-reg-yes');
+  // const userRegNoBtn = document.getElementById('user-reg-no');
+
+
   function showLoginPopup() {
     if (loginPopup) {
-      loginPopup.style.display = 'flex'; // Changed to flex to use align/justify from CSS
+      loginPopup.style.display = 'flex';
     }
-    // Initially, show admin section and hide user section
-    if (adminSection) adminSection.style.display = 'block'; // Or 'flex' if its children need flex props
+    if (adminSection) adminSection.style.display = 'block';
     if (userSection) userSection.style.display = 'none';
 
-    // Set Admin role as active by default
     if (adminRoleBtn) adminRoleBtn.classList.add('active');
     if (userRoleBtn) userRoleBtn.classList.remove('active');
 
-    // Ensure user sub-elements are hidden initially
-    if (userEmailWrapper) userEmailWrapper.style.display = 'none'; // Hide wrapper
-    if (userContactAdminBtn) userContactAdminBtn.style.display = 'none';
+    // Initial state for User Section when popup shows (though it's hidden by default)
+    // This will also be reset when user tab is clicked
+    if (userEmailInput) userEmailInput.value = '';
+    if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Make email input visible by default in user section
+    if (userErrorMessage) userErrorMessage.style.display = 'none';
+    if (userContactAdminText) userContactAdminText.style.display = 'none';
     if (userContactLinks) userContactLinks.style.display = 'none';
   }
 
-  // Function to show the main application
   function showMainApp() {
     if (loginPopup) {
       loginPopup.style.display = 'none';
@@ -48,10 +53,9 @@ export function initLogin() {
     }
   }
 
-  // Event Listeners for Role Selector
   if (adminRoleBtn) {
     adminRoleBtn.addEventListener('click', () => {
-      if (adminSection) adminSection.style.display = 'block'; // or 'flex'
+      if (adminSection) adminSection.style.display = 'block';
       if (userSection) userSection.style.display = 'none';
       adminRoleBtn.classList.add('active');
       if (userRoleBtn) userRoleBtn.classList.remove('active');
@@ -61,50 +65,70 @@ export function initLogin() {
   if (userRoleBtn) {
     userRoleBtn.addEventListener('click', () => {
       if (adminSection) adminSection.style.display = 'none';
-      if (userSection) userSection.style.display = 'block'; // or 'flex'
+      if (userSection) userSection.style.display = 'block';
       userRoleBtn.classList.add('active');
       if (adminRoleBtn) adminRoleBtn.classList.remove('active');
-      // Reset user section sub-elements visibility
-      if (userEmailWrapper) userEmailWrapper.style.display = 'none'; // Hide wrapper
-      if (userContactAdminBtn) userContactAdminBtn.style.display = 'none';
+
+      // Reset User Section to initial state when tab is clicked
+      if (userEmailInput) userEmailInput.value = '';
+      if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Ensure email input is visible
+      if (userErrorMessage) userErrorMessage.style.display = 'none';
+      if (userContactAdminText) userContactAdminText.style.display = 'none';
       if (userContactLinks) userContactLinks.style.display = 'none';
     });
   }
 
-  // Admin Login Logic
   if (adminLoginBtn) {
     adminLoginBtn.addEventListener('click', () => {
-      const email = adminEmailInput ? adminEmailInput.value : '';
-      const password = adminPasswordInput ? adminPasswordInput.value : '';
-
-      // Placeholder authentication
+      const email = adminEmailInput ? adminEmailInput.value.trim() : '';
+      const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
       if (email && password) {
         showMainApp();
       } else {
-        // Optional: Show error message
         console.error('Admin login failed: Email and password are required.');
-        // You might want to display this error to the user in the UI
+        // TODO: Display this error in the admin UI if an error field is added there
       }
     });
   }
 
-  // User Section Logic
-  if (userRegYesBtn) {
-    userRegYesBtn.addEventListener('click', () => {
-      if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Show wrapper (as it's a flex container now)
-      if (userContactAdminBtn) userContactAdminBtn.style.display = 'none';
-      if (userContactLinks) userContactLinks.style.display = 'none';
+  // New User Login Logic
+  if (userLoginBtn) {
+    userLoginBtn.addEventListener('click', () => {
+      const email = userEmailInput ? userEmailInput.value.trim() : '';
+
+      // Basic Validation
+      if (email === '') {
+        if (userErrorMessage) {
+          userErrorMessage.textContent = 'Please enter your email.';
+          userErrorMessage.style.display = 'block';
+        }
+        if (userContactAdminText) userContactAdminText.style.display = 'none';
+        if (userContactLinks) userContactLinks.style.display = 'none';
+        return;
+      }
+
+      // Placeholder Email Check
+      if (email.toLowerCase() === 'test@example.com') {
+        // This email is considered "not registered"
+        if (userErrorMessage) {
+          userErrorMessage.textContent = 'Email not registered.';
+          userErrorMessage.style.display = 'block';
+        }
+        if (userContactAdminText) userContactAdminText.style.display = 'block'; // Show contact admin text
+        if (userContactLinks) userContactLinks.style.display = 'block'; // Show contact links
+      } else {
+        // Any other email is considered "registered"
+        if (userErrorMessage) userErrorMessage.style.display = 'none';
+        if (userContactAdminText) userContactAdminText.style.display = 'none';
+        if (userContactLinks) userContactLinks.style.display = 'none';
+        showMainApp(); // Proceed to main application
+      }
     });
   }
 
-  if (userRegNoBtn) {
-    userRegNoBtn.addEventListener('click', () => {
-      if (userEmailWrapper) userEmailWrapper.style.display = 'none'; // Hide wrapper
-      if (userContactAdminBtn) userContactAdminBtn.style.display = 'block';
-      if (userContactLinks) userContactLinks.style.display = 'block';
-    });
-  }
+  // REMOVE: Old user registration event listeners
+  // if (userRegYesBtn) { ... }
+  // if (userRegNoBtn) { ... }
 
-  // Show the login popup when initLogin is called
-  showLoginPopup();
+  showLoginPopup(); // Initialize and show the popup
 }

@@ -114,7 +114,7 @@
   font-size: 1.1rem; /* Larger font */
   font-weight: 600;
   transition: background 0.3s ease, transform 0.1s ease;
-  margin-top: 15px;
+  margin-top: 15px; /* Adjusted from 25px in prev anaylsis to fit better */
   display: flex; /* For icon alignment */
   align-items: center;
   justify-content: center;
@@ -128,20 +128,19 @@
   transform: translateY(0px); /* Click effect */
 }
 
-/* User Registration Options Container (NEW) */
+/* User Registration Options Container (OLD - kept for reference if needed, but not active) */
 .user-reg-options-container {
   display: flex;
-  justify-content: space-around; /* Evenly space buttons */
+  justify-content: space-around;
   align-items: center;
-  gap: 15px; /* Space between buttons */
-  margin-bottom: 20px; /* Space below the container */
+  gap: 15px;
+  margin-bottom: 20px;
 }
 
+/* Styles for OLD Yes/No buttons if they were to be used again */
 #user-reg-yes,
-#user-reg-no,
-#user-contact-admin-btn { /* user-contact-admin-btn is a p tag now, but might share some styles if it were a button */
-  /* width: 100%; */ /* REMOVE width: 100% for Yes/No buttons */
-  flex-grow: 1; /* Allow buttons to grow and share space */
+#user-reg-no {
+  flex-grow: 1;
   padding: 12px 15px;
   border: none;
   border-radius: 8px;
@@ -150,61 +149,78 @@
   font-size: 1rem;
   font-weight: 500;
   transition: background-color 0.3s ease, transform 0.1s ease;
-  margin-top: 0; /* Remove individual margin-top, handled by container's margin-bottom or direct spacing */
+  margin-top: 0;
 }
-
 #user-reg-yes:hover,
-#user-reg-no:hover,
-#user-contact-admin-btn:hover { /* This will only apply if user-contact-admin-btn becomes a button again */
+#user-reg-no:hover {
     transform: translateY(-1px);
 }
+#user-reg-yes { background-color: #17a2b8; }
+#user-reg-yes:hover { background-color: #138496; }
+#user-reg-no { background-color: #ffc107; color: #212529; }
+#user-reg-no:hover { background-color: #e0a800; }
 
 
-#user-reg-yes {
-  background-color: #17a2b8; /* Info blue/teal */
-}
-#user-reg-yes:hover {
-  background-color: #138496;
-}
-
-#user-reg-no {
-  background-color: #ffc107; /* Warning yellow */
-  color: #212529; /* Dark text for yellow bg */
-}
-#user-reg-no:hover {
-  background-color: #e0a800;
+/* User Section Specific Styles */
+.user-login-header {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #343a40; /* Darker text color */
+  margin-bottom: 1.5rem; /* Default from HTML, can be adjusted */
 }
 
+/* User Login Button - primarily uses Bootstrap classes .btn .btn-primary .w-100 .mt-3 .mb-3 */
+/* Add minor adjustments if needed */
+#user-login-btn {
+  font-weight: 500; /* Bootstrap primary might be bolder, this can make it standard */
+  padding: 0.65rem 1rem; /* Slightly adjust padding if needed */
+  /* mt-3 and mb-3 from HTML provide margin */
+}
+/* Example hover, if Bootstrap's isn't "zingy" enough. For now, rely on Bootstrap.
+#user-login-btn:hover {
+  background-color: #0056b3;
+}
+*/
 
-/* "Are you registered?" text */
-#user-section > p:first-of-type { /* Target the "Are you registered?" paragraph specifically */
-  margin-bottom: 15px; /* Adjusted space before the button container */
-  font-size: 1.05rem;
-  color: #343a40;
+#user-error-message {
+  color: #dc3545; /* Bootstrap danger color */
+  text-align: center;
+  margin-top: 10px; /* From inline style */
+  margin-bottom: 10px; /* Added bottom margin */
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 8px 10px; /* Increased padding */
+  border-radius: 5px; /* Softer radius */
+  background-color: #f8d7da; /* Optional: light red background */
+  border: 1px solid #f5c6cb;  /* Optional: light red border */
 }
 
-/* Contact Admin Text (was button, now p tag) */
-#user-contact-admin-btn { /* Styles for the <p> tag */
+
+/* "Are you registered?" text - OLD, no longer in HTML, selector can be removed or kept for reference */
+/* #user-section > p:first-of-type { ... } */
+
+/* Contact Admin Text (p tag) */
+#user-contact-admin-btn {
   background: none;
   border: none;
   padding: 0;
   text-align: center;
-  font-size: 1.1rem; /* Slightly larger to appear as a sub-heading */
+  font-size: 1.1rem;
   font-weight: bold;
-  color: #343a40; /* Darker, standard text color */
-  margin-top: 25px; /* Increased top margin for separation */
-  margin-bottom: 15px; /* Space before the links that follow */
-  cursor: default; /* Ensure no button-like cursor */
-  /* Clear any properties that might be inherited from generic button rules if they existed */
-  flex-grow: 0; /* Ensure it does not flex-grow if it was part of a flex container by mistake */
-  width: auto; /* Ensure it's not 100% width like other buttons were */
-  transition: none; /* Remove any transitions */
+  color: #343a40;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  cursor: default;
+  flex-grow: 0;
+  width: auto;
+  transition: none;
 }
 
 
 /* Contact Links Section */
 #user-contact-links {
-  margin-top: 15px; /* Adjusted space */
+  margin-top: 0; /* Adjusted as previous element now has margin-bottom */
   padding-top: 15px;
   border-top: 1px solid #dee2e6;
 }
@@ -238,7 +254,6 @@
 .login-role-selector button i,
 #admin-login-btn i {
   font-size: 1em;
-  /* me-1 class from bootstrap should provide margin */
 }
 #admin-login-btn i {
   font-size: 1.1em;
@@ -253,21 +268,34 @@
 #admin-section > .input-icon-wrapper + .input-icon-wrapper {
     margin-top: 18px;
 }
-#admin-section > .input-icon-wrapper + button {
+#admin-section > .input-icon-wrapper + button#admin-login-btn { /* Target admin login button specifically */
     margin-top: 25px;
 }
 
 /* Spacing for User Section elements */
-#user-section > p:first-of-type + .user-reg-options-container { /* p "Are you registered" + button container */
-    margin-top: 0; /* p already has margin-bottom */
+#user-section > .user-login-header + .input-icon-wrapper {
+    margin-top: 0; /* Header already has margin-bottom */
 }
 
-.user-reg-options-container + .input-icon-wrapper, /* Button container + email wrapper */
-.user-reg-options-container + #user-contact-admin-btn { /* Button container + contact admin text */
-    margin-top: 20px;
+.input-icon-wrapper + #user-login-btn { /* Email wrapper + user login button */
+    /* margin-top is on the button via .mt-3 */
 }
 
-#user-contact-admin-btn + #user-contact-links { /* Contact admin text + contact links div */
+#user-login-btn + #user-error-message {
+    /* margin-top is on the error message itself */
+}
+
+#user-error-message + #user-contact-admin-btn {
+    margin-top: 20px; /* If error message is visible, then contact admin text */
+}
+
+/* Spacing if error message is NOT visible: */
+#user-login-btn + #user-contact-admin-btn {
+    margin-top: 20px; /* If error message is hidden, login button to contact admin text */
+}
+
+
+#user-contact-admin-btn + #user-contact-links {
     margin-top: 0; /* Reset margin as #user-contact-admin-btn now has margin-bottom */
 }
 

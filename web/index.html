@@ -28,15 +28,13 @@
         <button id="admin-login-btn"><i data-lucide="log-in" class="me-1"></i>Login</button>
       </div>
       <div id="user-section" style="display: none;">
-        <p>Are you registered?</p>
-        <div class="user-reg-options-container">
-          <button id="user-reg-yes">Yes</button>
-          <button id="user-reg-no">No</button>
-        </div>
-        <div class="input-icon-wrapper" id="user-email-wrapper" style="display: none;">
+        <h4 class="user-login-header" style="margin-bottom: 1.5rem;">Enter your email to login</h4>
+        <div class="input-icon-wrapper" id="user-email-wrapper">
           <i data-lucide="mail" class="input-icon"></i>
           <input type="email" id="user-email" placeholder="Email">
         </div>
+        <button id="user-login-btn" class="btn btn-primary w-100 mt-3 mb-3">Login / Check Email</button>
+        <p id="user-error-message" style="display: none; color: red; margin-top: 10px; text-align: center;"></p>
         <p id="user-contact-admin-btn" style="display: none; margin-top: 1rem;">Contact admin to register</p>
         <div id="user-contact-links" style="display: none;">
           <a href="mailto:linktracker03@gmail.com?subject=New%20User%20Registration%20Request&body=I%20would%20like%20to%20request%20access." id="user-mail-link">Email Admin</a>
