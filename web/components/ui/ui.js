@@ -21,24 +21,18 @@ export function initBackground() {
     console.error('Error: #particles-js-bg element not found.');
     return;
   }
-  try {
-    const storedBackground = localStorage.getItem('fixedBackground');
-    if (storedBackground) {
-      bgElement.style.background = storedBackground;
-      bgElement.style.animation = 'none';
-    } else {
-      setTimeout(() => {
-        const computedStyle = window.getComputedStyle(bgElement).getPropertyValue('background-image');
-        if (computedStyle && computedStyle !== 'none') {
-          localStorage.setItem('fixedBackground', computedStyle);
-          bgElement.style.background = computedStyle;
-          bgElement.style.animation = 'none';
-        }
-      }, 1000);
-    }
-  } catch (e) {
-    console.error('Error accessing localStorage or applying background:', e);
-  }
+
+  const gradients = [
+    'linear-gradient(135deg, #89f7fe, #66a6ff)',
+    'linear-gradient(135deg, #66a6ff, #ffb3ba)',
+    'linear-gradient(135deg, #ffb3ba, #ffdf7e)',
+    'linear-gradient(135deg, #ffdf7e, #b4f8c8)',
+    'linear-gradient(135deg, #b4f8c8, #89f7fe)'
+  ];
+
+  const selected = gradients[Math.floor(Math.random() * gradients.length)];
+  bgElement.style.backgroundImage = selected;
+  bgElement.style.animation = 'none';
 }
 
 export function initPage() {
