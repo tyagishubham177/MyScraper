@@ -20,7 +20,7 @@ export function initLogin() {
   const userErrorMessage = document.getElementById('user-error-message');
   // const userContactAdminText = document.getElementById('user-contact-admin-btn'); // REMOVED - Element deleted from HTML
   const userContactLinks = document.getElementById('user-contact-links');
-  const userMailLink = document.getElementById('user-mail-link');
+  const userMailBtn = document.getElementById('user-mail-btn');
 
   // REMOVE: Old user registration button declarations (userRegYesBtn, userRegNoBtn)
   // const userRegYesBtn = document.getElementById('user-reg-yes');
@@ -144,7 +144,16 @@ export function initLogin() {
     });
   }
 
-  // userMailLink anchor already has target="_blank" in the HTML. No JS handler needed.
+  if (userMailBtn) {
+    userMailBtn.addEventListener('click', () => {
+      const to = 'linktracker03@gmail.com';
+      const subject = encodeURIComponent('Register Amul tracker email');
+      const typedEmail = userEmailInput ? userEmailInput.value.trim() : '';
+      const body = encodeURIComponent(`Hey there!\nPlease register my email : ${typedEmail}`);
+      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
+      window.open(url, '_blank');
+    });
+  }
 
   // REMOVE: Old user registration event listeners
   // if (userRegYesBtn) { ... }
