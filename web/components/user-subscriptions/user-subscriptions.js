@@ -44,7 +44,8 @@ export async function initUserSubscriptionsUI() {
     strong.textContent = product.name;
     const link = document.createElement('small');
     link.className = 'd-block text-muted';
-    link.innerHTML = `<a href="${product.url}" target="_blank">${product.url} <i data-lucide="external-link" class="lucide-small"></i></a>`;
+    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
+    link.innerHTML = `<a href="${product.url}" target="_blank" title="${product.url}">${displayUrl} <i data-lucide="external-link" class="lucide-small"></i></a>`;
     info.appendChild(strong);
     info.appendChild(link);
 
@@ -72,7 +73,8 @@ export async function initUserSubscriptionsUI() {
     strong.textContent = product.name;
     const link = document.createElement('small');
     link.className = 'd-block text-muted';
-    link.innerHTML = `<a href="${product.url}" target="_blank">${product.url} <i data-lucide="external-link" class="lucide-small"></i></a>`;
+    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
+    link.innerHTML = `<a href="${product.url}" target="_blank" title="${product.url}">${displayUrl} <i data-lucide="external-link" class="lucide-small"></i></a>`;
     info.appendChild(strong);
     info.appendChild(link);
 
@@ -178,4 +180,4 @@ export async function initUserSubscriptionsUI() {
   render();
 }
 
-document.addEventListener('DOMContentLoaded', initUserSubscriptionsUI);
+// Initialization is handled by the page that loads this component
