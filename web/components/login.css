@@ -183,18 +183,30 @@
 }
 */
 
-#user-error-message {
+/* Shared styles for error messages if desired, or use specific IDs */
+/* .error-message { ... } */
+
+#user-error-message,
+#admin-error-message { /* Grouping selector for shared styles */
   color: #dc3545; /* Bootstrap danger color */
   text-align: center;
-  margin-top: 10px; /* From inline style */
-  margin-bottom: 10px; /* Added bottom margin */
+  margin-top: 10px;
+  margin-bottom: 10px;
   font-size: 0.9rem;
   font-weight: 500;
-  padding: 8px 10px; /* Increased padding */
-  border-radius: 5px; /* Softer radius */
-  background-color: #f8d7da; /* Optional: light red background */
-  border: 1px solid #f5c6cb;  /* Optional: light red border */
+  padding: 8px 10px;
+  border-radius: 5px;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  /* display: none; is handled by inline style initially and JS */
 }
+
+/* If specific overrides are needed for one or the other, they can be added below */
+/* For example:
+#admin-error-message {
+  margin-top: 15px; // Different top margin for admin specifically
+}
+*/
 
 
 /* "Are you registered?" text - OLD, no longer in HTML, selector can be removed or kept for reference */
@@ -220,30 +232,40 @@
 
 /* Contact Links Section */
 #user-contact-links {
-  margin-top: 0; /* Adjusted as previous element now has margin-bottom */
-  padding-top: 15px;
-  border-top: 1px solid #dee2e6;
+  display: flex; /* Arrange children (links/buttons) horizontally */
+  justify-content: center; /* Center the group of links */
+  align-items: center; /* Align items vertically */
+  gap: 15px; /* Adds space between the links/buttons */
+  margin-top: 20px; /* Space above the links container (was 0, needs space now) */
+  padding-top: 15px; /* Keep padding if border is kept */
+  border-top: 1px solid #dee2e6; /* Keep or remove border as desired */
+  flex-wrap: wrap; /* Allow wrapping on very small screens if needed */
 }
 
-#user-contact-links a {
-  display: block;
-  padding: 12px 0;
-  color: #007bff;
-  text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.2s ease, background-color 0.2s ease;
-  border-radius: 6px;
+/* Styling for the new .contact-link-btn class within #user-contact-links */
+#user-contact-links .contact-link-btn {
+  text-decoration: none; /* Already handled by .btn, but good to ensure */
+  /* padding: 0.5rem 1rem; */ /* Bootstrap .btn default padding is usually fine, adjust if needed */
+  /* border-radius: 5px; */   /* Bootstrap .btn default radius is usually fine */
+  display: inline-flex; /* To align icon and text nicely */
+  align-items: center;
+  font-weight: 500;
+  /* Bootstrap hover effects on .btn-outline-* are usually sufficient */
+  /* transition: all 0.2s ease-in-out; */ /* Bootstrap handles transitions */
 }
 
-#user-contact-links a:hover {
-  color: #0056b3;
-  background-color: #e9ecef;
-  text-decoration: none;
+/* Ensure icons within these new buttons are vertically aligned if needed */
+#user-contact-links .contact-link-btn i {
+  line-height: 1; /* Helps align lucide icons with text in a flex container */
+  /* me-1 class from HTML will provide margin */
 }
 
-#user-contact-links a + a {
-  margin-top: 10px;
-}
+/* Remove old specific 'a' and 'a+a' styling if .contact-link-btn handles it all */
+/*
+#user-contact-links a { ... }
+#user-contact-links a:hover { ... }
+#user-contact-links a + a { ... }
+*/
 
 /* Utility class for hiding elements */
 .hidden {
@@ -255,8 +277,9 @@
 #admin-login-btn i {
   font-size: 1em;
 }
-#admin-login-btn i {
-  font-size: 1.1em;
+#admin-login-btn i,
+#user-contact-links .contact-link-btn i { /* Ensure icon size consistency if not using me-1 or similar */
+  font-size: 1em; /* Or adjust as needed, me-1 might make this redundant for size */
 }
 
 /* Ensure sections take up space if they have elements */
@@ -268,8 +291,14 @@
 #admin-section > .input-icon-wrapper + .input-icon-wrapper {
     margin-top: 18px;
 }
-#admin-section > .input-icon-wrapper + button#admin-login-btn { /* Target admin login button specifically */
-    margin-top: 25px;
+#admin-section > .input-icon-wrapper + #admin-error-message, /* Pwd wrapper to error message */
+#admin-section > #admin-error-message + button#admin-login-btn { /* Error message to login button */
+    margin-top: 15px; /* Consistent spacing around error message */
+}
+
+/* If error message is hidden, direct spacing from pwd wrapper to button */
+#admin-section > .input-icon-wrapper + button#admin-login-btn {
+    margin-top: 15px; /* Should match the sum of (error msg margin + button margin) or be set directly */
 }
 
 /* Spacing for User Section elements */
@@ -295,8 +324,14 @@
 }
 
 
-#user-contact-admin-btn + #user-contact-links {
-    margin-top: 0; /* Reset margin as #user-contact-admin-btn now has margin-bottom */
+/* Spacing adjustment if #user-contact-admin-btn were present. It's removed, so this specific rule might not be needed. */
+/* #user-contact-admin-btn + #user-contact-links {
+    margin-top: 0;
+} */
+
+/* Ensure there's space if an error message is shown, then the contact links */
+#user-error-message + #user-contact-links {
+    margin-top: 20px;
 }
 
 

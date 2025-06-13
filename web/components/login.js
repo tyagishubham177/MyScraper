@@ -11,13 +11,14 @@ export function initLogin() {
   const adminEmailInput = document.getElementById('admin-email');
   const adminPasswordInput = document.getElementById('admin-password');
   const adminLoginBtn = document.getElementById('admin-login-btn');
+  const adminErrorMessage = document.getElementById('admin-error-message'); // Added
 
   // User section elements
   const userEmailInput = document.getElementById('user-email'); // Reference to the actual input field
   const userEmailWrapper = document.getElementById('user-email-wrapper'); // Wrapper for email input + icon
   const userLoginBtn = document.getElementById('user-login-btn');
   const userErrorMessage = document.getElementById('user-error-message');
-  const userContactAdminText = document.getElementById('user-contact-admin-btn'); // This is the <p> tag
+  // const userContactAdminText = document.getElementById('user-contact-admin-btn'); // REMOVED - Element deleted from HTML
   const userContactLinks = document.getElementById('user-contact-links');
 
   // REMOVE: Old user registration button declarations (userRegYesBtn, userRegNoBtn)
@@ -40,7 +41,7 @@ export function initLogin() {
     if (userEmailInput) userEmailInput.value = '';
     if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Make email input visible by default in user section
     if (userErrorMessage) userErrorMessage.style.display = 'none';
-    if (userContactAdminText) userContactAdminText.style.display = 'none';
+    // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
     if (userContactLinks) userContactLinks.style.display = 'none';
   }
 
@@ -59,6 +60,10 @@ export function initLogin() {
       if (userSection) userSection.style.display = 'none';
       adminRoleBtn.classList.add('active');
       if (userRoleBtn) userRoleBtn.classList.remove('active');
+      if (adminErrorMessage) adminErrorMessage.style.display = 'none'; // Hide admin error on tab switch
+      // Clear admin inputs (optional, but good practice)
+      if(adminEmailInput) adminEmailInput.value = '';
+      if(adminPasswordInput) adminPasswordInput.value = '';
     });
   }
 
@@ -73,7 +78,7 @@ export function initLogin() {
       if (userEmailInput) userEmailInput.value = '';
       if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Ensure email input is visible
       if (userErrorMessage) userErrorMessage.style.display = 'none';
-      if (userContactAdminText) userContactAdminText.style.display = 'none';
+      // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
       if (userContactLinks) userContactLinks.style.display = 'none';
     });
   }
@@ -82,12 +87,21 @@ export function initLogin() {
     adminLoginBtn.addEventListener('click', () => {
       const email = adminEmailInput ? adminEmailInput.value.trim() : '';
       const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
-      if (email && password) {
-        showMainApp();
-      } else {
-        console.error('Admin login failed: Email and password are required.');
-        // TODO: Display this error in the admin UI if an error field is added there
+
+      if (email === '' || password === '') {
+        if (adminErrorMessage) {
+          adminErrorMessage.textContent = 'Please enter both email and password.';
+          adminErrorMessage.style.display = 'block';
+        }
+        return;
       }
+
+      // Always show "Invalid credentials" error
+      if (adminErrorMessage) {
+        adminErrorMessage.textContent = 'Invalid credentials.';
+        adminErrorMessage.style.display = 'block';
+      }
+      // Ensure showMainApp() is NOT called here
     });
   }
 
@@ -102,7 +116,7 @@ export function initLogin() {
           userErrorMessage.textContent = 'Please enter your email.';
           userErrorMessage.style.display = 'block';
         }
-        if (userContactAdminText) userContactAdminText.style.display = 'none';
+        // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
         if (userContactLinks) userContactLinks.style.display = 'none';
         return;
       }
@@ -112,9 +126,9 @@ export function initLogin() {
         userErrorMessage.textContent = 'Email not registered. Please contact admin to register.';
         userErrorMessage.style.display = 'block';
       }
-      if (userContactAdminText) {
-        userContactAdminText.style.display = 'block'; // Or 'inline', 'flex' as appropriate for the <p> tag. 'block' is fine.
-      }
+      // if (userContactAdminText) { // REMOVED
+      //   userContactAdminText.style.display = 'block';
+      // }
       if (userContactLinks) {
         userContactLinks.style.display = 'block'; // Or 'flex' as appropriate for the <div>. 'block' is fine.
       }
