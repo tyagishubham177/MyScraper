@@ -14,20 +14,26 @@ export function initLogin() {
 
   const userRegYesBtn = document.getElementById('user-reg-yes');
   const userRegNoBtn = document.getElementById('user-reg-no');
-  const userEmailInput = document.getElementById('user-email');
+  // const userEmailInput = document.getElementById('user-email'); // Direct input no longer needed for show/hide
+  const userEmailWrapper = document.getElementById('user-email-wrapper'); // Get the wrapper
   const userContactAdminBtn = document.getElementById('user-contact-admin-btn');
   const userContactLinks = document.getElementById('user-contact-links');
 
   // Function to show the login popup
   function showLoginPopup() {
     if (loginPopup) {
-      loginPopup.style.display = 'block';
+      loginPopup.style.display = 'flex'; // Changed to flex to use align/justify from CSS
     }
     // Initially, show admin section and hide user section
-    if (adminSection) adminSection.style.display = 'block';
+    if (adminSection) adminSection.style.display = 'block'; // Or 'flex' if its children need flex props
     if (userSection) userSection.style.display = 'none';
+
+    // Set Admin role as active by default
+    if (adminRoleBtn) adminRoleBtn.classList.add('active');
+    if (userRoleBtn) userRoleBtn.classList.remove('active');
+
     // Ensure user sub-elements are hidden initially
-    if (userEmailInput) userEmailInput.style.display = 'none';
+    if (userEmailWrapper) userEmailWrapper.style.display = 'none'; // Hide wrapper
     if (userContactAdminBtn) userContactAdminBtn.style.display = 'none';
     if (userContactLinks) userContactLinks.style.display = 'none';
   }
@@ -45,10 +51,9 @@ export function initLogin() {
   // Event Listeners for Role Selector
   if (adminRoleBtn) {
     adminRoleBtn.addEventListener('click', () => {
-      if (adminSection) adminSection.style.display = 'block';
+      if (adminSection) adminSection.style.display = 'block'; // or 'flex'
       if (userSection) userSection.style.display = 'none';
-      // Optional: Add active class styling if needed
-      adminRoleBtn.classList.add('active'); // Placeholder for active state
+      adminRoleBtn.classList.add('active');
       if (userRoleBtn) userRoleBtn.classList.remove('active');
     });
   }
@@ -56,12 +61,11 @@ export function initLogin() {
   if (userRoleBtn) {
     userRoleBtn.addEventListener('click', () => {
       if (adminSection) adminSection.style.display = 'none';
-      if (userSection) userSection.style.display = 'block';
-      // Optional: Add active class styling if needed
-      userRoleBtn.classList.add('active'); // Placeholder for active state
+      if (userSection) userSection.style.display = 'block'; // or 'flex'
+      userRoleBtn.classList.add('active');
       if (adminRoleBtn) adminRoleBtn.classList.remove('active');
       // Reset user section sub-elements visibility
-      if (userEmailInput) userEmailInput.style.display = 'none';
+      if (userEmailWrapper) userEmailWrapper.style.display = 'none'; // Hide wrapper
       if (userContactAdminBtn) userContactAdminBtn.style.display = 'none';
       if (userContactLinks) userContactLinks.style.display = 'none';
     });
@@ -87,7 +91,7 @@ export function initLogin() {
   // User Section Logic
   if (userRegYesBtn) {
     userRegYesBtn.addEventListener('click', () => {
-      if (userEmailInput) userEmailInput.style.display = 'block';
+      if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Show wrapper (as it's a flex container now)
       if (userContactAdminBtn) userContactAdminBtn.style.display = 'none';
       if (userContactLinks) userContactLinks.style.display = 'none';
     });
@@ -95,7 +99,7 @@ export function initLogin() {
 
   if (userRegNoBtn) {
     userRegNoBtn.addEventListener('click', () => {
-      if (userEmailInput) userEmailInput.style.display = 'none';
+      if (userEmailWrapper) userEmailWrapper.style.display = 'none'; // Hide wrapper
       if (userContactAdminBtn) userContactAdminBtn.style.display = 'block';
       if (userContactLinks) userContactLinks.style.display = 'block';
     });

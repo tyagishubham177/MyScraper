@@ -5,57 +5,78 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6); /* Darker semi-transparent background */
-  display: flex; /* Changed from 'block' to 'flex' for centering */
+  background-color: rgba(0, 0, 0, 0.65); /* Slightly darker for more focus */
+  display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050; /* Ensure it's above Bootstrap modals (usually 1040-1050) */
+  z-index: 1050;
   font-family: 'Inter', sans-serif;
+  padding: 15px; /* Add some padding for smaller screens */
 }
 
 /* Login Container Box */
 .login-container {
-  background-color: #ffffff; /* White background */
-  padding: 30px;
-  border-radius: 12px; /* Softer rounded corners */
-  max-width: 450px; /* Slightly adjusted max-width */
-  width: 90%;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Enhanced box shadow */
-  text-align: center; /* Center text and inline elements */
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 35px; /* Increased padding */
+  border-radius: 15px; /* More pronounced rounding */
+  max-width: 480px; /* Slightly wider */
+  width: 100%; /* Responsive width */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Enhanced shadow */
+  border: 1px solid #e0e0e0;
+  text-align: center;
 }
 
 /* Role Selector */
 .login-role-selector {
   display: flex;
-  justify-content: center; /* Center buttons */
-  margin-bottom: 25px;
-  border-radius: 8px; /* Rounded corners for the group */
-  overflow: hidden; /* Ensure child button borders don't stick out */
-  border: 1px solid #dee2e6; /* Light border around the selector */
+  justify-content: center;
+  margin-bottom: 30px; /* More space below */
+  border-radius: 10px; /* Match container rounding */
+  overflow: hidden;
+  border: 1px solid #d0d9e0; /* Adjusted border color */
 }
 
 .login-role-selector button {
-  flex-grow: 1; /* Make buttons take equal width */
-  padding: 12px 15px;
-  border: none; /* Remove individual button borders */
-  background-color: #f8f9fa; /* Light background for non-active */
-  color: #495057;
+  flex-grow: 1;
+  padding: 14px 18px; /* Increased padding */
+  border: none;
+  background-color: #e9ecef; /* Non-active bg */
+  color: #495057; /* Non-active text */
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-weight: 500;
+  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  font-weight: 600; /* Bolder font */
+  display: flex; /* For icon alignment */
+  align-items: center;
+  justify-content: center;
 }
 
 .login-role-selector button:not(:last-child) {
-  border-right: 1px solid #dee2e6; /* Separator line */
+  border-right: 1px solid #d0d9e0; /* Adjusted separator */
 }
 
 .login-role-selector button.active {
-  background-color: #007bff; /* Bootstrap primary blue */
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
 }
 
 .login-role-selector button:hover:not(.active) {
-  background-color: #e9ecef; /* Slight hover effect for non-active */
+  background-color: #dce3e9; /* Hover for non-active */
+}
+
+/* Input Field Wrappers (NEW) */
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px; /* Consistent margin */
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px; /* Padding for icon */
+  color: #6c757d;
+  font-size: 1.1rem; /* Slightly larger icon */
 }
 
 /* Input Fields */
@@ -63,104 +84,129 @@
 #admin-section input[type="password"],
 #user-section input[type="email"] {
   width: 100%;
-  padding: 12px 15px;
-  margin-bottom: 15px;
+  padding: 14px 18px 14px 45px; /* Left padding for icon */
   border: 1px solid #ced4da;
-  border-radius: 8px; /* Rounded corners for inputs */
-  box-sizing: border-box; /* Ensure padding doesn't affect width */
+  border-radius: 10px; /* Match container rounding */
+  box-sizing: border-box;
   font-size: 1rem;
+  background-color: #f8f9fa; /* Light background */
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 0; /* Moved margin to wrapper */
 }
 
 #admin-section input[type="email"]:focus,
 #admin-section input[type="password"]:focus,
 #user-section input[type="email"]:focus {
-  border-color: #80bdff; /* Highlight focus */
+  border-color: #80bdff;
   outline: 0;
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 /* Buttons within the form */
-#admin-login-btn,
+#admin-login-btn {
+  width: 100%;
+  padding: 0.75rem 1.2rem; /* Adjusted padding */
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(to right, #28a745, #218838);
+  color: white;
+  cursor: pointer;
+  font-size: 1.1rem; /* Larger font */
+  font-weight: 600;
+  transition: background 0.3s ease, transform 0.1s ease;
+  margin-top: 15px;
+  display: flex; /* For icon alignment */
+  align-items: center;
+  justify-content: center;
+}
+
+#admin-login-btn:hover {
+  background: linear-gradient(to right, #218838, #1e7e34);
+  transform: translateY(-1px); /* Subtle hover lift */
+}
+#admin-login-btn:active {
+  transform: translateY(0px); /* Click effect */
+}
+
+
 #user-reg-yes,
 #user-reg-no,
 #user-contact-admin-btn {
-  width: 100%; /* Make buttons full width */
+  width: 100%;
   padding: 12px 15px;
   border: none;
   border-radius: 8px;
-  background-color: #007bff; /* Primary color for main action */
   color: white;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
-  transition: background-color 0.3s ease;
-  margin-top: 10px; /* Add some space above buttons */
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  margin-top: 10px;
 }
-
-#admin-login-btn:hover,
 #user-reg-yes:hover,
 #user-reg-no:hover,
 #user-contact-admin-btn:hover {
-  background-color: #0056b3; /* Darker shade on hover */
+    transform: translateY(-1px);
 }
 
-/* Specific button styling for Yes/No */
-#user-reg-yes,
-#user-reg-no {
-  background-color: #28a745; /* Green for "Yes" */
-  margin-bottom: 10px; /* Space between Yes and No */
+
+#user-reg-yes {
+  background-color: #17a2b8; /* Info blue/teal */
 }
 #user-reg-yes:hover {
-  background-color: #1e7e34;
+  background-color: #138496;
 }
 
 #user-reg-no {
-  background-color: #dc3545; /* Red for "No" */
+  background-color: #ffc107; /* Warning yellow */
+  color: #212529; /* Dark text for yellow bg */
 }
 #user-reg-no:hover {
-  background-color: #c82333;
+  background-color: #e0a800;
 }
 
 
 /* "Are you registered?" text */
 #user-section p {
-  margin-bottom: 15px;
-  font-size: 1rem;
-  color: #333;
+  margin-bottom: 20px; /* More space */
+  font-size: 1.05rem; /* Slightly larger */
+  color: #343a40; /* Darker text */
 }
 
-/* Contact Admin Button - if different styling is needed */
+/* Contact Admin Button */
 #user-contact-admin-btn {
-  background-color: #17a2b8; /* Info color */
-  margin-top: 15px; /* Space above contact admin button */
+  background-color: #6c757d; /* Secondary grey */
+  margin-top: 15px;
 }
 #user-contact-admin-btn:hover {
-  background-color: #117a8b;
+  background-color: #5a6268;
 }
 
 /* Contact Links Section */
 #user-contact-links {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #eee; /* Separator line */
+  margin-top: 25px; /* More space */
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6; /* Slightly darker separator */
 }
 
 #user-contact-links a {
-  display: block; /* Make links take full width for easier clicking */
-  padding: 10px 0;
+  display: block;
+  padding: 12px 0; /* More padding */
   color: #007bff;
   text-decoration: none;
-  font-size: 0.95rem;
-  transition: color 0.2s ease;
+  font-size: 1rem; /* Larger link text */
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 6px; /* Rounded hover effect */
 }
 
 #user-contact-links a:hover {
   color: #0056b3;
-  text-decoration: underline;
+  background-color: #e9ecef; /* Light background on hover */
+  text-decoration: none; /* Remove underline for this style */
 }
 
 #user-contact-links a + a {
-  margin-top: 8px; /* Space between links */
+  margin-top: 10px;
 }
 
 /* Utility class for hiding elements */
@@ -168,25 +214,48 @@
   display: none !important;
 }
 
-/* Styling for the active class on role buttons (already handled by .login-role-selector button.active) */
-/* but if you need to override something or add more: */
-/*
-.login-role-selector button.active {
-  font-weight: bold;
+/* Adjustments for icons inside buttons */
+.login-role-selector button i,
+#admin-login-btn i {
+  font-size: 1em; /* Make icon size relative to button font size */
+  /* me-1 class from bootstrap should provide margin, if not: */
+  /* margin-right: 0.4em; */
 }
-*/
-
-/* Add some spacing if elements are directly one after another in a section */
-#admin-section > input + input { /* If password directly follows email */
-    margin-top: 0; /* Handled by margin-bottom on inputs already */
-}
-#admin-section > input + button { /* If button directly follows last input */
-    margin-top: 10px;
+#admin-login-btn i {
+  font-size: 1.1em; /* Slightly larger for the main button */
 }
 
-#user-section > button + input[type="email"], /* If email input follows "Yes" button */
-#user-section > button + button, /* If "No" button follows "Yes" button */
-#user-section > input[type="email"] + button, /* If contact admin button follows email input */
-#user-section > button + div#user-contact-links { /* If contact links div follows "No" button */
-    margin-top: 15px;
+/* Ensure sections take up space if they have elements */
+#admin-section, #user-section {
+  width: 100%;
 }
+
+/* Spacing for elements within sections */
+#admin-section > .input-icon-wrapper + .input-icon-wrapper {
+    margin-top: 18px;
+}
+#admin-section > .input-icon-wrapper + button {
+    margin-top: 25px; /* More space before login button */
+}
+
+#user-section > p + button,
+#user-section > button + button,
+#user-section > .input-icon-wrapper + button,
+#user-section > button + .input-icon-wrapper,
+#user-section > button + div#user-contact-links {
+    margin-top: 18px;
+}
+
+/* Ensure placeholder text is not too dark */
+::placeholder {
+  color: #6c757d;
+  opacity: 1; /* Firefox */
+}
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+ color: #6c757d;
+}
+::-ms-input-placeholder { /* Microsoft Edge */
+ color: #6c757d;
+}
+
+```

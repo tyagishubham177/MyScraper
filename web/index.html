@@ -17,19 +17,28 @@
         <button id="user-role-btn"><i data-lucide="user" class="me-1"></i>User</button>
       </div>
       <div id="admin-section">
-        <input type="email" id="admin-email" placeholder="Email">
-        <input type="password" id="admin-password" placeholder="Password">
-        <button id="admin-login-btn">Login</button>
+        <div class="input-icon-wrapper">
+          <i data-lucide="mail" class="input-icon"></i>
+          <input type="email" id="admin-email" placeholder="Email">
+        </div>
+        <div class="input-icon-wrapper">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" id="admin-password" placeholder="Password">
+        </div>
+        <button id="admin-login-btn"><i data-lucide="log-in" class="me-1"></i>Login</button>
       </div>
       <div id="user-section" style="display: none;">
         <p>Are you registered?</p>
         <button id="user-reg-yes">Yes</button>
         <button id="user-reg-no">No</button>
-        <input type="email" id="user-email" placeholder="Email" style="display: none;">
-        <button id="user-contact-admin-btn" style="display: none;">Contact admin to register</button>
+        <div class="input-icon-wrapper" id="user-email-wrapper" style="display: none;">
+          <i data-lucide="mail" class="input-icon"></i>
+          <input type="email" id="user-email" placeholder="Email">
+        </div>
+        <p id="user-contact-admin-btn" style="display: none; margin-top: 1rem;">Contact admin to register</p>
         <div id="user-contact-links" style="display: none;">
-          <a href="mailto:linktracker03@gmail.com" id="user-mail-link">Email Admin</a>
-          <a href="https://www.reddit.com/message/compose/?to=ShooBum-T" target="_blank" id="user-reddit-link">Message Admin on Reddit</a>
+          <a href="mailto:linktracker03@gmail.com?subject=New%20User%20Registration%20Request&body=I%20would%20like%20to%20request%20access." id="user-mail-link">Email Admin</a>
+          <a href="https://www.reddit.com/message/compose/?to=ShooBum-T&subject=User%20Registration%20Request" target="_blank" id="user-reddit-link">Message Admin on Reddit</a>
         </div>
       </div>
     </div>
