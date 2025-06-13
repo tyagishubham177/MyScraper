@@ -8,18 +8,22 @@
       height: 100%;
       overflow-y: auto; /* Allow scrolling on html element */
     }
-    body {
-      font-family: 'Inter', Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center; /* This centers the card when content is short */
-      justify-content: center;
-      position: relative; /* Needed for z-indexing of particles-js */
-      overflow-x: hidden; /* Prevent horizontal scrollbars */
-      overflow-y: auto;   /* Allow vertical scrolling for the body */
-      padding-top: 2rem; /* Add some padding if card is very tall */
-      padding-bottom: 2rem; /* Add some padding if card is very tall */
-    }
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center; /* This centers the card when content is short */
+  justify-content: center;
+  position: relative; /* Needed for z-indexing of particles-js */
+  overflow-x: hidden; /* Prevent horizontal scrollbars */
+  overflow-y: auto;   /* Allow vertical scrolling for the body */
+  padding-top: 2rem; /* Add some padding if card is very tall */
+  padding-bottom: 2rem; /* Add some padding if card is very tall */
+}
+
+button, .btn {
+  touch-action: manipulation;
+}
     /* Adjust alignment when body needs to scroll */
     body.is-scrollable {
       align-items: flex-start; /* Align card to top when scrollable */
