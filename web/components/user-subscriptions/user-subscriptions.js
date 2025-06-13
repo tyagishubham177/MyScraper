@@ -34,15 +34,30 @@ export async function initUserSubscriptionsUI() {
     const li = document.createElement('li');
     li.className = 'list-group-item';
     li.dataset.productId = product.id;
-    li.innerHTML = `
-      <div class="d-flex justify-content-between align-items-center">
-        <a href="${product.url}" target="_blank" class="prod-name text-decoration-none">${product.name} <i data-lucide="external-link" class="lucide-small ms-1"></i></a>
-        <div class="d-flex align-items-center">
-          <input type="time" class="form-control form-control-sm me-2 sub-start" value="${sub.start_time || '00:00'}">
-          <input type="time" class="form-control form-control-sm me-2 sub-end" value="${sub.end_time || '23:59'}">
-          <button class="btn btn-sm btn-outline-danger unsub-btn"><i data-lucide="x"></i></button>
-        </div>
-      </div>`;
+    li.dataset.name = product.name.toLowerCase();
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex justify-content-between align-items-center';
+
+    const info = document.createElement('div');
+    const strong = document.createElement('strong');
+    strong.textContent = product.name;
+    const link = document.createElement('small');
+    link.className = 'd-block text-muted';
+    link.innerHTML = `<a href="${product.url}" target="_blank">${product.url} <i data-lucide="external-link" class="lucide-small"></i></a>`;
+    info.appendChild(strong);
+    info.appendChild(link);
+
+    const controls = document.createElement('div');
+    controls.className = 'd-flex align-items-center';
+    controls.innerHTML = `
+      <input type="time" class="form-control form-control-sm me-2 sub-start" value="${sub.start_time || '00:00'}">
+      <input type="time" class="form-control form-control-sm me-2 sub-end" value="${sub.end_time || '23:59'}">
+      <button class="btn btn-sm btn-outline-danger unsub-btn"><i data-lucide="x"></i></button>`;
+
+    wrapper.appendChild(info);
+    wrapper.appendChild(controls);
+    li.appendChild(wrapper);
     return li;
   }
 
@@ -50,7 +65,23 @@ export async function initUserSubscriptionsUI() {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.dataset.productId = product.id;
-    li.innerHTML = `<a href="${product.url}" target="_blank" class="prod-name text-decoration-none">${product.name} <i data-lucide="external-link" class="lucide-small ms-1"></i></a><button class="btn btn-sm btn-outline-primary sub-btn"><i data-lucide="plus"></i></button>`;
+    li.dataset.name = product.name.toLowerCase();
+
+    const info = document.createElement('div');
+    const strong = document.createElement('strong');
+    strong.textContent = product.name;
+    const link = document.createElement('small');
+    link.className = 'd-block text-muted';
+    link.innerHTML = `<a href="${product.url}" target="_blank">${product.url} <i data-lucide="external-link" class="lucide-small"></i></a>`;
+    info.appendChild(strong);
+    info.appendChild(link);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-outline-primary sub-btn';
+    btn.innerHTML = '<i data-lucide="plus"></i>';
+
+    li.appendChild(info);
+    li.appendChild(btn);
     return li;
   }
 
@@ -133,10 +164,10 @@ export async function initUserSubscriptionsUI() {
 
   function filterProducts(term) {
     const items = allList.querySelectorAll('li');
+    const lower = term.toLowerCase();
     items.forEach(item => {
-      const nameEl = item.querySelector('.prod-name');
-      const name = nameEl ? nameEl.textContent.toLowerCase() : '';
-      item.style.display = name.includes(term.toLowerCase()) ? '' : 'none';
+      const name = item.dataset.name || '';
+      item.style.display = name.includes(lower) ? '' : 'none';
     });
   }
 
