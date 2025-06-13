@@ -26,6 +26,7 @@
     </div>
     <div class="offcanvas-body">
       <button type="button" id="logout-btn" class="btn btn-secondary w-100 mb-3"><i data-lucide="log-out" class="me-1"></i>Logout</button>
+      <button type="button" id="change-username-btn" class="btn btn-secondary w-100 mb-3"><i data-lucide="user" class="me-1"></i>Change Display Name</button>
       <h6 class="mb-2">Reach Out</h6>
       <p class="small text-body-secondary">Send a message for bugs, feedback or new product requests.</p>
       <a href="#" id="feedbackGmail" class="btn btn-outline-primary w-100 mb-2"><i data-lucide="mail" class="me-1"></i>Gmail</a>
@@ -65,7 +66,8 @@
         const username = localStorage.getItem(`username_${email}`) || "";
         const hi = username ? `Hi ${username}!` : "Hi!";
         const mailPart = username ? '' : ` ${email}`;
-        welcomeEl.innerHTML = `${hi} ${getGreeting()},${mailPart} <i id="edit-username" data-lucide="edit" class="ms-1" role="button" style="cursor:pointer"></i>`;
+        const icon = username ? '' : ` <i id="edit-username" data-lucide="edit" class="ms-1" role="button" style="cursor:pointer"></i>`;
+        welcomeEl.innerHTML = `${hi} ${getGreeting()},${mailPart}${icon}`;
         if (window.lucide) window.lucide.createIcons();
       }
       updateWelcome();
@@ -93,6 +95,13 @@
         const modal = bootstrap.Modal.getInstance(document.getElementById('usernameModal'));
         modal.hide();
         updateWelcome();
+      });
+
+      document.getElementById('change-username-btn').addEventListener('click', () => {
+        const input = document.getElementById('username-input');
+        input.value = localStorage.getItem(`username_${email}`) || '';
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('usernameModal'));
+        modal.show();
       });
 
       document.getElementById("logout-btn").addEventListener("click", () => {
