@@ -117,39 +117,7 @@
       transform: translateY(1px) !important; /* Press in */
     }
 
-#enable.btn-neumorphic {
-  background: var(--success-color) !important; /* Bootstrap success green */
-  color: #fff !important; /* Ensure text is white for contrast */
-}
-
-#disable.btn-neumorphic {
-  background: var(--danger-color) !important; /* Bootstrap danger red */
-  color: #fff !important; /* Ensure text is white for contrast */
-}
-
-/* Optional: Adjust hover/active states if the new background conflicts badly */
-#enable.btn-neumorphic:hover {
-  background: #218838 !important; /* Darker green on hover */
-}
-
-#disable.btn-neumorphic:hover {
-  background: #c82333 !important; /* Darker red on hover */
-}
-
-/* Keep existing neumorphic box-shadows for pressed state, but ensure bg color is not lost */
-#enable.btn-neumorphic:active {
-  background: #1e7e34 !important; /* Even darker green when active */
-  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
-}
-
-#disable.btn-neumorphic:active {
-  background: #bd2130 !important; /* Even darker red when active */
-  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.05) !important;
-}
-
     /* Specific colors for icon and text if needed, but keeping text white by default for this bg */
-    #enable.btn-neumorphic { /* color: #28a745 !important; */ }
-    #disable.btn-neumorphic { /* color: #dc3545 !important; */ }
     #refresh.btn-neumorphic { /* color: #6c757d !important; */ }
 
     /* Make icons slightly more prominent on neumorphic buttons */
