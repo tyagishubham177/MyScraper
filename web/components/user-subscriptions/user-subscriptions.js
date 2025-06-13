@@ -258,14 +258,6 @@ export async function initUserSubscriptionsUI() {
     searchInput.addEventListener('input', () => filterProducts(searchInput.value));
   }
 
-  const infoToggle = document.getElementById('subscriptions-info-toggle');
-  const infoList = document.getElementById('subscriptions-info');
-  if (infoToggle && infoList) {
-    infoToggle.addEventListener('click', () => {
-      infoList.classList.toggle('d-none');
-    });
-  }
-
   render();
 }
 

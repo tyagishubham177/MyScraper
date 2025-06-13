@@ -1,13 +1,25 @@
 <div class="row" id="subscriptions-ui">
   <div class="col-md-6 mb-4">
-    <h4>Your Subscriptions <i id="subscriptions-info-toggle" data-lucide="info" class="lucide-small ms-1" title="Show info"></i></h4>
-    <ul id="subscriptions-info" class="list-unstyled small mt-2 d-none">
-      <li>➕ Add products from the list on the right</li>
-      <li>❌ Remove a subscription with the X button</li>
-      <li>🔗 Links open the product page</li>
-      <li>⏯ Pause or resume with the pause button</li>
-      <li>⏰ Set start/end times for notifications</li>
-    </ul>
+    <h4>Your Subscriptions <i id="subscriptions-info-toggle" data-lucide="info" class="lucide-small ms-1" title="Show info" data-bs-toggle="modal" data-bs-target="#subscriptionsInfoModal"></i></h4>
+    <div class="modal fade" id="subscriptionsInfoModal" tabindex="-1" aria-labelledby="subscriptionsInfoModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="subscriptionsInfoModalLabel">Subscription Controls</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <ul class="list-unstyled small mb-0">
+              <li>➕ Add products from the list on the right</li>
+              <li>❌ Remove a subscription with the X button</li>
+              <li>🔗 Links open the product page</li>
+              <li>⏯ Pause or resume with the pause button</li>
+              <li>⏰ Set start/end times for notifications</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="list-wrapper">
       <ul id="user-subscribed-list" class="list-group"></ul>
     </div>
