@@ -136,17 +136,15 @@ export function initLogin() {
       // }
       if (userContactLinks) {
         userContactLinks.style.display = 'block'; // Or 'flex' as appropriate for the <div>. 'block' is fine.
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
       }
       // Ensure showMainApp() is NOT called here
     });
   }
 
-  if (userMailLink) {
-    userMailLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.open(userMailLink.href, '_blank');
-    });
-  }
+  // userMailLink anchor already has target="_blank" in the HTML. No JS handler needed.
 
   // REMOVE: Old user registration event listeners
   // if (userRegYesBtn) { ... }
