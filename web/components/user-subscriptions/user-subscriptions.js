@@ -249,8 +249,8 @@ export async function initUserSubscriptionsUI() {
     const items = allList.querySelectorAll('li');
     const lower = term.toLowerCase();
     items.forEach(item => {
-      const name = item.dataset.name || '';
-      item.style.display = name.includes(lower) ? '' : 'none';
+      const title = item.dataset.name || item.querySelector('strong')?.textContent.toLowerCase() || '';
+      item.style.display = title.includes(lower) ? '' : 'none';
     });
   }
 
