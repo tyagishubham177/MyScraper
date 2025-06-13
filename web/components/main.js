@@ -2,7 +2,7 @@ import './status.js';
 import {initPage} from './ui.js';
 import {initParticles} from './particles-config.js';
 import {initIcons} from './icons.js';
-import { initLogin } from './login.js'; // Import initLogin
+import { initLogin } from './login/login.js'; // Import initLogin
 import {initRecipientsUI} from './recipients-ui.js';
 import {initProductsUI} from './products-ui.js';
 import './subscriptions-ui.js'; // Ensures subscriptions UI is initialized

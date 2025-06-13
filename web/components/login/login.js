@@ -1,10 +1,10 @@
-import { API_LOGIN, API_USER_LOGIN } from './config.js';
+import { API_LOGIN, API_USER_LOGIN } from '../config.js';
 
 export async function initLogin() {
   let loginPopup = document.getElementById('login-popup');
   if (!loginPopup) {
     try {
-      const res = await fetch('components/login.html');
+      const res = await fetch('components/login/login.html');
       const html = await res.text();
       const wrapper = document.createElement('div');
       wrapper.innerHTML = html.trim();
