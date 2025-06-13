@@ -246,22 +246,37 @@ export async function initUserSubscriptionsUI() {
   });
 
   function filterProducts(term) {
+  console.log('[FilterDebug] filterProducts called with term:', term);
     const items = allList.querySelectorAll('li');
-  // Split the search term into words, convert to lowercase, and filter out empty strings
   const searchWords = term.toLowerCase().split(' ').filter(word => word.length > 0);
+  console.log('[FilterDebug] searchWords:', searchWords);
 
-    items.forEach(item => {
-    // Ensure title is fetched correctly, defaulting to an empty string if not found
+  let shownCount = 0;
+  let hiddenCount = 0;
+
+  items.forEach((item, index) => {
     const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
 
+    let allWordsMatch = false;
     if (searchWords.length === 0) {
-      item.style.display = ''; // Show all if search is empty
+      allWordsMatch = true; // Show all if search is empty
     } else {
-      // Check if all search words are present in the title
-      const allWordsMatch = searchWords.every(word => title.includes(word));
-      item.style.display = allWordsMatch ? '' : 'none';
+      allWordsMatch = searchWords.every(word => title.includes(word));
+    }
+
+    if (index < 5) { // Log details for the first 5 items for brevity
+      console.log(`[FilterDebug] Item ${index}: Title: "${title}", Matches: ${allWordsMatch}`);
+    }
+
+    if (allWordsMatch) {
+      item.style.display = '';
+      shownCount++;
+    } else {
+      item.style.display = 'none';
+      hiddenCount++;
     }
     });
+  console.log(`[FilterDebug] Filtering complete. Shown: ${shownCount}, Hidden: ${hiddenCount} (Total: ${items.length})`);
   }
 
   if (searchInput) {
