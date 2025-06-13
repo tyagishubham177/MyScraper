@@ -1,4 +1,4 @@
-import { API_LOGIN } from './config.js';
+import { API_LOGIN, API_USER_LOGIN } from './config.js';
 
 export async function initLogin() {
   let loginPopup = document.getElementById('login-popup');
@@ -147,35 +147,48 @@ export async function initLogin() {
 
   // New User Login Logic
   if (userLoginBtn) {
-    userLoginBtn.addEventListener('click', () => {
+    userLoginBtn.addEventListener('click', async () => {
       const email = userEmailInput ? userEmailInput.value.trim() : '';
 
-      // Basic Validation
       if (email === '') {
         if (userErrorMessage) {
           userErrorMessage.textContent = 'Please enter your email.';
           userErrorMessage.style.display = 'block';
         }
-        // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
         if (userContactLinks) userContactLinks.style.display = 'none';
         return;
       }
 
-      // Always show "not registered" flow after email submission
-      if (userErrorMessage) {
-        userErrorMessage.textContent = 'Email not registered. Please contact admin to register.';
-        userErrorMessage.style.display = 'block';
-      }
-      // if (userContactAdminText) { // REMOVED
-      //   userContactAdminText.style.display = 'block';
-      // }
-      if (userContactLinks) {
-        userContactLinks.style.display = 'block'; // Or 'flex' as appropriate for the <div>. 'block' is fine.
-        if (window.lucide && typeof window.lucide.createIcons === 'function') {
-          window.lucide.createIcons();
+      try {
+        const res = await fetch(API_USER_LOGIN, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        if (res.ok) {
+          localStorage.setItem('userEmail', email);
+          window.location.href = 'user.html';
+          return;
+        }
+
+        if (userErrorMessage) {
+          const result = await res.json().catch(() => ({}));
+          userErrorMessage.textContent = result.message || 'Email not registered. Please contact admin to register.';
+          userErrorMessage.style.display = 'block';
+        }
+        if (userContactLinks) {
+          userContactLinks.style.display = 'block';
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+          }
+        }
+      } catch (e) {
+        if (userErrorMessage) {
+          userErrorMessage.textContent = 'Login failed.';
+          userErrorMessage.style.display = 'block';
         }
       }
-      // Ensure showMainApp() is NOT called here
     });
   }
 
@@ -198,6 +211,11 @@ export async function initLogin() {
   if (existingToken) {
     showMainApp();
   } else {
-    showLoginPopup(); // Initialize and show the popup
+    const existingUser = localStorage.getItem('userEmail');
+    if (existingUser) {
+      window.location.href = 'user.html';
+    } else {
+      showLoginPopup();
+    }
   }
 }
