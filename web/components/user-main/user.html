@@ -20,12 +20,12 @@
   <script>
     const email = localStorage.getItem("userEmail");
     if (!email) {
-      window.location.href = "../index.html";
+      window.location.href = "../../index.html";
     } else {
       document.getElementById("welcome-msg").textContent = "Logged in as " + email;
       document.getElementById("logout-btn").addEventListener("click", () => {
         localStorage.removeItem("userEmail");
-        window.location.href = "../index.html";
+        window.location.href = "../../index.html";
       });
     }
   </script>
