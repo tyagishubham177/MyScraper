@@ -1,6 +1,6 @@
 // JSZip is loaded globally via a script tag in index.html
-import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from './config.js';
-import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog} from './utils.js';
+import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from '../config/config.js';
+import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog} from '../utils/utils.js';
 
 function parseScraperDecisionsFromLog(logText) {
   if (!logText) return [];

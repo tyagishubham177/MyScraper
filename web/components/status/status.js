@@ -1,4 +1,4 @@
-import {API_STATUS} from './config.js';
+import {API_STATUS} from '../config/config.js';
 
 const loader = document.getElementById('loader');
 const statusSpan = document.getElementById('status');

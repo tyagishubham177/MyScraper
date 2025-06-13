@@ -4,8 +4,8 @@ import {
   createInputElement,
   storeInitialFormState as storeInitialFormStateHelper, // Import from helpers
   updateSaveButtonState as updateSaveButtonStateHelper  // Import from helpers
-} from './subscription-helpers.js';
-import { fetchAPI } from './utils.js';
+} from '../subscription-helpers/subscription-helpers.js';
+import { fetchAPI } from '../utils/utils.js';
 
 // Global variables moved from subscriptions-ui.js
 let currentModalRecipientId = null;

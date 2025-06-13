@@ -1,4 +1,4 @@
-import { API_LOGIN, API_USER_LOGIN } from '../config.js';
+import { API_LOGIN, API_USER_LOGIN } from '../config/config.js';
 
 export async function initLogin() {
   let loginPopup = document.getElementById('login-popup');
