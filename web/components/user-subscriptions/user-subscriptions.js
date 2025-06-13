@@ -269,10 +269,10 @@ export async function initUserSubscriptionsUI() {
     }
 
     if (allWordsMatch) {
-      item.style.display = '';
+      item.classList.remove('product-item-hidden');
       shownCount++;
     } else {
-      item.style.display = 'none';
+      item.classList.add('product-item-hidden');
       hiddenCount++;
     }
     });

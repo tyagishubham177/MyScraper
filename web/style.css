@@ -980,3 +980,8 @@ button, .btn {
   60% { opacity: 1; transform: scale(1.05); }
   100% { transform: scale(1); }
 }
+
+/* Used by user-subscriptions.js to hide non-matching products during search */
+.product-item-hidden {
+  display: none !important;
+}
