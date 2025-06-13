@@ -7,14 +7,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="components/style.css">
+  <link rel="stylesheet" href="components/login.css">
 </head>
 <body>
+  <!-- Login UI moved to components/login.html -->
   <div id="particles-js" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0;"></div>
   <div id="particles-js-bg"></div> <!-- Div for animated gradient background -->
-  <div class="container py-4">
-    <div class="row"> <!-- Single row for the two main columns -->
-      <div class="col-lg-5 mb-4"> <!-- Left Column for Amul Watchdog Control -->
-        <div class="card shadow-lg">
+  <div id="main-app-content" style="display: none;">
+    <div class="container py-4">
+      <div class="row"> <!-- Single row for the two main columns -->
+        <div class="col-lg-5 mb-4"> <!-- Left Column for Amul Watchdog Control -->
+          <div class="card shadow-lg">
           <div class="card-body text-center">
             <h1 class="text-primary mb-4">Amul Watchdog Control</h1>
         <p>
@@ -126,6 +129,7 @@
       </div> <!-- End of Right Column -->
     </div> <!-- End of main row -->
   </div> <!-- End of container -->
+  </div> <!-- End of main-app-content -->
   <button type="button" class="fab" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="3" />

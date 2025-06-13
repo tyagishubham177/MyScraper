@@ -51,6 +51,9 @@ The `web/` folder contains a very small HTML page and three API endpoints that c
    - `GH_REPO` – `<owner>/<repo>` pointing to your GitHub repository.
    - `GH_TOKEN` – a token with the `workflow` scope so the API can toggle the workflow.
    - `GH_WORKFLOW` – workflow filename, defaults to `schedule.yml`.
+   - `ADMIN_EMAIL` – admin login email.
+   - `ADMIN_PASSWORD_HASH` – bcrypt hash of the admin password.
+   - `JWT_SECRET` – secret used to sign admin session tokens.
 4. Deploy the project. Visiting the deployed URL will display buttons to enable/disable the workflow and a **Check status** button to see if it is currently active.
 
 ## Files

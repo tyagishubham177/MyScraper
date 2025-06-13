@@ -1,0 +1,350 @@
+/* Overall Login Popup */
+#login-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.65); /* Slightly darker for more focus */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  font-family: 'Inter', sans-serif;
+  padding: 15px; /* Add some padding for smaller screens */
+}
+
+/* Login Container Box */
+.login-container {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 35px; /* Increased padding */
+  border-radius: 15px; /* More pronounced rounding */
+  max-width: 480px; /* Slightly wider */
+  width: 100%; /* Responsive width */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Enhanced shadow */
+  border: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+/* Role Selector */
+.login-role-selector {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px; /* More space below */
+  border-radius: 10px; /* Match container rounding */
+  overflow: hidden;
+  border: 1px solid #d0d9e0; /* Adjusted border color */
+}
+
+.login-role-selector button {
+  flex-grow: 1;
+  padding: 14px 18px; /* Increased padding */
+  border: none;
+  background-color: #e9ecef; /* Non-active bg */
+  color: #495057; /* Non-active text */
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  font-weight: 600; /* Bolder font */
+  display: flex; /* For icon alignment */
+  align-items: center;
+  justify-content: center;
+}
+
+.login-role-selector button:not(:last-child) {
+  border-right: 1px solid #d0d9e0; /* Adjusted separator */
+}
+
+.login-role-selector button.active {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.login-role-selector button:hover:not(.active) {
+  background-color: #dce3e9; /* Hover for non-active */
+}
+
+/* Input Field Wrappers */
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px; /* Consistent margin */
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px; /* Padding for icon */
+  color: #6c757d;
+  font-size: 1.1rem; /* Slightly larger icon */
+}
+
+/* Input Fields */
+#admin-section input[type="email"],
+#admin-section input[type="password"],
+#user-section input[type="email"] {
+  width: 100%;
+  padding: 14px 18px 14px 45px; /* Left padding for icon */
+  border: 1px solid #ced4da;
+  border-radius: 10px; /* Match container rounding */
+  box-sizing: border-box;
+  font-size: 1rem;
+  background-color: #f8f9fa; /* Light background */
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 0; /* Moved margin to wrapper */
+}
+
+#admin-section input[type="email"]:focus,
+#admin-section input[type="password"]:focus,
+#user-section input[type="email"]:focus {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Buttons within the form */
+#admin-login-btn {
+  width: 100%;
+  padding: 0.75rem 1.2rem; /* Adjusted padding */
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(to right, #28a745, #218838);
+  color: white;
+  cursor: pointer;
+  font-size: 1.1rem; /* Larger font */
+  font-weight: 600;
+  transition: background 0.3s ease, transform 0.1s ease;
+  margin-top: 15px; /* Adjusted from 25px in prev anaylsis to fit better */
+  display: flex; /* For icon alignment */
+  align-items: center;
+  justify-content: center;
+}
+
+#admin-login-btn:hover {
+  background: linear-gradient(to right, #218838, #1e7e34);
+  transform: translateY(-1px); /* Subtle hover lift */
+}
+#admin-login-btn:active {
+  transform: translateY(0px); /* Click effect */
+}
+
+/* User Registration Options Container (OLD - kept for reference if needed, but not active) */
+.user-reg-options-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+/* Styles for OLD Yes/No buttons if they were to be used again */
+#user-reg-yes,
+#user-reg-no {
+  flex-grow: 1;
+  padding: 12px 15px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  margin-top: 0;
+}
+#user-reg-yes:hover,
+#user-reg-no:hover {
+    transform: translateY(-1px);
+}
+#user-reg-yes { background-color: #17a2b8; }
+#user-reg-yes:hover { background-color: #138496; }
+#user-reg-no { background-color: #ffc107; color: #212529; }
+#user-reg-no:hover { background-color: #e0a800; }
+
+
+/* User Section Specific Styles */
+.user-login-header {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #343a40; /* Darker text color */
+  margin-bottom: 1.5rem; /* Default from HTML, can be adjusted */
+}
+
+/* User Login Button - primarily uses Bootstrap classes .btn .btn-primary .w-100 .mt-3 .mb-3 */
+/* Add minor adjustments if needed */
+#user-login-btn {
+  font-weight: 500; /* Bootstrap primary might be bolder, this can make it standard */
+  padding: 0.65rem 1rem; /* Slightly adjust padding if needed */
+  /* mt-3 and mb-3 from HTML provide margin */
+}
+/* Example hover, if Bootstrap's isn't "zingy" enough. For now, rely on Bootstrap.
+#user-login-btn:hover {
+  background-color: #0056b3;
+}
+*/
+
+/* Shared styles for error messages if desired, or use specific IDs */
+/* .error-message { ... } */
+
+#user-error-message,
+#admin-error-message { /* Grouping selector for shared styles */
+  color: #dc3545; /* Bootstrap danger color */
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-radius: 5px;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  /* display: none; is handled by inline style initially and JS */
+}
+
+/* If specific overrides are needed for one or the other, they can be added below */
+/* For example:
+#admin-error-message {
+  margin-top: 15px; // Different top margin for admin specifically
+}
+*/
+
+
+/* "Are you registered?" text - OLD, no longer in HTML, selector can be removed or kept for reference */
+/* #user-section > p:first-of-type { ... } */
+
+/* Contact Admin Text (p tag) */
+#user-contact-admin-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #343a40;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  cursor: default;
+  flex-grow: 0;
+  width: auto;
+  transition: none;
+}
+
+
+/* Contact Links Section */
+#user-contact-links {
+  display: flex; /* Arrange children (links/buttons) horizontally */
+  justify-content: center; /* Center the group of links */
+  align-items: center; /* Align items vertically */
+  gap: 15px; /* Adds space between the links/buttons */
+  margin-top: 20px; /* Space above the links container (was 0, needs space now) */
+  padding-top: 15px; /* Keep padding if border is kept */
+  border-top: 1px solid #dee2e6; /* Keep or remove border as desired */
+  flex-wrap: wrap; /* Allow wrapping on very small screens if needed */
+}
+
+/* Styling for the new .contact-link-btn class within #user-contact-links */
+#user-contact-links .contact-link-btn {
+  text-decoration: none; /* Already handled by .btn, but good to ensure */
+  /* padding: 0.5rem 1rem; */ /* Bootstrap .btn default padding is usually fine, adjust if needed */
+  /* border-radius: 5px; */   /* Bootstrap .btn default radius is usually fine */
+  display: inline-flex; /* To align icon and text nicely */
+  align-items: center;
+  font-weight: 500;
+  /* Bootstrap hover effects on .btn-outline-* are usually sufficient */
+  /* transition: all 0.2s ease-in-out; */ /* Bootstrap handles transitions */
+}
+
+/* Ensure icons within these new buttons are vertically aligned if needed */
+#user-contact-links .contact-link-btn i {
+  line-height: 1; /* Helps align lucide icons with text in a flex container */
+  /* me-1 class from HTML will provide margin */
+}
+
+/* Remove old specific 'a' and 'a+a' styling if .contact-link-btn handles it all */
+/*
+#user-contact-links a { ... }
+#user-contact-links a:hover { ... }
+#user-contact-links a + a { ... }
+*/
+
+/* Utility class for hiding elements */
+.hidden {
+  display: none !important;
+}
+
+/* Adjustments for icons inside buttons */
+.login-role-selector button i,
+#admin-login-btn i {
+  font-size: 1em;
+}
+#admin-login-btn i,
+#user-contact-links .contact-link-btn i { /* Ensure icon size consistency if not using me-1 or similar */
+  font-size: 1em; /* Or adjust as needed, me-1 might make this redundant for size */
+}
+
+/* Ensure sections take up space if they have elements */
+#admin-section, #user-section {
+  width: 100%;
+}
+
+/* Spacing for elements within sections */
+#admin-section > .input-icon-wrapper + .input-icon-wrapper {
+    margin-top: 18px;
+}
+#admin-section > .input-icon-wrapper + #admin-error-message, /* Pwd wrapper to error message */
+#admin-section > #admin-error-message + button#admin-login-btn { /* Error message to login button */
+    margin-top: 15px; /* Consistent spacing around error message */
+}
+
+/* If error message is hidden, direct spacing from pwd wrapper to button */
+#admin-section > .input-icon-wrapper + button#admin-login-btn {
+    margin-top: 15px; /* Should match the sum of (error msg margin + button margin) or be set directly */
+}
+
+/* Spacing for User Section elements */
+#user-section > .user-login-header + .input-icon-wrapper {
+    margin-top: 0; /* Header already has margin-bottom */
+}
+
+.input-icon-wrapper + #user-login-btn { /* Email wrapper + user login button */
+    /* margin-top is on the button via .mt-3 */
+}
+
+#user-login-btn + #user-error-message {
+    /* margin-top is on the error message itself */
+}
+
+#user-error-message + #user-contact-admin-btn {
+    margin-top: 20px; /* If error message is visible, then contact admin text */
+}
+
+/* Spacing if error message is NOT visible: */
+#user-login-btn + #user-contact-admin-btn {
+    margin-top: 20px; /* If error message is hidden, login button to contact admin text */
+}
+
+
+/* Spacing adjustment if #user-contact-admin-btn were present. It's removed, so this specific rule might not be needed. */
+/* #user-contact-admin-btn + #user-contact-links {
+    margin-top: 0;
+} */
+
+/* Ensure there's space if an error message is shown, then the contact links */
+#user-error-message + #user-contact-links {
+    margin-top: 20px;
+}
+
+
+/* Ensure placeholder text is not too dark */
+::placeholder {
+  color: #6c757d;
+  opacity: 1; /* Firefox */
+}
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+ color: #6c757d;
+}
+::-ms-input-placeholder { /* Microsoft Edge */
+ color: #6c757d;
+}
+
+```
