@@ -25,24 +25,8 @@ export async function initUserSubscriptionsUI() {
   }
 
   let subscriptions = await fetchAPI(`/api/subscriptions?recipient_id=${recipient.id}`).catch(() => []);
-  const subscribedMap = new Map(subscriptions.map(s => [s.product_id, s]));
-
-  function loadPaused() {
-    try {
-      const stored = JSON.parse(localStorage.getItem('pausedSubscriptions') || '{}');
-      return new Map(Object.entries(stored));
-    } catch {
-      return new Map();
-    }
-  }
-
-  function savePaused(map) {
-    const obj = {};
-    map.forEach((v, k) => { obj[k] = v; });
-    localStorage.setItem('pausedSubscriptions', JSON.stringify(obj));
-  }
-
-  const pausedMap = loadPaused();
+  const subscribedMap = new Map(subscriptions.map(s => [s.product_id, { ...s, paused: !!s.paused }]));
+  const productMap = new Map(products.map(p => [p.id, p]));
 
   const subscribedList = document.getElementById('user-subscribed-list');
   const allList = document.getElementById('all-products-list');
@@ -129,17 +113,24 @@ export async function initUserSubscriptionsUI() {
   function render() {
     subscribedList.innerHTML = '';
     allList.innerHTML = '';
-    for (const [id, sub] of subscribedMap.entries()) {
-      const product = products.find(p => p.id === id);
-      if (product) subscribedList.appendChild(createSubscribedItem(product, sub, false));
+
+    const sortedSubs = [...subscribedMap.entries()]
+      .map(([id, sub]) => ({ id, sub, product: productMap.get(id) }))
+      .filter(item => item.product)
+      .sort((a, b) => {
+        if (a.sub.paused && !b.sub.paused) return 1;
+        if (!a.sub.paused && b.sub.paused) return -1;
+        return a.product.name.localeCompare(b.product.name);
+      });
+
+    for (const item of sortedSubs) {
+      subscribedList.appendChild(
+        createSubscribedItem(item.product, item.sub, item.sub.paused)
+      );
     }
-    for (const [id, info] of pausedMap.entries()) {
-      if (subscribedMap.has(id)) continue;
-      const product = products.find(p => p.id === id);
-      if (product) subscribedList.appendChild(createSubscribedItem(product, info, true));
-    }
+
     products.forEach(p => {
-      if (!subscribedMap.has(p.id) && !pausedMap.has(p.id)) allList.appendChild(createAllProductItem(p));
+      if (!subscribedMap.has(p.id)) allList.appendChild(createAllProductItem(p));
     });
     if (window.lucide) window.lucide.createIcons();
     filterProducts(searchInput.value || '');
@@ -151,7 +142,7 @@ export async function initUserSubscriptionsUI() {
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId })
+        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, paused: false })
       });
       subscribedMap.set(productId, res);
       render();
@@ -181,39 +172,36 @@ export async function initUserSubscriptionsUI() {
 
   async function pause(productId) {
     const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
-    const start = li ? li.querySelector('.sub-start').value : '00:00';
-    const end = li ? li.querySelector('.sub-end').value : '23:59';
-    showGlobalLoader();
-    try {
-      await fetchAPI('/api/subscriptions', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId })
-      });
-    } catch (err) {
-      // ignore failures; subscription might not exist
-    }
-    subscribedMap.delete(productId);
-    pausedMap.set(productId, { start_time: start, end_time: end });
-    savePaused(pausedMap);
-    render();
-    hideGlobalLoader();
-  }
-
-  async function resume(productId) {
-    const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
-    const start = li ? li.querySelector('.sub-start').value : (pausedMap.get(productId)?.start_time || '00:00');
-    const end = li ? li.querySelector('.sub-end').value : (pausedMap.get(productId)?.end_time || '23:59');
+    const start = li ? li.querySelector('.sub-start').value : (subscribedMap.get(productId)?.start_time || '00:00');
+    const end = li ? li.querySelector('.sub-end').value : (subscribedMap.get(productId)?.end_time || '23:59');
     showGlobalLoader();
     try {
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end })
+        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: true })
       });
       subscribedMap.set(productId, res);
-      pausedMap.delete(productId);
-      savePaused(pausedMap);
+      render();
+    } catch (err) {
+      alert(err.message || 'Failed to pause');
+    } finally {
+      hideGlobalLoader();
+    }
+  }
+
+  async function resume(productId) {
+    const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
+    const start = li ? li.querySelector('.sub-start').value : (subscribedMap.get(productId)?.start_time || '00:00');
+    const end = li ? li.querySelector('.sub-end').value : (subscribedMap.get(productId)?.end_time || '23:59');
+    showGlobalLoader();
+    try {
+      const res = await fetchAPI('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: false })
+      });
+      subscribedMap.set(productId, res);
       render();
     } catch (err) {
       alert(err.message || 'Failed to resume');
@@ -224,17 +212,11 @@ export async function initUserSubscriptionsUI() {
 
   async function updateTimes(productId, start, end) {
     showGlobalLoader();
-    if (pausedMap.has(productId) && !subscribedMap.has(productId)) {
-      pausedMap.set(productId, { start_time: start, end_time: end });
-      savePaused(pausedMap);
-      hideGlobalLoader();
-      return;
-    }
     try {
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end })
+        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: !!subscribedMap.get(productId)?.paused })
       });
       subscribedMap.set(productId, res);
     } catch (err) {
@@ -249,16 +231,11 @@ export async function initUserSubscriptionsUI() {
     if (!li) return;
     if (e.target.closest('.unsub-btn')) {
       const id = li.dataset.productId;
-      if (subscribedMap.has(id)) {
-        unsubscribe(id);
-      } else {
-        pausedMap.delete(id);
-        savePaused(pausedMap);
-        render();
-      }
+      unsubscribe(id);
     } else if (e.target.closest('.pause-btn')) {
       const id = li.dataset.productId;
-      if (pausedMap.has(id) && !subscribedMap.has(id)) {
+      const sub = subscribedMap.get(id);
+      if (sub && sub.paused) {
         resume(id);
       } else {
         pause(id);
@@ -282,37 +259,20 @@ export async function initUserSubscriptionsUI() {
   });
 
   function filterProducts(term) {
-  console.log('[FilterDebug] filterProducts called with term:', term);
     const items = allList.querySelectorAll('li');
-  const searchWords = term.toLowerCase().split(' ').filter(word => word.length > 0);
-  console.log('[FilterDebug] searchWords:', searchWords);
+    const searchWords = term.toLowerCase().split(' ').filter(word => word.length > 0);
 
-  let shownCount = 0;
-  let hiddenCount = 0;
+    items.forEach(item => {
+      const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
+      const matches =
+        searchWords.length === 0 || searchWords.every(word => title.includes(word));
 
-  items.forEach((item, index) => {
-    const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
-
-    let allWordsMatch = false;
-    if (searchWords.length === 0) {
-      allWordsMatch = true; // Show all if search is empty
-    } else {
-      allWordsMatch = searchWords.every(word => title.includes(word));
-    }
-
-    if (index < 5) { // Log details for the first 5 items for brevity
-      console.log(`[FilterDebug] Item ${index}: Title: "${title}", Matches: ${allWordsMatch}`);
-    }
-
-    if (allWordsMatch) {
-      item.classList.remove('product-item-hidden');
-      shownCount++;
-    } else {
-      item.classList.add('product-item-hidden');
-      hiddenCount++;
-    }
+      if (matches) {
+        item.classList.remove('product-item-hidden');
+      } else {
+        item.classList.add('product-item-hidden');
+      }
     });
-  console.log(`[FilterDebug] Filtering complete. Shown: ${shownCount}, Hidden: ${hiddenCount} (Total: ${items.length})`);
   }
 
   if (searchInput) {

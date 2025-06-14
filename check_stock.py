@@ -93,6 +93,12 @@ async def main():
                     email = recipients_map.get(rid)
                     start_t = sub.get('start_time', '00:00')
                     end_t = sub.get('end_time', '23:59')
+                    if sub.get('paused'):
+                        if email:
+                            current_summary.append({'user_email': email, 'status': 'Skipped - Paused'})
+                        else:
+                            current_summary.append({'user_email': 'Unknown', 'status': 'Skipped - Paused'})
+                        continue
                     if not within_time_window(start_t, end_t, current_time):
                         if email:
                             current_summary.append({'user_email': email, 'status': 'Skipped - Subscription Not Due'})
