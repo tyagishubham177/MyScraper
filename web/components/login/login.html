@@ -1,10 +1,10 @@
 <div id="login-popup" style="display: none;">
   <div class="login-container">
     <div class="login-role-selector">
-      <button id="admin-role-btn"><i data-lucide="shield" class="me-1"></i>Admin</button>
       <button id="user-role-btn"><i data-lucide="user" class="me-1"></i>User</button>
+      <button id="admin-role-btn"><i data-lucide="shield" class="me-1"></i>Admin</button>
     </div>
-    <div id="admin-section">
+    <div id="admin-section" style="display: none;">
       <div class="input-icon-wrapper">
         <i data-lucide="mail" class="input-icon"></i>
         <input type="email" id="admin-email" placeholder="Email">
@@ -16,7 +16,7 @@
       <p id="admin-error-message" class="error-message" style="display: none;"></p>
       <button id="admin-login-btn"><i data-lucide="log-in" class="me-1"></i>Login</button>
     </div>
-    <div id="user-section" style="display: none;">
+    <div id="user-section">
       <h4 class="user-login-header" style="margin-bottom: 1.5rem;">Enter your email to login</h4>
       <div class="input-icon-wrapper" id="user-email-wrapper">
         <i data-lucide="mail" class="input-icon"></i>
