@@ -221,6 +221,7 @@ export async function initLogin() {
           const lockUntil = Date.now() + result.wait * 1000;
           localStorage.setItem('userLockUntil', lockUntil);
           startCountdown(userLoginBtn, lockUntil, userErrorMessage, 'userLockUntil');
+          if (userContactLinks) userContactLinks.style.display = 'none';
         } else if (result.attempt) {
           let msg = `Unsuccessful attempt ${result.attempt}/3`;
           if (result.attempt === 2) msg += ' - last attempt';
@@ -228,17 +229,22 @@ export async function initLogin() {
             userErrorMessage.textContent = msg;
             userErrorMessage.style.display = 'block';
           }
+          if (userContactLinks) {
+            userContactLinks.style.display = 'block';
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+              window.lucide.createIcons();
+            }
+          }
         } else {
           if (userErrorMessage) {
             userErrorMessage.textContent = result.message || 'Email not registered. Please contact admin to register.';
             userErrorMessage.style.display = 'block';
           }
-        }
-
-        if (!result.wait && !result.attempt && userContactLinks) {
-          userContactLinks.style.display = 'block';
-          if (window.lucide && typeof window.lucide.createIcons === 'function') {
-            window.lucide.createIcons();
+          if (userContactLinks) {
+            userContactLinks.style.display = 'block';
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+              window.lucide.createIcons();
+            }
           }
         }
       } catch (e) {
