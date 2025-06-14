@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   if (attemptData.lockUntil && now < attemptData.lockUntil) {
     const wait = Math.ceil((attemptData.lockUntil - now) / 1000);
-    return res.status(429).json({ message: `Too many attempts. Try again in ${wait}s`, wait });
+    return res.status(429).json({ message: `Too many attempts. Try again in ${wait}s`, wait, attempt: attemptData.count });
   }
 
   try {
@@ -36,10 +36,10 @@ export default async function handler(req, res) {
     await kv.set(ATTEMPT_KEY, attemptData);
 
     if (attemptData.count >= 3) {
-      return res.status(429).json({ message: `Too many attempts. Try again in ${attemptData.delay}s`, wait: attemptData.delay });
+      return res.status(429).json({ message: `Too many attempts. Try again in ${attemptData.delay}s`, wait: attemptData.delay, attempt: attemptData.count });
     }
 
-    return res.status(401).json({ message: 'Email not registered' });
+    return res.status(401).json({ message: 'Email not registered', attempt: attemptData.count });
   } catch (error) {
     console.error('Error checking recipient list:', error);
     return res.status(500).json({ message: 'Server error' });
