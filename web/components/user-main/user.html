@@ -55,27 +55,43 @@
       </div>
     </div>
   </div>
-  <script>
-    const email = localStorage.getItem("userEmail");
-    if (!email) {
-      window.location.href = "../../index.html";
-    } else {
-      const welcomeEl = document.getElementById("welcome-msg");
+  <script src="../../particles.js"></script>
+  <script src="../../lucide-icons.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module">
+    import { initParticles } from "../particles-config/particles-config.js";
+    import { initIcons } from "../icons/icons.js";
+    import { initBackground } from "../ui/ui.js";
+    import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
+    import { showGlobalLoader, hideGlobalLoader, escapeHTML } from "../utils/utils.js";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      showGlobalLoader();
+
+      const email = localStorage.getItem('userEmail');
+      if (!email) {
+        window.location.href = '../../index.html';
+        return;
+      }
+
+      const welcomeEl = document.getElementById('welcome-msg');
       function getGreeting() {
         const h = new Date().getHours();
-        if (h < 12) return "Good Morning";
-        if (h < 18) return "Good Afternoon";
-        return "Good Evening";
+        if (h < 12) return 'Good Morning';
+        if (h < 18) return 'Good Afternoon';
+        return 'Good Evening';
       }
+
       function updateWelcome() {
-        const username = localStorage.getItem(`username_${email}`) || "";
+        const username = localStorage.getItem(`username_${email}`) || '';
         const safeName = escapeHTML(username);
-        const hi = username ? `Hi ${safeName}!` : "Hi!";
+        const hi = username ? `Hi ${safeName}!` : 'Hi!';
         const mailPart = username ? '' : ` ${email}`;
         const icon = username ? '' : ` <i id="edit-username" data-lucide="edit" class="ms-1" role="button" style="cursor:pointer"></i>`;
         welcomeEl.innerHTML = `${hi} ${getGreeting()},${mailPart}${icon}`;
         if (window.lucide) window.lucide.createIcons();
       }
+
       updateWelcome();
       setTimeout(() => {
         welcomeEl.classList.remove('initial');
@@ -99,7 +115,7 @@
           localStorage.removeItem(`username_${email}`);
         }
         const modal = bootstrap.Modal.getInstance(document.getElementById('usernameModal'));
-        modal.hide();
+        if (modal) modal.hide();
         updateWelcome();
       });
 
@@ -110,24 +126,11 @@
         modal.show();
       });
 
-      document.getElementById("logout-btn").addEventListener("click", () => {
-        localStorage.removeItem("userEmail");
-        window.location.href = "../../index.html";
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('userEmail');
+        window.location.href = '../../index.html';
       });
-    }
-  </script>
-  <script src="../../particles.js"></script>
-  <script src="../../lucide-icons.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module">
-    import { initParticles } from "../particles-config/particles-config.js";
-    import { initIcons } from "../icons/icons.js";
-    import { initBackground } from "../ui/ui.js";
-    import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
-    import { showGlobalLoader, hideGlobalLoader, escapeHTML } from "../utils/utils.js";
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      showGlobalLoader();
       initParticles();
       initIcons();
       initBackground();
