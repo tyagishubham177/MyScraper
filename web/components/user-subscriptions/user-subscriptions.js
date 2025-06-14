@@ -25,24 +25,7 @@ export async function initUserSubscriptionsUI() {
   }
 
   let subscriptions = await fetchAPI(`/api/subscriptions?recipient_id=${recipient.id}`).catch(() => []);
-  const subscribedMap = new Map(subscriptions.map(s => [s.product_id, s]));
-
-  function loadPaused() {
-    try {
-      const stored = JSON.parse(localStorage.getItem('pausedSubscriptions') || '{}');
-      return new Map(Object.entries(stored));
-    } catch {
-      return new Map();
-    }
-  }
-
-  function savePaused(map) {
-    const obj = {};
-    map.forEach((v, k) => { obj[k] = v; });
-    localStorage.setItem('pausedSubscriptions', JSON.stringify(obj));
-  }
-
-  const pausedMap = loadPaused();
+  const subscribedMap = new Map(subscriptions.map(s => [s.product_id, { ...s, paused: !!s.paused }]));
 
   const subscribedList = document.getElementById('user-subscribed-list');
   const allList = document.getElementById('all-products-list');
@@ -129,15 +112,10 @@ export async function initUserSubscriptionsUI() {
     allList.innerHTML = '';
     for (const [id, sub] of subscribedMap.entries()) {
       const product = products.find(p => p.id === id);
-      if (product) subscribedList.appendChild(createSubscribedItem(product, sub, false));
-    }
-    for (const [id, info] of pausedMap.entries()) {
-      if (subscribedMap.has(id)) continue;
-      const product = products.find(p => p.id === id);
-      if (product) subscribedList.appendChild(createSubscribedItem(product, info, true));
+      if (product) subscribedList.appendChild(createSubscribedItem(product, sub, sub.paused));
     }
     products.forEach(p => {
-      if (!subscribedMap.has(p.id) && !pausedMap.has(p.id)) allList.appendChild(createAllProductItem(p));
+      if (!subscribedMap.has(p.id)) allList.appendChild(createAllProductItem(p));
     });
     if (window.lucide) window.lucide.createIcons();
     filterProducts(searchInput.value || '');
@@ -149,7 +127,7 @@ export async function initUserSubscriptionsUI() {
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId })
+        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, paused: false })
       });
       subscribedMap.set(productId, res);
       render();
@@ -179,39 +157,36 @@ export async function initUserSubscriptionsUI() {
 
   async function pause(productId) {
     const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
-    const start = li ? li.querySelector('.sub-start').value : '00:00';
-    const end = li ? li.querySelector('.sub-end').value : '23:59';
-    showGlobalLoader();
-    try {
-      await fetchAPI('/api/subscriptions', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId })
-      });
-    } catch (err) {
-      // ignore failures; subscription might not exist
-    }
-    subscribedMap.delete(productId);
-    pausedMap.set(productId, { start_time: start, end_time: end });
-    savePaused(pausedMap);
-    render();
-    hideGlobalLoader();
-  }
-
-  async function resume(productId) {
-    const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
-    const start = li ? li.querySelector('.sub-start').value : (pausedMap.get(productId)?.start_time || '00:00');
-    const end = li ? li.querySelector('.sub-end').value : (pausedMap.get(productId)?.end_time || '23:59');
+    const start = li ? li.querySelector('.sub-start').value : (subscribedMap.get(productId)?.start_time || '00:00');
+    const end = li ? li.querySelector('.sub-end').value : (subscribedMap.get(productId)?.end_time || '23:59');
     showGlobalLoader();
     try {
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end })
+        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: true })
       });
       subscribedMap.set(productId, res);
-      pausedMap.delete(productId);
-      savePaused(pausedMap);
+      render();
+    } catch (err) {
+      alert(err.message || 'Failed to pause');
+    } finally {
+      hideGlobalLoader();
+    }
+  }
+
+  async function resume(productId) {
+    const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
+    const start = li ? li.querySelector('.sub-start').value : (subscribedMap.get(productId)?.start_time || '00:00');
+    const end = li ? li.querySelector('.sub-end').value : (subscribedMap.get(productId)?.end_time || '23:59');
+    showGlobalLoader();
+    try {
+      const res = await fetchAPI('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: false })
+      });
+      subscribedMap.set(productId, res);
       render();
     } catch (err) {
       alert(err.message || 'Failed to resume');
@@ -222,17 +197,11 @@ export async function initUserSubscriptionsUI() {
 
   async function updateTimes(productId, start, end) {
     showGlobalLoader();
-    if (pausedMap.has(productId) && !subscribedMap.has(productId)) {
-      pausedMap.set(productId, { start_time: start, end_time: end });
-      savePaused(pausedMap);
-      hideGlobalLoader();
-      return;
-    }
     try {
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end })
+        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: !!subscribedMap.get(productId)?.paused })
       });
       subscribedMap.set(productId, res);
     } catch (err) {
@@ -247,16 +216,11 @@ export async function initUserSubscriptionsUI() {
     if (!li) return;
     if (e.target.closest('.unsub-btn')) {
       const id = li.dataset.productId;
-      if (subscribedMap.has(id)) {
-        unsubscribe(id);
-      } else {
-        pausedMap.delete(id);
-        savePaused(pausedMap);
-        render();
-      }
+      unsubscribe(id);
     } else if (e.target.closest('.pause-btn')) {
       const id = li.dataset.productId;
-      if (pausedMap.has(id) && !subscribedMap.has(id)) {
+      const sub = subscribedMap.get(id);
+      if (sub && sub.paused) {
         resume(id);
       } else {
         pause(id);

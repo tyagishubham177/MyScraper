@@ -24,10 +24,10 @@ export default async function handler(req, res) {
   const { method } = req;
 
   switch (method) {
-    case 'POST':
-      if (!requireAdmin(req, res)) return;
-      try {
-        const { recipient_id, product_id, start_time, end_time } = req.body || {};
+      case 'POST':
+        if (!requireAdmin(req, res)) return;
+        try {
+          const { recipient_id, product_id, start_time, end_time, paused } = req.body || {};
         if (!recipient_id || !product_id) {
           return res.status(400).json({ message: 'Recipient ID and Product ID are required' });
         }
@@ -50,17 +50,26 @@ export default async function handler(req, res) {
         subs = subs.map(s => ({
           ...s,
           start_time: s.start_time || '00:00',
-          end_time: s.end_time || '23:59'
+          end_time: s.end_time || '23:59',
+          paused: !!s.paused
         }));
         const existing = subs.find(s => s.recipient_id === recipient_id && s.product_id === product_id);
         if (existing) {
           existing.start_time = start;
           existing.end_time = end;
+          existing.paused = !!paused;
           await saveToKV('subscriptions', subs);
           return res.status(200).json(existing);
         }
 
-        const newSub = { id: String(Date.now()), recipient_id, product_id, start_time: start, end_time: end };
+        const newSub = {
+          id: String(Date.now()),
+          recipient_id,
+          product_id,
+          start_time: start,
+          end_time: end,
+          paused: !!paused
+        };
         subs.push(newSub);
         await saveToKV('subscriptions', subs);
         res.status(201).json(newSub);
@@ -82,7 +91,8 @@ export default async function handler(req, res) {
         subs = subs.map(s => ({
           ...s,
           start_time: s.start_time || '00:00',
-          end_time: s.end_time || '23:59'
+          end_time: s.end_time || '23:59',
+          paused: !!s.paused
         }));
         const updated = subs.filter(s => !(s.recipient_id === recipient_id && s.product_id === product_id));
         if (updated.length === subs.length) {
@@ -100,7 +110,13 @@ export default async function handler(req, res) {
     case 'GET':
       try {
         const { recipient_id, product_id } = req.query;
-        const subs = await getFromKV('subscriptions');
+        let subs = await getFromKV('subscriptions');
+        subs = subs.map(s => ({
+          ...s,
+          start_time: s.start_time || '00:00',
+          end_time: s.end_time || '23:59',
+          paused: !!s.paused
+        }));
 
         if (recipient_id && product_id) {
           return res.status(400).json({ message: 'Provide either recipient_id OR product_id, not both.' });
