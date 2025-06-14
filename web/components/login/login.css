@@ -213,7 +213,7 @@
 /* #user-section > p:first-of-type { ... } */
 
 /* Contact Admin Text (p tag) */
-#user-contact-admin-btn {
+#user-contact-admin-text {
   background: none;
   border: none;
   padding: 0;
@@ -314,18 +314,18 @@
     /* margin-top is on the error message itself */
 }
 
-#user-error-message + #user-contact-admin-btn {
+#user-error-message + #user-contact-admin-text {
     margin-top: 20px; /* If error message is visible, then contact admin text */
 }
 
 /* Spacing if error message is NOT visible: */
-#user-login-btn + #user-contact-admin-btn {
+#user-login-btn + #user-contact-admin-text {
     margin-top: 20px; /* If error message is hidden, login button to contact admin text */
 }
 
 
-/* Spacing adjustment if #user-contact-admin-btn were present. It's removed, so this specific rule might not be needed. */
-/* #user-contact-admin-btn + #user-contact-links {
+/* Spacing adjustment if #user-contact-admin-text were present. It's removed, so this specific rule might not be needed. */
+/* #user-contact-admin-text + #user-contact-links {
     margin-top: 0;
 } */
 

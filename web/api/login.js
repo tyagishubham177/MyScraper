@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ message: 'Invalid credentials', attempt: attemptData.count });
   }
 
-  await kv.set(ATTEMPT_KEY, { count: 0, delay: 0, lockUntil: 0 });
+  await kv.del(ATTEMPT_KEY);
   const token = jwt.sign({ email: adminEmail, role: 'admin' }, jwtSecret, {
     expiresIn: '7d'
   });

@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     const recipients = await kv.get('recipients');
     const exists = Array.isArray(recipients) && recipients.some(r => r.email === email);
     if (exists) {
-      await kv.set(ATTEMPT_KEY, { count: 0, delay: 0, lockUntil: 0 });
+      await kv.del(ATTEMPT_KEY);
       return res.status(200).json({ message: 'ok' });
     }
 

@@ -36,7 +36,7 @@ export async function initLogin() {
   const userEmailWrapper = document.getElementById('user-email-wrapper'); // Wrapper for email input + icon
   const userLoginBtn = document.getElementById('user-login-btn');
   const userErrorMessage = document.getElementById('user-error-message');
-  // const userContactAdminText = document.getElementById('user-contact-admin-btn'); // REMOVED - Element deleted from HTML
+  const userContactAdminText = document.getElementById('user-contact-admin-text');
   const userContactLinks = document.getElementById('user-contact-links');
   const userMailBtn = document.getElementById('user-mail-btn');
 
@@ -91,7 +91,7 @@ export async function initLogin() {
     if (userEmailInput) userEmailInput.value = '';
     if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Make email input visible by default in user section
     if (userErrorMessage) userErrorMessage.style.display = 'none';
-    // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
+    if (userContactAdminText) userContactAdminText.style.display = 'none';
     if (userContactLinks) userContactLinks.style.display = 'none';
 
     checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
@@ -127,7 +127,7 @@ export async function initLogin() {
       if (userEmailInput) userEmailInput.value = '';
       if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Ensure email input is visible
       if (userErrorMessage) userErrorMessage.style.display = 'none';
-      // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
+      if (userContactAdminText) userContactAdminText.style.display = 'none';
       if (userContactLinks) userContactLinks.style.display = 'none';
     });
   }
@@ -156,6 +156,7 @@ export async function initLogin() {
         if (res.ok) {
           const data = await res.json();
           localStorage.setItem('authToken', data.token);
+          localStorage.removeItem('adminLockUntil');
           if (adminErrorMessage) adminErrorMessage.style.display = 'none';
             window.location.href = "components/admin-main/admin.html";
         } else {
@@ -211,6 +212,7 @@ export async function initLogin() {
 
         if (res.ok) {
           localStorage.setItem('userEmail', email);
+          localStorage.removeItem('userLockUntil');
           window.location.href = 'components/user-main/user.html';
           return;
         }
@@ -221,14 +223,17 @@ export async function initLogin() {
           const lockUntil = Date.now() + result.wait * 1000;
           localStorage.setItem('userLockUntil', lockUntil);
           startCountdown(userLoginBtn, lockUntil, userErrorMessage, 'userLockUntil');
+          if (userContactAdminText) userContactAdminText.style.display = 'none';
           if (userContactLinks) userContactLinks.style.display = 'none';
         } else if (result.attempt) {
           let msg = `Unsuccessful attempt ${result.attempt}/3`;
           if (result.attempt === 2) msg += ' - last attempt';
+          msg += '. If your email is not registered, contact the admin below.';
           if (userErrorMessage) {
             userErrorMessage.textContent = msg;
             userErrorMessage.style.display = 'block';
           }
+          if (userContactAdminText) userContactAdminText.style.display = 'block';
           if (userContactLinks) {
             userContactLinks.style.display = 'block';
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -237,9 +242,10 @@ export async function initLogin() {
           }
         } else {
           if (userErrorMessage) {
-            userErrorMessage.textContent = result.message || 'Email not registered. Please contact admin to register.';
+            userErrorMessage.textContent = result.message || 'Email not registered. Contact the admin below to register your email.';
             userErrorMessage.style.display = 'block';
           }
+          if (userContactAdminText) userContactAdminText.style.display = 'block';
           if (userContactLinks) {
             userContactLinks.style.display = 'block';
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
