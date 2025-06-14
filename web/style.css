@@ -813,6 +813,11 @@ button, .btn {
   color: #333333;
 }
 
+#settingsPane hr {
+  margin: 1rem 0;
+  border-color: rgba(209, 213, 219, 0.3);
+}
+
 /* Save All Subscriptions Button Styles */
 
 /* Initial state (btn-outline-primary is the base in JS when no changes) */
