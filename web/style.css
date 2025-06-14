@@ -359,14 +359,14 @@ button, .btn {
   margin-right: 0.25rem;
 }
 
-#subscriptions-ui .collapse-toggle .lucide {
+#subscriptions-ui .collapse-toggle svg {
   width: 2em;
   height: 2em;
   stroke-width: 3;
   transition: transform 0.2s ease;
 }
 
-#subscriptions-ui .collapse-toggle.collapsed .lucide {
+#subscriptions-ui .collapse-toggle.collapsed svg {
   transform: rotate(-90deg);
 }
 
@@ -1136,14 +1136,14 @@ button, .btn {
   margin-right: 0.25rem;
 }
 
-#subscriptions-ui .collapse-toggle .lucide {
+#subscriptions-ui .collapse-toggle svg {
   width: 2em;
   height: 2em;
   stroke-width: 3;
   transition: transform 0.2s ease;
 }
 
-#subscriptions-ui .collapse-toggle.collapsed .lucide {
+#subscriptions-ui .collapse-toggle.collapsed svg {
   transform: rotate(-90deg);
 }
 
@@ -1983,14 +1983,14 @@ button, .btn {
   margin-right: 0.25rem;
 }
 
-#subscriptions-ui .collapse-toggle .lucide {
+#subscriptions-ui .collapse-toggle svg {
   width: 2em;
   height: 2em;
   stroke-width: 3;
   transition: transform 0.2s ease;
 }
 
-#subscriptions-ui .collapse-toggle.collapsed .lucide {
+#subscriptions-ui .collapse-toggle.collapsed svg {
   transform: rotate(-90deg);
 }
 
