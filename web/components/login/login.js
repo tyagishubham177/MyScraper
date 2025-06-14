@@ -131,6 +131,21 @@ export async function initLogin() {
             adminErrorMessage.textContent = result.message || 'Invalid credentials.';
             adminErrorMessage.style.display = 'block';
           }
+          if (result.wait && adminLoginBtn) {
+            adminLoginBtn.disabled = true;
+            let wait = result.wait;
+            const interval = setInterval(() => {
+              wait--;
+              if (adminErrorMessage) {
+                adminErrorMessage.textContent = `Too many attempts. Try again in ${wait}s`;
+              }
+              if (wait <= 0) {
+                clearInterval(interval);
+                if (adminLoginBtn) adminLoginBtn.disabled = false;
+                if (adminErrorMessage) adminErrorMessage.style.display = 'none';
+              }
+            }, 1000);
+          }
         }
       } catch (e) {
         if (adminErrorMessage) {
@@ -171,12 +186,28 @@ export async function initLogin() {
           return;
         }
 
+        const result = await res.json().catch(() => ({}));
+
         if (userErrorMessage) {
-          const result = await res.json().catch(() => ({}));
           userErrorMessage.textContent = result.message || 'Email not registered. Please contact admin to register.';
           userErrorMessage.style.display = 'block';
         }
-        if (userContactLinks) {
+
+        if (result.wait && userLoginBtn) {
+          userLoginBtn.disabled = true;
+          let wait = result.wait;
+          const interval = setInterval(() => {
+            wait--;
+            if (userErrorMessage) {
+              userErrorMessage.textContent = `Too many attempts. Try again in ${wait}s`;
+            }
+            if (wait <= 0) {
+              clearInterval(interval);
+              if (userLoginBtn) userLoginBtn.disabled = false;
+              if (userErrorMessage) userErrorMessage.style.display = 'none';
+            }
+          }, 1000);
+        } else if (userContactLinks) {
           userContactLinks.style.display = 'block';
           if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
