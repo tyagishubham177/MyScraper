@@ -101,11 +101,11 @@ export async function initLogin() {
     if (loginPopup) {
       loginPopup.style.display = 'flex';
     }
-    if (adminSection) adminSection.style.display = 'block';
-    if (userSection) userSection.style.display = 'none';
+    if (adminSection) adminSection.style.display = 'none';
+    if (userSection) userSection.style.display = 'block';
 
-    if (adminRoleBtn) adminRoleBtn.classList.add('active');
-    if (userRoleBtn) userRoleBtn.classList.remove('active');
+    if (userRoleBtn) userRoleBtn.classList.add('active');
+    if (adminRoleBtn) adminRoleBtn.classList.remove('active');
 
     // Initial state for User Section when popup shows (though it's hidden by default)
     // This will also be reset when user tab is clicked
