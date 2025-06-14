@@ -1,6 +1,6 @@
 // JSZip is loaded globally via a script tag in index.html
 import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from '../config/config.js';
-import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog} from '../utils/utils.js';
+import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog, fetchAPI} from '../utils/utils.js';
 
 function parseScraperDecisionsFromLog(logText) {
   if (!logText) return [];
@@ -43,12 +43,7 @@ export async function fetchRuns() {
   }
   acc.innerHTML = skeletonHTML;
   try {
-    const res = await fetch(API_RUNS);
-    if (!res.ok) {
-      acc.innerHTML = `<div class="text-danger">Error fetching runs: ${res.status} ${res.statusText}</div>`;
-      return;
-    }
-    const data = await res.json();
+    const data = await fetchAPI(API_RUNS);
     if (!data.runs || !data.runs.length) {
       acc.innerHTML = '<div class="text-muted">No data</div>';
       return;
@@ -102,9 +97,7 @@ export async function fetchRuns() {
         const overviewTabPane = currentCollapse.querySelector(`#overview-${numericalIndex}`);
         overviewTabPane.innerHTML = 'Loading overview...';
         try {
-          const r = await fetch(`${API_RUN}?id=${runId}`);
-          if (!r.ok) throw new Error(`Failed to fetch run details: ${r.status}`);
-          const info = await r.json();
+          const info = await fetchAPI(`${API_RUN}?id=${runId}`);
           const githubLink = info.html_url || runUrl;
           let html = `<p><a href="${githubLink}" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>`;
           html += `<p><strong>Status:</strong> ${info.status || (info.step ? info.step.status : 'N/A')}</p>`;
@@ -121,7 +114,10 @@ export async function fetchRuns() {
             try {
               // Note: This fetches logs specifically for the overview.
               // For optimization, consider caching/reusing logs if already fetched by the 'Logs' tab.
-              const logRes = await fetch(`${API_LOGS}?id=${runId}`);
+              const token = localStorage.getItem('authToken');
+              const logRes = await fetch(`${API_LOGS}?id=${runId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
               if (!logRes.ok) throw new Error(`Failed to fetch logs for summary: ${logRes.status}`);
 
               const blob = await logRes.blob();
@@ -224,7 +220,10 @@ export async function fetchRuns() {
           logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">Loading logs...`;
           const runIdForLog = col.dataset.runId;
           try {
-            const logRes = await fetch(`${API_LOGS}?id=${runIdForLog}`);
+            const token = localStorage.getItem('authToken');
+            const logRes = await fetch(`${API_LOGS}?id=${runIdForLog}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!logRes.ok) throw new Error(`Failed to fetch logs: ${logRes.status}`);
             const blob = await logRes.blob();
             const zip = await JSZip.loadAsync(blob);
@@ -289,16 +288,17 @@ export async function fetchRuns() {
           artifactsTabPane.textContent = 'Loading artifacts...';
           const runIdForArtifact = col.dataset.runId;
           try {
-            const r = await fetch(`${API_RUN}?id=${runIdForArtifact}`);
-            if (!r.ok) throw new Error(`Failed to fetch run details for artifacts: ${r.status}`);
-            const info = await r.json();
+            const info = await fetchAPI(`${API_RUN}?id=${runIdForArtifact}`);
             if (info.artifacts && info.artifacts.length) {
               const carouselId = `carousel-${runIdForArtifact}`;
               let itemsHtml = '';
               let isFirstItem = true;
               let imageCount = 0;
+              const token = localStorage.getItem('authToken');
               for (const art of info.artifacts) {
-                const zipRes = await fetch(`${API_ARTIFACT}?id=${art.id}`);
+                const zipRes = await fetch(`${API_ARTIFACT}?id=${art.id}`, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (zipRes.ok) {
                   const blob = await zipRes.blob();
                   const zip = await JSZip.loadAsync(blob);

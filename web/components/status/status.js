@@ -1,4 +1,5 @@
 import {API_STATUS} from '../config/config.js';
+import { fetchAPI } from '../utils/utils.js';
 
 const loader = document.getElementById('loader');
 const statusSpan = document.getElementById('status');
@@ -18,14 +19,7 @@ export async function fetchStatus() {
   statusSpan.textContent = 'Loading…';
   statusSpan.className = 'fw-bold badge bg-info-subtle text-info-emphasis rounded-pill status-loading-pulse';
   try {
-    const res = await fetch(API_STATUS);
-    if (!res.ok) {
-      statusSpan.textContent = 'Error';
-      statusSpan.className = 'fw-bold badge bg-warning-subtle text-warning-emphasis rounded-pill';
-      hideLoader();
-      return;
-    }
-    const data = await res.json();
+    const data = await fetchAPI(API_STATUS);
     statusSpan.textContent = data.state;
     statusSpan.className = 'fw-bold';
     statusSpan.classList.remove('status-loading-pulse');

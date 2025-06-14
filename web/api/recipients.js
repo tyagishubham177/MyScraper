@@ -1,4 +1,5 @@
 import { kv } from '@vercel/kv';
+import { requireAdmin } from './auth.js';
 
 // KV Helper functions for Recipients
 async function getRecipientsFromKV() {
@@ -58,6 +59,7 @@ export default async function handler(req, res) {
       break;
 
     case 'POST':
+      if (!requireAdmin(req, res)) return;
       try {
         const { email } = req.body;
 
@@ -85,6 +87,7 @@ export default async function handler(req, res) {
       break;
 
     case 'DELETE':
+      if (!requireAdmin(req, res)) return;
       try {
         const { id: recipientIdToDelete } = req.query;
 

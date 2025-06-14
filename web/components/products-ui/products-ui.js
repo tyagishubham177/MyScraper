@@ -290,7 +290,12 @@ export function initProductsUI() {
 // A basic fetchAPI function, assuming it's not globally available from recipients-ui.js
 // If it is globally available, this definition is not needed.
 if (!window.fetchAPI) {
-  window.fetchAPI = async function(url, options) {
+  window.fetchAPI = async function(url, options = {}) {
+    options.headers = options.headers || {};
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      options.headers['Authorization'] = `Bearer ${token}`;
+    }
     const response = await fetch(url, options);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
