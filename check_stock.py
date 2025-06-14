@@ -158,7 +158,11 @@ async def main():
     month_name = run_timestamp_ist.strftime('%B')
     run_timestamp_str = run_timestamp_ist.strftime(f'%d-{month_name}-%Y / %I:%M%p') + ", IST"
     subject = f"Stock Check Summary: {run_timestamp_str} - {total_sent} User Notifications Sent"
-    summary_body = format_summary_email_body(run_timestamp_str, summary_email_data, total_sent)
+    sent_only_data = [
+        pd for pd in summary_email_data
+        if any(sub.get('status') == 'Sent' for sub in pd.get('subscriptions', []))
+    ]
+    summary_body = format_summary_email_body(run_timestamp_str, sent_only_data, total_sent)
 
     if total_sent > 0 and config.EMAIL_SENDER:
         try:
