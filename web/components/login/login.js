@@ -1,6 +1,8 @@
 import { API_LOGIN, API_USER_LOGIN } from '../config/config.js';
+import { showGlobalLoader, hideGlobalLoader } from '../utils/utils.js';
 
 export async function initLogin() {
+  showGlobalLoader();
   let loginPopup = document.getElementById('login-popup');
   if (!loginPopup) {
     try {
@@ -44,6 +46,7 @@ export async function initLogin() {
 
 
   function showLoginPopup() {
+    hideGlobalLoader();
     if (loginPopup) {
       loginPopup.style.display = 'flex';
     }
@@ -98,6 +101,7 @@ export async function initLogin() {
 
   if (adminLoginBtn) {
     adminLoginBtn.addEventListener('click', async () => {
+      showGlobalLoader();
       const email = adminEmailInput ? adminEmailInput.value.trim() : '';
       const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
 
@@ -133,6 +137,8 @@ export async function initLogin() {
           adminErrorMessage.textContent = 'Login failed.';
           adminErrorMessage.style.display = 'block';
         }
+      } finally {
+        hideGlobalLoader();
       }
     });
   }
@@ -140,6 +146,7 @@ export async function initLogin() {
   // New User Login Logic
   if (userLoginBtn) {
     userLoginBtn.addEventListener('click', async () => {
+      showGlobalLoader();
       const email = userEmailInput ? userEmailInput.value.trim() : '';
 
       if (email === '') {
@@ -180,6 +187,8 @@ export async function initLogin() {
           userErrorMessage.textContent = 'Login failed.';
           userErrorMessage.style.display = 'block';
         }
+      } finally {
+        hideGlobalLoader();
       }
     });
   }

@@ -11,6 +11,11 @@
 <body>
   <div id="particles-js" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0;"></div>
   <div id="particles-js-bg"></div>
+  <div id="global-loader" class="loading-overlay" style="display:none;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
   <div class="container py-5">
     <p id="welcome-msg" class="mb-4 fw-bold initial"></p>
     <div id="user-subscriptions-container"></div>
@@ -118,8 +123,10 @@
     import { initIcons } from "../icons/icons.js";
     import { initBackground } from "../ui/ui.js";
     import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
+    import { showGlobalLoader, hideGlobalLoader } from "../utils/utils.js";
 
     document.addEventListener("DOMContentLoaded", async () => {
+      showGlobalLoader();
       initParticles();
       initIcons();
       initBackground();
@@ -130,7 +137,8 @@
       } catch (e) {
         console.error('Failed to load subscription UI', e);
       }
-      initUserSubscriptionsUI();
+      await initUserSubscriptionsUI();
+      hideGlobalLoader();
       const gmailLink = document.getElementById('feedbackGmail');
       gmailLink.addEventListener('click', (e) => {
         e.preventDefault();

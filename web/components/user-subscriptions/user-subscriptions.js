@@ -1,6 +1,7 @@
-import { fetchAPI } from '../utils/utils.js';
+import { fetchAPI, showGlobalLoader, hideGlobalLoader } from '../utils/utils.js';
 
 export async function initUserSubscriptionsUI() {
+  showGlobalLoader();
   const email = localStorage.getItem('userEmail');
   if (!email) {
     window.location.href = '../../index.html';
@@ -128,6 +129,7 @@ export async function initUserSubscriptionsUI() {
   }
 
   async function subscribe(productId) {
+    showGlobalLoader();
     try {
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
@@ -138,10 +140,13 @@ export async function initUserSubscriptionsUI() {
       render();
     } catch (err) {
       alert(err.message || 'Failed to subscribe');
+    } finally {
+      hideGlobalLoader();
     }
   }
 
   async function unsubscribe(productId) {
+    showGlobalLoader();
     try {
       await fetchAPI('/api/subscriptions', {
         method: 'DELETE',
@@ -152,6 +157,8 @@ export async function initUserSubscriptionsUI() {
       render();
     } catch (err) {
       alert(err.message || 'Failed to unsubscribe');
+    } finally {
+      hideGlobalLoader();
     }
   }
 
@@ -159,6 +166,7 @@ export async function initUserSubscriptionsUI() {
     const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
     const start = li ? li.querySelector('.sub-start').value : '00:00';
     const end = li ? li.querySelector('.sub-end').value : '23:59';
+    showGlobalLoader();
     try {
       await fetchAPI('/api/subscriptions', {
         method: 'DELETE',
@@ -172,12 +180,14 @@ export async function initUserSubscriptionsUI() {
     pausedMap.set(productId, { start_time: start, end_time: end });
     savePaused(pausedMap);
     render();
+    hideGlobalLoader();
   }
 
   async function resume(productId) {
     const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
     const start = li ? li.querySelector('.sub-start').value : (pausedMap.get(productId)?.start_time || '00:00');
     const end = li ? li.querySelector('.sub-end').value : (pausedMap.get(productId)?.end_time || '23:59');
+    showGlobalLoader();
     try {
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
@@ -190,13 +200,17 @@ export async function initUserSubscriptionsUI() {
       render();
     } catch (err) {
       alert(err.message || 'Failed to resume');
+    } finally {
+      hideGlobalLoader();
     }
   }
 
   async function updateTimes(productId, start, end) {
+    showGlobalLoader();
     if (pausedMap.has(productId) && !subscribedMap.has(productId)) {
       pausedMap.set(productId, { start_time: start, end_time: end });
       savePaused(pausedMap);
+      hideGlobalLoader();
       return;
     }
     try {
@@ -208,6 +222,8 @@ export async function initUserSubscriptionsUI() {
       subscribedMap.set(productId, res);
     } catch (err) {
       alert(err.message || 'Failed to update times');
+    } finally {
+      hideGlobalLoader();
     }
   }
 
@@ -287,6 +303,7 @@ export async function initUserSubscriptionsUI() {
   }
 
   render();
+  hideGlobalLoader();
 }
 
 // Initialization is handled by the page that loads this component
