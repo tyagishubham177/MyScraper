@@ -372,6 +372,13 @@ button, .btn {
     max-height: calc(100vh - 250px);
     overflow-y: auto;
 }
+
+@media (max-width: 767.98px) {
+  #subscriptions-ui .list-wrapper {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
 #subscription-product-list .form-check-input {
     /* border-color: rgba(255,255,255,0.5); */ /* Conflicting border, handled by more specific rule */
 }
@@ -762,6 +769,12 @@ button, .btn {
   color: #333333;
 }
 
+@media (max-width: 767.98px) {
+  #settingsPane.offcanvas-end {
+    width: 50vw;
+  }
+}
+
 #settingsPane .offcanvas-header {
   border-bottom: 1px solid rgba(209, 213, 219, 0.3);
 }
@@ -950,6 +963,16 @@ button, .btn {
 #welcome-msg.shrunk {
   font-size: 1.75rem;
   text-align: start;
+}
+
+@media (max-width: 576px) {
+  #welcome-msg.initial {
+    font-size: 1.8rem;
+    word-break: break-word;
+  }
+  #welcome-msg.shrunk {
+    font-size: 1.5rem;
+  }
 }
 
 @keyframes welcomeBounce {

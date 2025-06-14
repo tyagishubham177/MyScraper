@@ -1,6 +1,12 @@
 <div class="row" id="subscriptions-ui">
   <div class="col-md-6 mb-4">
-    <h4>Your Subscriptions <i id="subscriptions-info-toggle" data-lucide="info" class="lucide-small ms-1" title="Show info" data-bs-toggle="modal" data-bs-target="#subscriptionsInfoModal"></i></h4>
+    <h4>
+      Your Subscriptions
+      <i id="subscriptions-info-toggle" data-lucide="info" class="lucide-small ms-1" title="Show info" data-bs-toggle="modal" data-bs-target="#subscriptionsInfoModal"></i>
+      <a href="#" class="d-sm-none float-end" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">
+        <i data-lucide="chevron-down"></i>
+      </a>
+    </h4>
     <div class="modal fade" id="subscriptionsInfoModal" tabindex="-1" aria-labelledby="subscriptionsInfoModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -20,13 +26,19 @@
         </div>
       </div>
     </div>
-    <div class="list-wrapper">
+    <div class="collapse show list-wrapper" id="userSubscribedListCollapse">
       <ul id="user-subscribed-list" class="list-group"></ul>
     </div>
   </div>
   <div class="col-md-6 mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <h4>Available Products</h4>
+      <a href="#" class="d-sm-none" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">
+        <i data-lucide="chevron-down"></i>
+      </a>
+    </div>
     <input type="text" id="product-search" class="form-control mb-2" placeholder="Search products">
-    <div class="list-wrapper">
+    <div class="collapse show list-wrapper" id="allProductsListCollapse">
       <ul id="all-products-list" class="list-group"></ul>
     </div>
   </div>
