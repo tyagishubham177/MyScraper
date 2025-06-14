@@ -116,11 +116,13 @@
   <script type="module">
     import { initParticles } from "../particles-config/particles-config.js";
     import { initIcons } from "../icons/icons.js";
+    import { initBackground } from "../ui/ui.js";
     import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
 
     document.addEventListener("DOMContentLoaded", async () => {
       initParticles();
       initIcons();
+      initBackground();
       const container = document.getElementById('user-subscriptions-container');
       try {
         const res = await fetch('../user-subscriptions/user-subscriptions.html');
