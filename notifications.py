@@ -180,14 +180,15 @@ def send_email_notification(subject: str, body: str, sender: str, recipients: li
         msg = MIMEText(body, 'html')
         msg['Subject'] = subject
         msg['From'] = sender
-        msg['To'] = sender  # Set 'To' to sender's email
-        msg['Bcc'] = ", ".join(recipients)  # Use Bcc for recipients
+        msg['To'] = sender  # Display sender in the "To" field
+        # Do not include a visible Bcc header. Recipients are passed to
+        # sendmail directly so they will not see each other's addresses.
 
         with smtplib.SMTP(host, port) as server:
             if username and password:
                 server.starttls()  # Upgrade connection to secure
                 server.login(username, password)
-            # Send to actual recipients in Bcc, msg['To'] is just for display
+            # Recipients are passed here so the email is Bcc'd to them
             server.sendmail(sender, recipients, msg.as_string())
         print("Email notification sent successfully.")
     except smtplib.SMTPException as e:
