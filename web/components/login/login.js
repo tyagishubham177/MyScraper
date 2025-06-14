@@ -209,19 +209,13 @@ export async function initLogin() {
           body: JSON.stringify({ email })
         });
 
-        if (res.ok) {
-          localStorage.setItem('userEmail', email);
-          window.location.href = 'components/user-main/user.html';
-          return;
-        }
-
         const result = await res.json().catch(() => ({}));
 
-        if (result.wait) {
+        if (res.status === 429 && result.wait) {
           const lockUntil = Date.now() + result.wait * 1000;
           localStorage.setItem('userLockUntil', lockUntil);
           startCountdown(userLoginBtn, lockUntil, userErrorMessage, 'userLockUntil');
-        } else if (result.attempt) {
+        } else if (res.status === 429 && result.attempt) {
           let msg = `Unsuccessful attempt ${result.attempt}/3`;
           if (result.attempt === 2) msg += ' - last attempt';
           if (userErrorMessage) {
@@ -230,16 +224,10 @@ export async function initLogin() {
           }
         } else {
           if (userErrorMessage) {
-            userErrorMessage.textContent = result.message || 'Email not registered. Please contact admin to register.';
+            userErrorMessage.textContent = result.message || 'Check your email for a login link if the address is registered.';
             userErrorMessage.style.display = 'block';
           }
-        }
-
-        if (!result.wait && !result.attempt && userContactLinks) {
-          userContactLinks.style.display = 'block';
-          if (window.lucide && typeof window.lucide.createIcons === 'function') {
-            window.lucide.createIcons();
-          }
+          if (userContactLinks) userContactLinks.style.display = 'none';
         }
       } catch (e) {
         if (userErrorMessage) {

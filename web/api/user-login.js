@@ -23,23 +23,22 @@ export default async function handler(req, res) {
   try {
     const recipients = await kv.get('recipients');
     const exists = Array.isArray(recipients) && recipients.some(r => r.email === email);
-    if (exists) {
+
+    if (!exists) {
+      attemptData.count = (attemptData.count || 0) + 1;
+      if (attemptData.count >= 3) {
+        attemptData.delay = attemptData.delay ? attemptData.delay * 2 : 60;
+        attemptData.lockUntil = now + attemptData.delay * 1000;
+      }
+      await kv.set(ATTEMPT_KEY, attemptData);
+      if (attemptData.count >= 3) {
+        return res.status(429).json({ message: `Too many attempts. Try again in ${attemptData.delay}s`, wait: attemptData.delay, attempt: attemptData.count });
+      }
+    } else {
       await kv.del(ATTEMPT_KEY);
-      return res.status(200).json({ message: 'ok' });
     }
 
-    attemptData.count = (attemptData.count || 0) + 1;
-    if (attemptData.count >= 3) {
-      attemptData.delay = attemptData.delay ? attemptData.delay * 2 : 60;
-      attemptData.lockUntil = now + attemptData.delay * 1000;
-    }
-    await kv.set(ATTEMPT_KEY, attemptData);
-
-    if (attemptData.count >= 3) {
-      return res.status(429).json({ message: `Too many attempts. Try again in ${attemptData.delay}s`, wait: attemptData.delay, attempt: attemptData.count });
-    }
-
-    return res.status(401).json({ message: 'Email not registered', attempt: attemptData.count });
+    return res.status(200).json({ message: 'If this email is registered, you will receive a login link shortly.' });
   } catch (error) {
     console.error('Error checking recipient list:', error);
     return res.status(500).json({ message: 'Server error' });
