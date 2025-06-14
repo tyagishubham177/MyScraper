@@ -190,8 +190,8 @@ export async function initLogin() {
       const subject = encodeURIComponent('Register Amul tracker email');
       const typedEmail = userEmailInput ? userEmailInput.value.trim() : '';
       const body = encodeURIComponent(`Hey there!\nPlease register my email : ${typedEmail}`);
-      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
-      window.open(url, '_blank');
+      const url = `mailto:${to}?subject=${subject}&body=${body}`;
+      window.location.href = url;
     });
   }
 
