@@ -69,7 +69,8 @@
       }
       function updateWelcome() {
         const username = localStorage.getItem(`username_${email}`) || "";
-        const hi = username ? `Hi ${username}!` : "Hi!";
+        const safeName = escapeHTML(username);
+        const hi = username ? `Hi ${safeName}!` : "Hi!";
         const mailPart = username ? '' : ` ${email}`;
         const icon = username ? '' : ` <i id="edit-username" data-lucide="edit" class="ms-1" role="button" style="cursor:pointer"></i>`;
         welcomeEl.innerHTML = `${hi} ${getGreeting()},${mailPart}${icon}`;
@@ -123,7 +124,7 @@
     import { initIcons } from "../icons/icons.js";
     import { initBackground } from "../ui/ui.js";
     import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
-    import { showGlobalLoader, hideGlobalLoader } from "../utils/utils.js";
+    import { showGlobalLoader, hideGlobalLoader, escapeHTML } from "../utils/utils.js";
 
     document.addEventListener("DOMContentLoaded", async () => {
       showGlobalLoader();

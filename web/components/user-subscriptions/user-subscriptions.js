@@ -1,4 +1,4 @@
-import { fetchAPI, showGlobalLoader, hideGlobalLoader } from '../utils/utils.js';
+import { fetchAPI, showGlobalLoader, hideGlobalLoader, sanitizeUrl } from '../utils/utils.js';
 
 export async function initUserSubscriptionsUI() {
   showGlobalLoader();
@@ -60,10 +60,15 @@ export async function initUserSubscriptionsUI() {
     nameEl.className = 'product-name mb-0';
     nameEl.textContent = product.name;
     const linkEl = document.createElement('a');
-    linkEl.href = product.url;
+    const safeUrl = sanitizeUrl(product.url);
+    linkEl.href = safeUrl || '#';
     linkEl.target = '_blank';
     linkEl.className = 'product-url d-block small';
-    linkEl.innerHTML = `${product.url} <i data-lucide="external-link" class="lucide-xs"></i>`;
+    linkEl.textContent = `${product.url} `;
+    const icon = document.createElement('i');
+    icon.setAttribute('data-lucide', 'external-link');
+    icon.className = 'lucide-xs';
+    linkEl.appendChild(icon);
     details.appendChild(nameEl);
     details.appendChild(linkEl);
 
@@ -96,7 +101,17 @@ export async function initUserSubscriptionsUI() {
     const link = document.createElement('small');
     link.className = 'd-block text-muted';
     const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
-    link.innerHTML = `<a href="${product.url}" target="_blank" title="${product.url}">${displayUrl} <i data-lucide="external-link" class="lucide-small"></i></a>`;
+    const anchor = document.createElement('a');
+    const safeUrl = sanitizeUrl(product.url);
+    anchor.href = safeUrl || '#';
+    anchor.target = '_blank';
+    anchor.title = product.url;
+    anchor.textContent = `${displayUrl} `;
+    const icon2 = document.createElement('i');
+    icon2.setAttribute('data-lucide', 'external-link');
+    icon2.className = 'lucide-small';
+    anchor.appendChild(icon2);
+    link.appendChild(anchor);
     info.appendChild(strong);
     info.appendChild(link);
 
