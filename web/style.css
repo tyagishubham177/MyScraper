@@ -12,8 +12,9 @@ body {
   font-family: 'Inter', Arial, sans-serif;
   min-height: 100vh;
   display: flex;
-  align-items: center; /* This centers the card when content is short */
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   position: relative; /* Needed for z-indexing of particles-js */
   overflow-x: hidden; /* Prevent horizontal scrollbars */
   overflow-y: auto;   /* Allow vertical scrolling for the body */
@@ -27,14 +28,19 @@ button, .btn {
 
 /* Page Header Styles */
 .page-header {
-  /* Removed display: flex, align-items, justify-content and width */
+  width: 100%;
+  box-sizing: border-box;
   padding: 1rem 0;
-  background-color: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
   border-bottom: 1px solid rgba(209, 213, 219, 0.5);
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  animation: slideDown 0.6s ease-out forwards;
 }
 
 .page-header .container {
+  max-width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -53,15 +59,16 @@ button, .btn {
 
 .page-header h1 {
   font-size: 1.75rem;
+  font-family: 'Poppins', 'Inter', sans-serif;
   animation: fadeIn 0.7s ease-out 0.3s forwards;
   margin: 0;
-  margin-left: 2rem; /* Added margin-left */
-  color: #333333; /* Match default card text color */
+  margin-left: 2rem;
+  color: #ffffff;
 }
 
     /* Adjust alignment when body needs to scroll */
     body.is-scrollable {
-      align-items: flex-start; /* Align card to top when scrollable */
+      align-items: center; /* Preserve horizontal centering on scroll */
     }
 
     /* Default dark text color for card elements */
@@ -218,6 +225,17 @@ button, .btn {
       }
       to {
         transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
         opacity: 1;
       }
     }
