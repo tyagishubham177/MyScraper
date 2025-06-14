@@ -17,7 +17,7 @@ body {
   position: relative; /* Needed for z-indexing of particles-js */
   overflow-x: hidden; /* Prevent horizontal scrollbars */
   overflow-y: auto;   /* Allow vertical scrolling for the body */
-  padding-top: 2rem; /* Add some padding if card is very tall */
+  padding-top: 0; /* Changed from 2rem to 0 */
   padding-bottom: 2rem; /* Add some padding if card is very tall */
 }
 
@@ -27,19 +27,22 @@ button, .btn {
 
 /* Page Header Styles */
 .page-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* Changed from space-between */
-  width: 100%;
+  /* Removed display: flex, align-items, justify-content and width */
   padding: 1rem 0;
   background-color: rgba(255, 255, 255, 0.15);
   border-bottom: 1px solid rgba(209, 213, 219, 0.5);
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+.page-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .page-header img {
   height: 40px;
-  width: auto;
+  width: 120px; /* Changed from auto to 120px */
   animation: slideInFromLeft 0.7s ease-out forwards;
   transition: transform 0.2s ease-in-out;
 }
