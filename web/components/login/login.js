@@ -44,8 +44,11 @@ export async function initLogin() {
   // const userRegYesBtn = document.getElementById('user-reg-yes');
   // const userRegNoBtn = document.getElementById('user-reg-no');
 
-  function startCountdown(button, lockUntil, messageElem, storageKey) {
-    if (!button) return;
+  let adminCountdownTimer = null;
+  let userCountdownTimer = null;
+
+  function startCountdown(button, lockUntil, messageElem, storageKey, contactLinks) {
+    if (!button) return null;
     button.disabled = true;
     function update() {
       const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
@@ -54,24 +57,32 @@ export async function initLogin() {
           messageElem.textContent = `Too many attempts. Try again in ${remaining}s`;
           messageElem.style.display = 'block';
         }
+        if (contactLinks) {
+          contactLinks.style.display = 'block';
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+          }
+        }
       } else {
         clearInterval(timer);
         button.disabled = false;
         localStorage.removeItem(storageKey);
         if (messageElem) messageElem.style.display = 'none';
+        if (contactLinks) contactLinks.style.display = 'none';
       }
     }
     update();
     const timer = setInterval(update, 1000);
+    return timer;
   }
 
-  function checkStoredLock(button, messageElem, storageKey) {
+  function checkStoredLock(button, messageElem, storageKey, contactLinks) {
     const lockUntil = parseInt(localStorage.getItem(storageKey), 10);
     if (lockUntil && lockUntil > Date.now()) {
-      startCountdown(button, lockUntil, messageElem, storageKey);
-    } else {
-      localStorage.removeItem(storageKey);
+      return startCountdown(button, lockUntil, messageElem, storageKey, contactLinks);
     }
+    localStorage.removeItem(storageKey);
+    return null;
   }
 
 
@@ -94,8 +105,14 @@ export async function initLogin() {
     // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
     if (userContactLinks) userContactLinks.style.display = 'none';
 
-    checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
-    checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil');
+    if (adminCountdownTimer) {
+      clearInterval(adminCountdownTimer);
+    }
+    adminCountdownTimer = checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
+    if (userCountdownTimer) {
+      clearInterval(userCountdownTimer);
+    }
+    userCountdownTimer = checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil', userContactLinks);
 
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
       window.lucide.createIcons();
@@ -129,6 +146,10 @@ export async function initLogin() {
       if (userErrorMessage) userErrorMessage.style.display = 'none';
       // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
       if (userContactLinks) userContactLinks.style.display = 'none';
+      if (userCountdownTimer) {
+        clearInterval(userCountdownTimer);
+      }
+      userCountdownTimer = checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil', userContactLinks);
     });
   }
 
@@ -157,6 +178,10 @@ export async function initLogin() {
           const data = await res.json();
           localStorage.setItem('authToken', data.token);
           localStorage.removeItem('adminLockUntil');
+          if (adminCountdownTimer) {
+            clearInterval(adminCountdownTimer);
+            adminCountdownTimer = null;
+          }
           if (adminErrorMessage) adminErrorMessage.style.display = 'none';
           window.location.href = "components/admin-main/admin.html";
         } else {
@@ -164,7 +189,15 @@ export async function initLogin() {
           if (result.wait) {
             const lockUntil = Date.now() + result.wait * 1000;
             localStorage.setItem('adminLockUntil', lockUntil);
-            startCountdown(adminLoginBtn, lockUntil, adminErrorMessage, 'adminLockUntil');
+            if (adminCountdownTimer) {
+              clearInterval(adminCountdownTimer);
+            }
+            adminCountdownTimer = startCountdown(
+              adminLoginBtn,
+              lockUntil,
+              adminErrorMessage,
+              'adminLockUntil'
+            );
           } else if (result.attempt) {
             let msg = `Unsuccessful attempt ${result.attempt}/3`;
             if (result.attempt === 2) msg += ' - last attempt';
@@ -212,6 +245,10 @@ export async function initLogin() {
 
         if (res.ok) {
           localStorage.removeItem('userLockUntil');
+          if (userCountdownTimer) {
+            clearInterval(userCountdownTimer);
+            userCountdownTimer = null;
+          }
           localStorage.setItem('userEmail', email);
           window.location.href = 'components/user-main/user.html';
           return;
@@ -222,7 +259,16 @@ export async function initLogin() {
         if (result.wait) {
           const lockUntil = Date.now() + result.wait * 1000;
           localStorage.setItem('userLockUntil', lockUntil);
-          startCountdown(userLoginBtn, lockUntil, userErrorMessage, 'userLockUntil');
+          if (userCountdownTimer) {
+            clearInterval(userCountdownTimer);
+          }
+          userCountdownTimer = startCountdown(
+            userLoginBtn,
+            lockUntil,
+            userErrorMessage,
+            'userLockUntil',
+            userContactLinks
+          );
         } else {
           let msg;
           if (result.attempt) {
