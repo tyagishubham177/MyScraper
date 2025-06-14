@@ -64,7 +64,9 @@ export async function initUserSubscriptionsUI() {
     linkEl.href = safeUrl || '#';
     linkEl.target = '_blank';
     linkEl.className = 'product-url d-block small';
-    linkEl.textContent = `${product.url} `;
+    linkEl.title = product.url;
+    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
+    linkEl.textContent = `${displayUrl} `;
     const icon = document.createElement('i');
     icon.setAttribute('data-lucide', 'external-link');
     icon.className = 'lucide-xs';
