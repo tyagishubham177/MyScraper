@@ -13,6 +13,28 @@ export function createRipple(event) {
   button.appendChild(circle);
 }
 
+export function sanitizeUrl(url) {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+  } catch (_) {
+    // ignore invalid URLs
+  }
+  return '';
+}
+
+export function escapeHTML(str) {
+  return str.replace(/[&<>'"]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[c]));
+}
+
 export function cleanLogText(logText) {
   if (!logText) return '';
   const lines = logText.split('\n');

@@ -68,7 +68,10 @@ export default async function handler(req, res) {
           return res.status(400).json({ message: 'Invalid URL' });
         }
         try {
-          new URL(url); // Validate URL format
+          const parsed = new URL(url);
+          if (!['http:', 'https:'].includes(parsed.protocol)) {
+            return res.status(400).json({ message: 'URL must start with http:// or https://' });
+          }
         } catch (_) {
           return res.status(400).json({ message: 'Invalid URL format' });
         }
@@ -109,7 +112,10 @@ export default async function handler(req, res) {
           return res.status(400).json({ message: 'Invalid URL' });
         }
         try {
-          new URL(url);
+          const parsed = new URL(url);
+          if (!['http:', 'https:'].includes(parsed.protocol)) {
+            return res.status(400).json({ message: 'URL must start with http:// or https://' });
+          }
         } catch (_) {
           return res.status(400).json({ message: 'Invalid URL format' });
         }
