@@ -44,8 +44,21 @@ export async function initLogin() {
   // const userRegYesBtn = document.getElementById('user-reg-yes');
   // const userRegNoBtn = document.getElementById('user-reg-no');
 
-  function startCountdown(button, lockUntil, messageElem, storageKey) {
-    if (!button) return;
+  let adminCountdownTimer = null;
+  let userCountdownTimer = null;
+
+  function clearCountdown(timerVar, storageKey, messageElem, contactLinks) {
+    if (timerVar) {
+      clearInterval(timerVar);
+    }
+    if (storageKey) localStorage.removeItem(storageKey);
+    if (messageElem) messageElem.style.display = 'none';
+    if (contactLinks) contactLinks.style.display = 'none';
+    return null;
+  }
+
+  function startCountdown(button, lockUntil, messageElem, storageKey, contactLinks) {
+    if (!button) return null;
     button.disabled = true;
     function update() {
       const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
@@ -54,24 +67,32 @@ export async function initLogin() {
           messageElem.textContent = `Too many attempts. Try again in ${remaining}s`;
           messageElem.style.display = 'block';
         }
+        if (contactLinks) {
+          contactLinks.style.display = 'block';
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+          }
+        }
       } else {
         clearInterval(timer);
         button.disabled = false;
         localStorage.removeItem(storageKey);
         if (messageElem) messageElem.style.display = 'none';
+        if (contactLinks) contactLinks.style.display = 'none';
       }
     }
     update();
     const timer = setInterval(update, 1000);
+    return timer;
   }
 
-  function checkStoredLock(button, messageElem, storageKey) {
+  function checkStoredLock(button, messageElem, storageKey, contactLinks) {
     const lockUntil = parseInt(localStorage.getItem(storageKey), 10);
     if (lockUntil && lockUntil > Date.now()) {
-      startCountdown(button, lockUntil, messageElem, storageKey);
-    } else {
-      localStorage.removeItem(storageKey);
+      return startCountdown(button, lockUntil, messageElem, storageKey, contactLinks);
     }
+    localStorage.removeItem(storageKey);
+    return null;
   }
 
 
@@ -94,8 +115,10 @@ export async function initLogin() {
     // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
     if (userContactLinks) userContactLinks.style.display = 'none';
 
-    checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
-    checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil');
+    adminCountdownTimer = clearCountdown(adminCountdownTimer, null, adminErrorMessage);
+    adminCountdownTimer = checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
+    userCountdownTimer = clearCountdown(userCountdownTimer, null, userErrorMessage, userContactLinks);
+    userCountdownTimer = checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil', userContactLinks);
 
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
       window.lucide.createIcons();
@@ -113,6 +136,7 @@ export async function initLogin() {
       // Clear admin inputs (optional, but good practice)
       if(adminEmailInput) adminEmailInput.value = '';
       if(adminPasswordInput) adminPasswordInput.value = '';
+      adminCountdownTimer = clearCountdown(adminCountdownTimer, null, adminErrorMessage);
     });
   }
 
@@ -129,6 +153,8 @@ export async function initLogin() {
       if (userErrorMessage) userErrorMessage.style.display = 'none';
       // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
       if (userContactLinks) userContactLinks.style.display = 'none';
+      userCountdownTimer = clearCountdown(userCountdownTimer, null, userErrorMessage, userContactLinks);
+      userCountdownTimer = checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil', userContactLinks);
     });
   }
 
@@ -156,14 +182,22 @@ export async function initLogin() {
         if (res.ok) {
           const data = await res.json();
           localStorage.setItem('authToken', data.token);
-          if (adminErrorMessage) adminErrorMessage.style.display = 'none';
-            window.location.href = "components/admin-main/admin.html";
+          adminCountdownTimer = clearCountdown(adminCountdownTimer, 'adminLockUntil', adminErrorMessage);
+          window.location.href = "components/admin-main/admin.html";
         } else {
           const result = await res.json().catch(() => ({}));
           if (result.wait) {
             const lockUntil = Date.now() + result.wait * 1000;
             localStorage.setItem('adminLockUntil', lockUntil);
-            startCountdown(adminLoginBtn, lockUntil, adminErrorMessage, 'adminLockUntil');
+            if (adminCountdownTimer) {
+              clearInterval(adminCountdownTimer);
+            }
+            adminCountdownTimer = startCountdown(
+              adminLoginBtn,
+              lockUntil,
+              adminErrorMessage,
+              'adminLockUntil'
+            );
           } else if (result.attempt) {
             let msg = `Unsuccessful attempt ${result.attempt}/3`;
             if (result.attempt === 2) msg += ' - last attempt';
@@ -210,6 +244,7 @@ export async function initLogin() {
         });
 
         if (res.ok) {
+          userCountdownTimer = clearCountdown(userCountdownTimer, 'userLockUntil', userErrorMessage, userContactLinks);
           localStorage.setItem('userEmail', email);
           window.location.href = 'components/user-main/user.html';
           return;
@@ -220,25 +255,34 @@ export async function initLogin() {
         if (result.wait) {
           const lockUntil = Date.now() + result.wait * 1000;
           localStorage.setItem('userLockUntil', lockUntil);
-          startCountdown(userLoginBtn, lockUntil, userErrorMessage, 'userLockUntil');
-        } else if (result.attempt) {
-          let msg = `Unsuccessful attempt ${result.attempt}/3`;
-          if (result.attempt === 2) msg += ' - last attempt';
+          if (userCountdownTimer) {
+            clearInterval(userCountdownTimer);
+          }
+          userCountdownTimer = startCountdown(
+            userLoginBtn,
+            lockUntil,
+            userErrorMessage,
+            'userLockUntil',
+            userContactLinks
+          );
+        } else {
+          let msg;
+          if (result.attempt) {
+            msg = `Email unregistered or incorrect attempt (${result.attempt}/3)`;
+            if (result.attempt === 2) msg += ' - last attempt';
+            msg += '. Please contact admin to register.';
+          } else {
+            msg = result.message || 'Email not registered. Please contact admin to register.';
+          }
           if (userErrorMessage) {
             userErrorMessage.textContent = msg;
             userErrorMessage.style.display = 'block';
           }
-        } else {
-          if (userErrorMessage) {
-            userErrorMessage.textContent = result.message || 'Email not registered. Please contact admin to register.';
-            userErrorMessage.style.display = 'block';
-          }
-        }
-
-        if (!result.wait && !result.attempt && userContactLinks) {
-          userContactLinks.style.display = 'block';
-          if (window.lucide && typeof window.lucide.createIcons === 'function') {
-            window.lucide.createIcons();
+          if (userContactLinks) {
+            userContactLinks.style.display = 'block';
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+              window.lucide.createIcons();
+            }
           }
         }
       } catch (e) {
