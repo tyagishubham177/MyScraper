@@ -26,6 +26,7 @@ export async function initUserSubscriptionsUI() {
 
   let subscriptions = await fetchAPI(`/api/subscriptions?recipient_id=${recipient.id}`).catch(() => []);
   const subscribedMap = new Map(subscriptions.map(s => [s.product_id, { ...s, paused: !!s.paused }]));
+  const productMap = new Map(products.map(p => [p.id, p]));
 
   const subscribedList = document.getElementById('user-subscribed-list');
   const allList = document.getElementById('all-products-list');
@@ -110,10 +111,22 @@ export async function initUserSubscriptionsUI() {
   function render() {
     subscribedList.innerHTML = '';
     allList.innerHTML = '';
-    for (const [id, sub] of subscribedMap.entries()) {
-      const product = products.find(p => p.id === id);
-      if (product) subscribedList.appendChild(createSubscribedItem(product, sub, sub.paused));
+
+    const sortedSubs = [...subscribedMap.entries()]
+      .map(([id, sub]) => ({ id, sub, product: productMap.get(id) }))
+      .filter(item => item.product)
+      .sort((a, b) => {
+        if (a.sub.paused && !b.sub.paused) return 1;
+        if (!a.sub.paused && b.sub.paused) return -1;
+        return a.product.name.localeCompare(b.product.name);
+      });
+
+    for (const item of sortedSubs) {
+      subscribedList.appendChild(
+        createSubscribedItem(item.product, item.sub, item.sub.paused)
+      );
     }
+
     products.forEach(p => {
       if (!subscribedMap.has(p.id)) allList.appendChild(createAllProductItem(p));
     });
@@ -244,37 +257,20 @@ export async function initUserSubscriptionsUI() {
   });
 
   function filterProducts(term) {
-  console.log('[FilterDebug] filterProducts called with term:', term);
     const items = allList.querySelectorAll('li');
-  const searchWords = term.toLowerCase().split(' ').filter(word => word.length > 0);
-  console.log('[FilterDebug] searchWords:', searchWords);
+    const searchWords = term.toLowerCase().split(' ').filter(word => word.length > 0);
 
-  let shownCount = 0;
-  let hiddenCount = 0;
+    items.forEach(item => {
+      const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
+      const matches =
+        searchWords.length === 0 || searchWords.every(word => title.includes(word));
 
-  items.forEach((item, index) => {
-    const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
-
-    let allWordsMatch = false;
-    if (searchWords.length === 0) {
-      allWordsMatch = true; // Show all if search is empty
-    } else {
-      allWordsMatch = searchWords.every(word => title.includes(word));
-    }
-
-    if (index < 5) { // Log details for the first 5 items for brevity
-      console.log(`[FilterDebug] Item ${index}: Title: "${title}", Matches: ${allWordsMatch}`);
-    }
-
-    if (allWordsMatch) {
-      item.classList.remove('product-item-hidden');
-      shownCount++;
-    } else {
-      item.classList.add('product-item-hidden');
-      hiddenCount++;
-    }
+      if (matches) {
+        item.classList.remove('product-item-hidden');
+      } else {
+        item.classList.add('product-item-hidden');
+      }
     });
-  console.log(`[FilterDebug] Filtering complete. Shown: ${shownCount}, Hidden: ${hiddenCount} (Total: ${items.length})`);
   }
 
   if (searchInput) {
