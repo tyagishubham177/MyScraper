@@ -359,9 +359,15 @@ button, .btn {
   margin-right: 0.25rem;
 }
 
-#subscriptions-ui .collapse-toggle .lucide {
-  width: 1.5em;
-  height: 1.5em;
+#subscriptions-ui .collapse-toggle svg {
+  width: 2em;
+  height: 2em;
+  stroke-width: 3;
+  transition: transform 0.2s ease;
+}
+
+#subscriptions-ui .collapse-toggle.collapsed svg {
+  transform: rotate(-90deg);
 }
 
 @media (max-width: 767.98px) {
@@ -1033,6 +1039,7 @@ button, .btn {
   z-index: 2000;
 }
 
+
 /* --------------- NEW UI SECTIONS STYLING --------------- */
 
 /* General Card Styling for new sections */
@@ -1129,9 +1136,15 @@ button, .btn {
   margin-right: 0.25rem;
 }
 
-#subscriptions-ui .collapse-toggle .lucide {
-  width: 1.5em;
-  height: 1.5em;
+#subscriptions-ui .collapse-toggle svg {
+  width: 2em;
+  height: 2em;
+  stroke-width: 3;
+  transition: transform 0.2s ease;
+}
+
+#subscriptions-ui .collapse-toggle.collapsed svg {
+  transform: rotate(-90deg);
 }
 
 @media (max-width: 767.98px) {
@@ -1970,9 +1983,15 @@ button, .btn {
   margin-right: 0.25rem;
 }
 
-#subscriptions-ui .collapse-toggle .lucide {
-  width: 1.5em;
-  height: 1.5em;
+#subscriptions-ui .collapse-toggle svg {
+  width: 2em;
+  height: 2em;
+  stroke-width: 3;
+  transition: transform 0.2s ease;
+}
+
+#subscriptions-ui .collapse-toggle.collapsed svg {
+  transform: rotate(-90deg);
 }
 
 @media (max-width: 767.98px) {
