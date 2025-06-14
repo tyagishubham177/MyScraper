@@ -44,6 +44,36 @@ export async function initLogin() {
   // const userRegYesBtn = document.getElementById('user-reg-yes');
   // const userRegNoBtn = document.getElementById('user-reg-no');
 
+  function startCountdown(button, lockUntil, messageElem, storageKey) {
+    if (!button) return;
+    button.disabled = true;
+    function update() {
+      const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
+      if (remaining > 0) {
+        if (messageElem) {
+          messageElem.textContent = `Too many attempts. Try again in ${remaining}s`;
+          messageElem.style.display = 'block';
+        }
+      } else {
+        clearInterval(timer);
+        button.disabled = false;
+        localStorage.removeItem(storageKey);
+        if (messageElem) messageElem.style.display = 'none';
+      }
+    }
+    update();
+    const timer = setInterval(update, 1000);
+  }
+
+  function checkStoredLock(button, messageElem, storageKey) {
+    const lockUntil = parseInt(localStorage.getItem(storageKey), 10);
+    if (lockUntil && lockUntil > Date.now()) {
+      startCountdown(button, lockUntil, messageElem, storageKey);
+    } else {
+      localStorage.removeItem(storageKey);
+    }
+  }
+
 
   function showLoginPopup() {
     hideGlobalLoader();
@@ -63,6 +93,9 @@ export async function initLogin() {
     if (userErrorMessage) userErrorMessage.style.display = 'none';
     // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
     if (userContactLinks) userContactLinks.style.display = 'none';
+
+    checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
+    checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil');
 
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
       window.lucide.createIcons();
@@ -127,7 +160,18 @@ export async function initLogin() {
             window.location.href = "components/admin-main/admin.html";
         } else {
           const result = await res.json().catch(() => ({}));
-          if (adminErrorMessage) {
+          if (result.wait) {
+            const lockUntil = Date.now() + result.wait * 1000;
+            localStorage.setItem('adminLockUntil', lockUntil);
+            startCountdown(adminLoginBtn, lockUntil, adminErrorMessage, 'adminLockUntil');
+          } else if (result.attempt) {
+            let msg = `Unsuccessful attempt ${result.attempt}/3`;
+            if (result.attempt === 2) msg += ' - last attempt';
+            if (adminErrorMessage) {
+              adminErrorMessage.textContent = msg;
+              adminErrorMessage.style.display = 'block';
+            }
+          } else if (adminErrorMessage) {
             adminErrorMessage.textContent = result.message || 'Invalid credentials.';
             adminErrorMessage.style.display = 'block';
           }
@@ -171,12 +215,27 @@ export async function initLogin() {
           return;
         }
 
-        if (userErrorMessage) {
-          const result = await res.json().catch(() => ({}));
-          userErrorMessage.textContent = result.message || 'Email not registered. Please contact admin to register.';
-          userErrorMessage.style.display = 'block';
+        const result = await res.json().catch(() => ({}));
+
+        if (result.wait) {
+          const lockUntil = Date.now() + result.wait * 1000;
+          localStorage.setItem('userLockUntil', lockUntil);
+          startCountdown(userLoginBtn, lockUntil, userErrorMessage, 'userLockUntil');
+        } else if (result.attempt) {
+          let msg = `Unsuccessful attempt ${result.attempt}/3`;
+          if (result.attempt === 2) msg += ' - last attempt';
+          if (userErrorMessage) {
+            userErrorMessage.textContent = msg;
+            userErrorMessage.style.display = 'block';
+          }
+        } else {
+          if (userErrorMessage) {
+            userErrorMessage.textContent = result.message || 'Email not registered. Please contact admin to register.';
+            userErrorMessage.style.display = 'block';
+          }
         }
-        if (userContactLinks) {
+
+        if (!result.wait && !result.attempt && userContactLinks) {
           userContactLinks.style.display = 'block';
           if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
