@@ -47,6 +47,16 @@ export async function initLogin() {
   let adminCountdownTimer = null;
   let userCountdownTimer = null;
 
+  function clearCountdown(timerVar, storageKey, messageElem, contactLinks) {
+    if (timerVar) {
+      clearInterval(timerVar);
+    }
+    if (storageKey) localStorage.removeItem(storageKey);
+    if (messageElem) messageElem.style.display = 'none';
+    if (contactLinks) contactLinks.style.display = 'none';
+    return null;
+  }
+
   function startCountdown(button, lockUntil, messageElem, storageKey, contactLinks) {
     if (!button) return null;
     button.disabled = true;
@@ -105,13 +115,9 @@ export async function initLogin() {
     // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
     if (userContactLinks) userContactLinks.style.display = 'none';
 
-    if (adminCountdownTimer) {
-      clearInterval(adminCountdownTimer);
-    }
+    adminCountdownTimer = clearCountdown(adminCountdownTimer, null, adminErrorMessage);
     adminCountdownTimer = checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
-    if (userCountdownTimer) {
-      clearInterval(userCountdownTimer);
-    }
+    userCountdownTimer = clearCountdown(userCountdownTimer, null, userErrorMessage, userContactLinks);
     userCountdownTimer = checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil', userContactLinks);
 
     if (window.lucide && typeof window.lucide.createIcons === 'function') {
@@ -130,6 +136,7 @@ export async function initLogin() {
       // Clear admin inputs (optional, but good practice)
       if(adminEmailInput) adminEmailInput.value = '';
       if(adminPasswordInput) adminPasswordInput.value = '';
+      adminCountdownTimer = clearCountdown(adminCountdownTimer, null, adminErrorMessage);
     });
   }
 
@@ -146,9 +153,7 @@ export async function initLogin() {
       if (userErrorMessage) userErrorMessage.style.display = 'none';
       // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
       if (userContactLinks) userContactLinks.style.display = 'none';
-      if (userCountdownTimer) {
-        clearInterval(userCountdownTimer);
-      }
+      userCountdownTimer = clearCountdown(userCountdownTimer, null, userErrorMessage, userContactLinks);
       userCountdownTimer = checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil', userContactLinks);
     });
   }
@@ -177,12 +182,7 @@ export async function initLogin() {
         if (res.ok) {
           const data = await res.json();
           localStorage.setItem('authToken', data.token);
-          localStorage.removeItem('adminLockUntil');
-          if (adminCountdownTimer) {
-            clearInterval(adminCountdownTimer);
-            adminCountdownTimer = null;
-          }
-          if (adminErrorMessage) adminErrorMessage.style.display = 'none';
+          adminCountdownTimer = clearCountdown(adminCountdownTimer, 'adminLockUntil', adminErrorMessage);
           window.location.href = "components/admin-main/admin.html";
         } else {
           const result = await res.json().catch(() => ({}));
@@ -244,11 +244,7 @@ export async function initLogin() {
         });
 
         if (res.ok) {
-          localStorage.removeItem('userLockUntil');
-          if (userCountdownTimer) {
-            clearInterval(userCountdownTimer);
-            userCountdownTimer = null;
-          }
+          userCountdownTimer = clearCountdown(userCountdownTimer, 'userLockUntil', userErrorMessage, userContactLinks);
           localStorage.setItem('userEmail', email);
           window.location.href = 'components/user-main/user.html';
           return;
