@@ -423,6 +423,14 @@ button, .btn {
   /* Page Header Adjustments for Small Screens */
   .page-header {
     padding: 0.75rem 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1020;
+  }
+  body {
+    padding-top: 4.5rem;
   }
   .page-header h1 {
     font-size: 1.25rem;
