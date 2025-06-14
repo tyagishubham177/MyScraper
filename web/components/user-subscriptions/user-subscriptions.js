@@ -49,34 +49,37 @@ export async function initUserSubscriptionsUI() {
 
   function createSubscribedItem(product, sub, paused = false) {
     const li = document.createElement('li');
-    li.className = 'list-group-item' + (paused ? ' paused' : '');
+    li.className = 'list-group-item product-list-item-mobile' + (paused ? ' paused' : '');
     li.dataset.productId = product.id;
     li.dataset.name = product.name.toLowerCase();
 
-    const wrapper = document.createElement('div');
-    wrapper.className = 'd-flex justify-content-between align-items-center';
-
-    const info = document.createElement('div');
-    const strong = document.createElement('strong');
-    strong.textContent = product.name;
-    const link = document.createElement('small');
-    link.className = 'd-block text-muted';
-    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
-    link.innerHTML = `<a href="${product.url}" target="_blank" title="${product.url}">${displayUrl} <i data-lucide="external-link" class="lucide-small"></i></a>`;
-    info.appendChild(strong);
-    info.appendChild(link);
+    const details = document.createElement('div');
+    details.className = 'product-details mb-2';
+    const nameEl = document.createElement('h5');
+    nameEl.className = 'product-name mb-0';
+    nameEl.textContent = product.name;
+    const linkEl = document.createElement('a');
+    linkEl.href = product.url;
+    linkEl.target = '_blank';
+    linkEl.className = 'product-url d-block small';
+    linkEl.innerHTML = `${product.url} <i data-lucide="external-link" class="lucide-xs"></i>`;
+    details.appendChild(nameEl);
+    details.appendChild(linkEl);
 
     const controls = document.createElement('div');
-    controls.className = 'd-flex align-items-center';
+    controls.className = 'product-controls d-flex align-items-center';
     controls.innerHTML = `
-      <input type="time" class="form-control form-control-sm me-2 sub-start" value="${sub.start_time || '00:00'}">
-      <input type="time" class="form-control form-control-sm me-2 sub-end" value="${sub.end_time || '23:59'}">
-      <button class="btn btn-sm btn-outline-secondary me-2 pause-btn"><i data-lucide="${paused ? 'play' : 'pause'}"></i></button>
-      <button class="btn btn-sm btn-outline-danger unsub-btn"><i data-lucide="x"></i></button>`;
+      <div class="time-slot-group me-1">
+        <input type="time" class="form-control form-control-sm sub-start" value="${sub.start_time || '00:00'}">
+      </div>
+      <div class="time-slot-group me-2">
+        <input type="time" class="form-control form-control-sm sub-end" value="${sub.end_time || '23:59'}">
+      </div>
+      <button class="btn btn-sm btn-outline-secondary pause-btn me-1 p-1 btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}" class="lucide-small"></i></button>
+      <button class="btn btn-sm btn-outline-danger unsub-btn p-1 btn-icon"><i data-lucide="x" class="lucide-small"></i></button>`;
 
-    wrapper.appendChild(info);
-    wrapper.appendChild(controls);
-    li.appendChild(wrapper);
+    li.appendChild(details);
+    li.appendChild(controls);
     return li;
   }
 
