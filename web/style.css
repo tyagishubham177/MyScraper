@@ -373,6 +373,18 @@ button, .btn {
     overflow-y: auto;
 }
 
+#subscriptions-ui .collapse-toggle {
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.25rem;
+}
+
+#subscriptions-ui .collapse-toggle .lucide {
+  width: 1.5em;
+  height: 1.5em;
+}
+
 @media (max-width: 767.98px) {
   #subscriptions-ui .list-wrapper {
     max-height: none;
@@ -512,22 +524,40 @@ button, .btn {
   cursor: pointer;
 }
 
-@media (max-width: 420px) {
-  /* Wrap subscription controls so time inputs and remove button fit */
-  #user-subscribed-list .d-flex.align-items-center {
-    flex-direction: column;
-    align-items: stretch;
+@media (max-width: 576px) {
+  .product-list-item-mobile .product-details .product-name {
+    text-align: left;
+    font-size: 1rem;
   }
-  #user-subscribed-list .d-flex.align-items-center input[type="time"] {
-    width: 100%;
-    margin-right: 0 !important; /* Override .me-2 */
-    margin-bottom: 0.5rem;
+  .product-list-item-mobile .product-details .product-url {
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
   }
-  #user-subscribed-list .d-flex.align-items-center .unsub-btn {
-    align-self: flex-end;
+  .product-list-item-mobile .product-controls {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
   }
-  #user-subscribed-list .d-flex.align-items-center .pause-btn {
-    align-self: flex-end;
+  .product-list-item-mobile .product-controls .time-slot-group {
+    flex-basis: auto;
+  }
+  .product-list-item-mobile .product-controls .form-control-sm {
+    padding: .2rem .4rem;
+    font-size: 0.8em;
+    min-width: 90px;
+  }
+  .product-list-item-mobile .product-controls .btn-icon {
+    line-height: 1;
+  }
+  .product-list-item-mobile .product-controls .lucide-small {
+    width: 16px;
+    height: 16px;
+  }
+  .product-list-item-mobile .product-details .lucide-xs {
+    width: 12px;
+    height: 12px;
   }
 
   /* Allow long title to wrap with close button below */
