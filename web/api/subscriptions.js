@@ -1,4 +1,5 @@
 import { kv } from '@vercel/kv';
+import { requireAdmin } from './auth.js';
 
 async function getFromKV(key) {
   try {
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
 
   switch (method) {
     case 'POST':
+      if (!requireAdmin(req, res)) return;
       try {
         const { recipient_id, product_id, start_time, end_time } = req.body || {};
         if (!recipient_id || !product_id) {
@@ -69,6 +71,7 @@ export default async function handler(req, res) {
       break;
 
     case 'DELETE':
+      if (!requireAdmin(req, res)) return;
       try {
         const { recipient_id, product_id } = req.body;
         if (!recipient_id || !product_id) {

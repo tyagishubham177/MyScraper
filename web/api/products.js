@@ -1,4 +1,5 @@
 import { kv } from '@vercel/kv';
+import { requireAdmin } from './auth.js';
 
 // KV Helper functions for Products
 async function getProductsFromKV() {
@@ -59,6 +60,7 @@ export default async function handler(req, res) {
       break;
 
     case 'POST':
+      if (!requireAdmin(req, res)) return;
       try {
         const { url, name } = req.body;
 
@@ -95,6 +97,7 @@ export default async function handler(req, res) {
       break;
 
     case 'PUT':
+      if (!requireAdmin(req, res)) return;
       try {
         const { id } = req.query;
         const { url, name } = req.body;
@@ -133,6 +136,7 @@ export default async function handler(req, res) {
       break;
 
     case 'DELETE':
+      if (!requireAdmin(req, res)) return;
       try {
         const { id: productIdToDelete } = req.query;
 

@@ -44,7 +44,12 @@ function clearRecipientError(elementId) {
 }
 
 // Function to make API calls (can be generalized later)
-async function fetchAPI(url, options) {
+async function fetchAPI(url, options = {}) {
+  options.headers = options.headers || {};
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    options.headers['Authorization'] = `Bearer ${token}`;
+  }
   const response = await fetch(url, options);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));

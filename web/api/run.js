@@ -1,8 +1,11 @@
+import { requireAdmin } from './auth.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.status(405).send('Method Not Allowed');
     return;
   }
+  if (!requireAdmin(req, res)) return;
   const { id } = req.query;
   if (!id) {
     res.status(400).send('Missing id');

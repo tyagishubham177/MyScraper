@@ -79,7 +79,12 @@ export function extractCheckStockLog(logText) {
   return trimmed;
 }
 
-export async function fetchAPI(url, options) {
+export async function fetchAPI(url, options = {}) {
+  options.headers = options.headers || {};
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    options.headers['Authorization'] = `Bearer ${token}`;
+  }
   const response = await fetch(url, options);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
