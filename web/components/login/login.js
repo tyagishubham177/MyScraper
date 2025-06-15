@@ -39,7 +39,6 @@ export async function initLogin() {
   // const userContactAdminText = document.getElementById('user-contact-admin-btn'); // REMOVED - Element deleted from HTML
   const userContactLinks = document.getElementById('user-contact-links');
   const userMailBtn = document.getElementById('user-mail-btn');
-  const userGmailLink = document.getElementById('user-gmail-link');
 
   // REMOVE: Old user registration button declarations (userRegYesBtn, userRegNoBtn)
   // const userRegYesBtn = document.getElementById('user-reg-yes');
@@ -298,25 +297,21 @@ export async function initLogin() {
   }
 
   if (userMailBtn) {
-    userMailBtn.addEventListener('click', () => {
-      const to = 'linktracker03@gmail.com';
-      const subject = encodeURIComponent('Register Amul tracker email');
-      const typedEmail = userEmailInput ? userEmailInput.value.trim() : '';
-      const body = encodeURIComponent(`Hey there!\nPlease register my email : ${typedEmail}`);
-      const url = `mailto:${to}?subject=${subject}&body=${body}`;
-      window.location.href = url;
-    });
-  }
-
-  if (userGmailLink) {
-    userGmailLink.addEventListener('click', (e) => {
+    userMailBtn.addEventListener('click', (e) => {
       e.preventDefault();
       const to = 'linktracker03@gmail.com';
       const subject = encodeURIComponent('Register Amul tracker email');
       const typedEmail = userEmailInput ? userEmailInput.value.trim() : '';
       const body = encodeURIComponent(`Hey there!\nPlease register my email : ${typedEmail}`);
-      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
-      window.open(url, '_blank');
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      let url;
+      if (isMobile) {
+        url = `mailto:${to}?subject=${subject}&body=${body}`;
+        window.location.href = url;
+      } else {
+        url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
+        window.open(url, '_blank');
+      }
     });
   }
 

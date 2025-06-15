@@ -46,7 +46,6 @@
         <h6 class="mb-2">Reach Out</h6>
         <p class="small text-body-secondary">Send a message for bugs, feedback or new product requests.</p>
         <a href="#" id="feedbackGmail" class="btn btn-outline-primary w-100 mb-2"><i data-lucide="mail" class="me-1"></i>Gmail</a>
-        <a href="#" id="feedbackMailto" class="btn btn-outline-primary w-100 mb-2"><i data-lucide="mail" class="me-1"></i>Email App</a>
         <a href="https://www.reddit.com/message/compose/?to=ShooBum-T&subject=Feedback&message=I%20would%20like%20to%20request%20a%20new%20product%20or%20send%20feedback" target="_blank" id="feedbackReddit" class="btn btn-outline-danger w-100"><i data-lucide="message-circle" class="me-1"></i>Reddit</a>
       </div>
     </div>
@@ -157,22 +156,21 @@
       await initUserSubscriptionsUI();
       hideGlobalLoader();
       const gmailLink = document.getElementById('feedbackGmail');
-      const mailtoLink = document.getElementById('feedbackMailto');
       const to = 'linktracker03@gmail.com';
       const subject = encodeURIComponent('Product Request / Feedback');
       const body = encodeURIComponent(`Hey there! I would like to request a new product or send feedback. My email: ${email}`);
       if (gmailLink) {
         gmailLink.addEventListener('click', (e) => {
           e.preventDefault();
-          const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
-          window.open(url, '_blank');
-        });
-      }
-      if (mailtoLink) {
-        mailtoLink.addEventListener('click', (e) => {
-          e.preventDefault();
-          const url = `mailto:${to}?subject=${subject}&body=${body}`;
-          window.location.href = url;
+          const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          let url;
+          if (isMobile) {
+            url = `mailto:${to}?subject=${subject}&body=${body}`;
+            window.location.href = url;
+          } else {
+            url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
+            window.open(url, '_blank');
+          }
         });
       }
    });
