@@ -156,14 +156,23 @@
       await initUserSubscriptionsUI();
       hideGlobalLoader();
       const gmailLink = document.getElementById('feedbackGmail');
-      gmailLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        const to = 'linktracker03@gmail.com';
-        const subject = encodeURIComponent('Product Request / Feedback');
-        const body = encodeURIComponent(`Hey there! I would like to request a new product or send feedback. My email: ${email}`);
-        const url = `mailto:${to}?subject=${subject}&body=${body}`;
-        window.location.href = url;
-      });
+      const to = 'linktracker03@gmail.com';
+      const subject = encodeURIComponent('Product Request / Feedback');
+      const body = encodeURIComponent(`Hey there! I would like to request a new product or send feedback. My email: ${email}`);
+      if (gmailLink) {
+        gmailLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          let url;
+          if (isMobile) {
+            url = `mailto:${to}?subject=${subject}&body=${body}`;
+            window.location.href = url;
+          } else {
+            url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
+            window.open(url, '_blank');
+          }
+        });
+      }
    });
   </script>
 </body>
