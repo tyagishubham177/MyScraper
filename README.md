@@ -20,7 +20,7 @@ The workflow definition lives in `.github/workflows/schedule.yml` and runs every
    cd amul-lassi-tracker
    pip install -r requirements.txt
    ```
-   Playwright needs browser binaries so run `playwright install` if you plan to execute the script locally.
+   Playwright needs browser binaries so run `playwright install chromium` if you plan to execute the script locally. The GitHub Actions workflow also installs only Chromium to speed up jobs.
 
 2. **Set up environment variables**
    - `PINCODE` – the postal code used on the Amul store.

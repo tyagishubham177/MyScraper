@@ -8,6 +8,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: pw-browsers
     steps:
       - uses: actions/checkout@v4
 
@@ -20,14 +22,14 @@ jobs:
       - name: Cache Playwright browsers
         uses: actions/cache@v3
         with:
-          path: ~/.cache/ms-playwright
+          path: pw-browsers
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
           restore-keys: ${{ runner.os }}-playwright-
 
       - name: Install deps
         run: |
           pip install -r requirements.txt
-          playwright install
+          playwright install chromium
 
       - name: Run stock checker
         env:
