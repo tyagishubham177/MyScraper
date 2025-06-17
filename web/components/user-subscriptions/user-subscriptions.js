@@ -31,6 +31,20 @@ export async function initUserSubscriptionsUI() {
   const subscribedList = document.getElementById('user-subscribed-list');
   const allList = document.getElementById('all-products-list');
   const searchInput = document.getElementById('product-search');
+  const productsCollapse = document.getElementById('allProductsListCollapse');
+
+  if (productsCollapse && searchInput) {
+    const updateSearchVisibility = () => {
+      if (productsCollapse.classList.contains('show')) {
+        searchInput.classList.remove('d-none');
+      } else {
+        searchInput.classList.add('d-none');
+      }
+    };
+    productsCollapse.addEventListener('shown.bs.collapse', updateSearchVisibility);
+    productsCollapse.addEventListener('hidden.bs.collapse', updateSearchVisibility);
+    updateSearchVisibility();
+  }
 
   function createSubscribedItem(product, sub, paused = false) {
     const li = document.createElement('li');
@@ -123,10 +137,17 @@ export async function initUserSubscriptionsUI() {
         return a.product.name.localeCompare(b.product.name);
       });
 
-    for (const item of sortedSubs) {
-      subscribedList.appendChild(
-        createSubscribedItem(item.product, item.sub, item.sub.paused)
-      );
+    if (sortedSubs.length === 0) {
+      const emptyLi = document.createElement('li');
+      emptyLi.className = 'list-group-item text-center text-muted';
+      emptyLi.textContent = 'Uh oh, your subscriptions list is empty 😢 Add products from the available list below.';
+      subscribedList.appendChild(emptyLi);
+    } else {
+      for (const item of sortedSubs) {
+        subscribedList.appendChild(
+          createSubscribedItem(item.product, item.sub, item.sub.paused)
+        );
+      }
     }
 
     products.forEach(p => {
