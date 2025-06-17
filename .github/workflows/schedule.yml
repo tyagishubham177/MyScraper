@@ -8,10 +8,14 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.30.0-focal
     env:
-      PLAYWRIGHT_BROWSERS_PATH: pw-browsers
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: actions/setup-python@v4
         with:
@@ -22,14 +26,13 @@ jobs:
       - name: Cache Playwright browsers
         uses: actions/cache@v3
         with:
-          path: pw-browsers
+          path: /ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
           restore-keys: ${{ runner.os }}-playwright-
 
       - name: Install deps
         run: |
           pip install -r requirements.txt
-          playwright install chromium
 
       - name: Run stock checker
         env:
