@@ -46,6 +46,8 @@ async def main():
             print("No products fetched from API. Exiting.")
             return
 
+        current_time = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).time()
+
         for product_info in all_products:
             product_id = product_info.get('id')
             product_url = product_info.get('url')
@@ -68,6 +70,28 @@ async def main():
                 })
                 continue
 
+            # Filter subscriptions to only those that are active (not paused and within time window)
+            active_subs = []
+            for sub in subs:
+                if sub.get('paused'):
+                    continue
+                start_t = sub.get('start_time', '00:00')
+                end_t = sub.get('end_time', '23:59')
+                if not within_time_window(start_t, end_t, current_time):
+                    continue
+                active_subs.append(sub)
+
+            if not active_subs:
+                print(f"Skipping product '{effective_name}' - no active subscribers.")
+                summary_email_data.append({
+                    'product_name': effective_name,
+                    'product_url': product_url,
+                    'subscriptions': [{'user_email': 'N/A', 'status': 'Skipped - No Active Subscribers'}]
+                })
+                continue
+
+            subs = active_subs
+
             try:
                 in_stock, scraped_name = await scraper.check_product_availability(product_url, config.PINCODE)
                 if scraped_name:
@@ -87,7 +111,6 @@ async def main():
             if in_stock:
                 print(f"✅ Product '{effective_name}' is IN STOCK.")
                 valid_emails = []
-                current_time = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).time()
                 for sub in subs:
                     rid = sub.get('recipient_id')
                     email = recipients_map.get(rid)
