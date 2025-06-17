@@ -2,6 +2,7 @@ import smtplib
 from email.mime.text import MIMEText
 import requests # For the commented-out send_fast2sms
 import os # For F2S_KEY/TO if they were used directly (they are in the commented out function)
+from typing import List
 
 # ——————————————————————————————————————————
 # Config from GitHub Secrets / .env (assumed to be in config.py or environment)
@@ -185,7 +186,7 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
 def format_short_message(product_name: str) -> str:
     return f"ALERT: {product_name.strip()} is back in stock!"
 
-def send_email_notification(subject: str, body: str, sender: str, recipients: list[str], host: str, port: int, username: str = None, password: str = None):
+def send_email_notification(subject: str, body: str, sender: str, recipients: List[str], host: str, port: int, username: str = None, password: str = None):
     """Sends an email notification."""
     if not (host and sender and recipients and all(recipients)):
         print("⚠️ Essential email configuration or recipient list is missing or invalid.")
