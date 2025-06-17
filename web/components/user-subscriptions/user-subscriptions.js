@@ -139,8 +139,8 @@ export async function initUserSubscriptionsUI() {
 
     if (sortedSubs.length === 0) {
       const emptyLi = document.createElement('li');
-      emptyLi.className = 'list-group-item';
-      emptyLi.textContent = 'Add products you want to subscribe to from the available list below.';
+      emptyLi.className = 'list-group-item text-center text-muted';
+      emptyLi.textContent = 'Uh oh, your subscriptions list is empty 😢 Add products from the available list below.';
       subscribedList.appendChild(emptyLi);
     } else {
       for (const item of sortedSubs) {
