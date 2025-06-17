@@ -75,7 +75,7 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
                 <tr>
                     <th>Product Name</th>
                     <th>Product URL</th>
-                    <th>Subscribed User Emails (CSV)</th>
+                    <th>Email sent to</th>
                     <th>Overall Product Status</th>
                 </tr>
             </thead>
@@ -113,12 +113,11 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
         else:
             for sub_info in subscriptions:
                 user_email = sub_info.get('user_email', 'N/A')
-                if user_email not in user_emails_list: # Avoid duplicate emails in the list
-                    user_emails_list.append(user_email)
-
                 current_sub_status = sub_info.get('status', 'N/A')
 
                 if current_sub_status == "Sent":
+                    if user_email not in user_emails_list:  # Avoid duplicate emails in the list
+                        user_emails_list.append(user_email)
                     is_in_stock_attempted = True
                     all_out_of_stock = False
                 elif current_sub_status == "Not Sent - Out of Stock":
@@ -126,9 +125,9 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
                     # all_out_of_stock remains true if this is the status for all relevant subs
                 elif current_sub_status in failed_notification_for_instock_statuses:
                     is_in_stock_attempted = True
-                    all_out_of_stock = False # Product was in stock, but notification failed
+                    all_out_of_stock = False  # Product was in stock, but notification failed
                     if user_email not in failed_to_notify_list:
-                         failed_to_notify_list.append(user_email)
+                        failed_to_notify_list.append(user_email)
                 elif current_sub_status not in ignorable_statuses:
                     # Any other non-ignorable status means we can't definitively say all were OOS
                     all_out_of_stock = False
