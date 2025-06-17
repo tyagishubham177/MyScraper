@@ -31,6 +31,17 @@ def format_long_message(product_name: str, url: str) -> str:
             font-weight: bold;
         }}
         .button:hover {{ background-color: #218838; }}
+        .button-manage {{
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 10px; /* Adjusted margin for spacing */
+            background-color: #007bff; /* Blue */
+            color: white !important; /* Ensure text is white */
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }}
+        .button-manage:hover {{ background-color: #0056b3; }}
         </style>
     </head>
     <body>
@@ -40,6 +51,10 @@ def format_long_message(product_name: str, url: str) -> str:
         <p><strong>{product_name.strip()}</strong></p>
         <p>Don't miss out! Check it out here:</p>
         <a href="{url}" class="button">View Product Now</a>
+        <p style="margin-top: 20px; color: #555555;">
+            ⏸️ You can pause notifications for this product in the app, or adjust the window in which the notifications are sent to you. ⚙️
+        </p>
+        <a href="https://my-scraper-nine.vercel.app/" class="button-manage">Manage Notifications</a>
         <p style="margin-top: 20px; font-size: 0.9em; color: #777;">
             This is an automated notification.
         </p>
