@@ -13,11 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v4
+      - name: Cache pip
+        uses: actions/cache@v3
         with:
-          python-version: "3.x"
-          cache: "pip"
-          cache-dependency-path: requirements.txt
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Install deps
         run: pip install -r requirements.txt
