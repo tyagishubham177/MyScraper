@@ -39,6 +39,7 @@ export async function initLogin() {
   // const userContactAdminText = document.getElementById('user-contact-admin-btn'); // REMOVED - Element deleted from HTML
   const userContactLinks = document.getElementById('user-contact-links');
   const userMailBtn = document.getElementById('user-mail-btn');
+  const userRedditLink = document.getElementById('user-reddit-link');
 
   // REMOVE: Old user registration button declarations (userRegYesBtn, userRegNoBtn)
   // const userRegYesBtn = document.getElementById('user-reg-yes');
@@ -270,9 +271,9 @@ export async function initLogin() {
           if (result.attempt) {
             msg = `Email unregistered or incorrect attempt (${result.attempt}/3)`;
             if (result.attempt === 2) msg += ' - last attempt';
-            msg += '. Please contact admin to register.';
+            msg += '. Please contact admin to register via options below';
           } else {
-            msg = result.message || 'Email not registered. Please contact admin to register.';
+            msg = result.message || 'Email not registered. Please contact admin to register via options below';
           }
           if (userErrorMessage) {
             userErrorMessage.textContent = msg;
@@ -312,6 +313,19 @@ export async function initLogin() {
         url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
         window.open(url, '_blank');
       }
+    });
+  }
+
+  if (userRedditLink) {
+    userRedditLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const baseUrl = 'https://www.reddit.com/message/compose/';
+      const to = 'ShooBum-T';
+      const subject = encodeURIComponent('User Registration Request');
+      const typedEmail = userEmailInput ? userEmailInput.value.trim() : '';
+      const message = encodeURIComponent(`Please register my email : ${typedEmail}`);
+      const url = `${baseUrl}?to=${to}&subject=${subject}&message=${message}`;
+      window.open(url, '_blank');
     });
   }
 
