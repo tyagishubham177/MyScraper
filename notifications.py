@@ -156,7 +156,6 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
 
         return subscribed_emails_csv, product_status_overall
 
-"""
     for product_data in summary_data_list:
         product_name = product_data.get("product_name", "N/A")
         product_url = product_data.get("product_url", "#")
