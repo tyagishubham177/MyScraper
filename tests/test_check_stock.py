@@ -44,7 +44,7 @@ def test_filter_active_subs():
 
 async def _run_notify_users(monkeypatch):
     sent_args = {}
-    async def dummy_send_email(*args, **kwargs):
+    def dummy_send_email(*args, **kwargs):
         sent_args['called'] = True
     monkeypatch.setattr(notifications, 'send_email_notification', dummy_send_email)
     monkeypatch.setattr(config, 'EMAIL_HOST', 'smtp')
