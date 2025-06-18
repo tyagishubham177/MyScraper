@@ -14,6 +14,7 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 # Declare default permissions as read only.
@@ -110,13 +111,13 @@ jobs:
           python-version: '3.x'
       - name: Install deps
         run: |
-          pip install coverage codecov
+          pip install coverage codecov pytest
       - name: Run coverage
         run: |
           coverage run -m pytest || echo "no tests to run"
           coverage xml -o coverage.xml
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v4.4.1
+        uses: codecov/codecov-action@ac9bd6e8a25c8eae7932d7a4a8fc3c5da5f5ffe0 # v4.4.1
         with:
           files: coverage.xml
           fail_ci_if_error: true
