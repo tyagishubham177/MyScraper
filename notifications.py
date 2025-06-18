@@ -1,7 +1,5 @@
 import smtplib
 from email.mime.text import MIMEText
-import requests # For the commented-out send_fast2sms
-import os # For F2S_KEY/TO if they were used directly (they are in the commented out function)
 
 # ——————————————————————————————————————————
 # Config from GitHub Secrets / .env (assumed to be in config.py or environment)
