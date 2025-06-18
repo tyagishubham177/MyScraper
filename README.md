@@ -36,7 +36,7 @@ Ready to catch some Lassi? Here’s how to set up the project:
    ```bash
    git clone https://github.com/tyagishubham177/MyScraper.git
    cd MyScraper
-   pip install -r requirements.txt
+   pip install myscraper
    ```
 
    This will install Playwright, BeautifulSoup4, Requests, Aiohttp, and a few others. *Note:* Playwright needs browser binaries for Chromium – if you plan to run locally, execute:
@@ -68,10 +68,12 @@ Ready to catch some Lassi? Here’s how to set up the project:
      * *(These last variables are only needed if deploying the web UI on Vercel.)*
 
 3. **Run the Stock Checker Locally (optional)**
-   You can execute the Python script directly to verify everything is working:
+   You can execute the module directly or use the installed command-line script:
 
    ```bash
-   python scripts/check_stock.py
+   python -m myscraper.check_stock
+   # Or if installed via pip
+   myscraper-check
    ```
 
    The script will open a headless browser, navigate to the product page, input the pincode, and report the stock status. You’ll see console logs for each step (e.g., “Page loaded”, “Add to Cart enabled: visible”, etc.), and it will save a screenshot in the `artifacts/` folder. If an item is in stock and you’ve configured email/SMS, it will attempt to send out notifications. (Don’t worry, it also logs if it actually sent or if it skipped due to time windows or missing config.)

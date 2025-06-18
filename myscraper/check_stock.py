@@ -2,10 +2,10 @@ import asyncio
 from datetime import datetime, timezone, timedelta, time as dt_time
 import aiohttp
 from playwright.async_api import async_playwright
-import config
-import notifications
-from notifications import format_summary_email_body
-import scraper
+from . import config
+from . import notifications
+from .notifications import format_summary_email_body
+from . import scraper
 
 
 def within_time_window(start_str: str, end_str: str, now: dt_time) -> bool:
@@ -240,5 +240,9 @@ async def main():
     else:
         print("No user notifications were sent. Skipping summary email.")
 
-if __name__ == "__main__":
+def cli() -> None:
+    """Entry point for console_scripts."""
     asyncio.run(main())
+
+if __name__ == "__main__":
+    cli()

@@ -6,13 +6,13 @@ This repo combines a small Python backend with a Node/JavaScript dashboard. Belo
 For more details [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/tyagishubham177/MyScraper)
 ```
 MyScraper/
-├── scripts/
+├── myscraper/
 │   ├── check_stock.py
 │   ├── scraper.py
 │   ├── notifications.py
 │   ├── config.py
 │   └── __init__.py
-├── requirements.txt
+├── pyproject.toml
 ├── .github/  
 │   └── workflows/  
 │       └── schedule.yml  
@@ -46,13 +46,13 @@ MyScraper/
 ```
 
 ## Python bits 🐍
-- **scripts/check_stock.py** – orchestrates the run, talks to the dashboard API and decides who gets alerts.
-- **scripts/scraper.py** – uses Playwright to see if the “Add to Cart” button is enabled.
-- **scripts/notifications.py** – builds the email body and fires off SMTP messages.
-- **scripts/config.py** – loads environment variables and constants.
-- **requirements.txt** – libraries needed to run the scripts.
+- **myscraper/check_stock.py** – orchestrates the run, talks to the dashboard API and decides who gets alerts.
+- **myscraper/scraper.py** – uses Playwright to see if the “Add to Cart” button is enabled.
+- **myscraper/notifications.py** – builds the email body and fires off SMTP messages.
+- **myscraper/config.py** – loads environment variables and constants.
+- **pyproject.toml** – project metadata and dependencies.
 
-- **schedule.yml** – runs `scripts/check_stock.py` every two hours and uploads screenshots as artifacts.
+- **schedule.yml** – runs `python -m myscraper.check_stock` every two hours and uploads screenshots as artifacts.
 - **scorecard.yml** – scans the repository for security issues with CodeQL and Scorecard.
 - **dependabot.yml** – keeps Python dependencies updated automatically (located at `.github/dependabot.yml`).
 
