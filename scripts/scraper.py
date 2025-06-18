@@ -75,9 +75,16 @@ async def _check_availability_on_page(page: Page, url: str, pincode: str, skip_p
     product_name = "The Product"
     elem = await page.query_selector("h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4")
     if elem:
-        content = await elem.text_content() or ""
-        product_name = content.strip() or product_name
-        await log("Extracted product name:", product_name)
+        try:
+            content = await elem.text_content()
+            if content: # Ensure content is not None before stripping
+                product_name = content.strip() or product_name
+            else: # content is None or empty string
+                product_name = product_name # Keep default
+            await log("Extracted product name:", product_name)
+        except Exception as e:
+            await log(f"Error fetching product name text: {e}. Using default.")
+            # product_name remains "The Product"
     else:
         await log("Product name element not found. Using default.")
 
