@@ -2,6 +2,7 @@
 
 This repo combines a small Python backend with a Node/JavaScript dashboard. Below is a quick tour of the layout and what each part does.
 
+For more details [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/tyagishubham177/MyScraper)
 ```
 MyScraper/  
 ├── check_stock.py  
