@@ -52,7 +52,10 @@ MyScraper/
 
 ## GitHub Actions 🤖
 - **schedule.yml** – runs `check_stock.py` every two hours and uploads screenshots as artifacts.
+- **scorecard.yml** – scans the repository for security issues with CodeQL and Scorecard.
 - **dependabot.yml** – keeps Python dependencies updated automatically (located at `.github/dependabot.yml`).
+
+All workflows include a `workflow_dispatch` trigger so you can run them manually from the Actions tab for quick testing.
 
 ## Dashboard (web/) 🌐
 - **index.html** & **style.css** – the simple front end.

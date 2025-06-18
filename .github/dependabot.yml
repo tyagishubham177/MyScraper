@@ -1,4 +1,4 @@
-# name: Amul Watchdog
+name: Amul Watchdog
 version: 2
 updates:
   - package-ecosystem: "pip"

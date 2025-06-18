@@ -79,8 +79,8 @@ Ready to catch some Lassi? Here’s how to set up the project:
 
    * Fork this repo to your own GitHub account (or push it to a new repo under your account).
    * In your repository settings, add the required secrets (those environment vars from step 2) – at the very least `PINCODE`, and the SMTP settings if you want email alerts. Fast2SMS keys if you use that.
-   * GitHub Actions should be enabled by default; if not, enable them. The “Amul Watchdog” workflow will start executing on schedule. You can check the Actions tab to see run logs and artifacts (screenshots).
-   * **Manual trigger:** You can also trigger the workflow on-demand via the Actions tab “Run workflow” button. Useful for testing changes or if you just can’t wait for the next scheduled run.
+  * GitHub Actions should be enabled by default; if not, enable them. The “Amul Watchdog” and “Scorecard supply-chain security” workflows will run automatically.
+  * **Manual trigger:** Both workflows can also be started on-demand from the Actions tab using the **Run workflow** button – handy for testing changes without waiting for the next scheduled run.
 
 5. **(Optional) Deploy the Web Dashboard**
    If you want the fancy dashboard to monitor runs and manage configurations in a nicer way:
