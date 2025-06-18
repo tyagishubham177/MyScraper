@@ -17,6 +17,19 @@ export default async function handler(req, res) {
   const now = Date.now();
   let attemptData = await kv.get(ATTEMPT_KEY) || { count: 0, delay: 0, lockUntil: 0 };
 
+  async function recordAttempt() {
+    attemptData.count = (attemptData.count || 0) + 1;
+    if (attemptData.count >= 3) {
+      attemptData.delay = attemptData.delay ? attemptData.delay * 2 : 60;
+      attemptData.lockUntil = now + attemptData.delay * 1000;
+    }
+    await kv.set(ATTEMPT_KEY, attemptData);
+    if (attemptData.count >= 3) {
+      return res.status(429).json({ message: `Too many attempts. Try again in ${attemptData.delay}s`, wait: attemptData.delay, attempt: attemptData.count });
+    }
+    return null;
+  }
+
   if (attemptData.lockUntil && now < attemptData.lockUntil) {
     const wait = Math.ceil((attemptData.lockUntil - now) / 1000);
     return res.status(429).json({ message: `Too many attempts. Try again in ${wait}s`, wait, attempt: attemptData.count });
@@ -31,29 +44,15 @@ export default async function handler(req, res) {
   }
 
   if (email !== adminEmail) {
-    attemptData.count = (attemptData.count || 0) + 1;
-    if (attemptData.count >= 3) {
-      attemptData.delay = attemptData.delay ? attemptData.delay * 2 : 60;
-      attemptData.lockUntil = now + attemptData.delay * 1000;
-    }
-    await kv.set(ATTEMPT_KEY, attemptData);
-    if (attemptData.count >= 3) {
-      return res.status(429).json({ message: `Too many attempts. Try again in ${attemptData.delay}s`, wait: attemptData.delay, attempt: attemptData.count });
-    }
+    const lockRes = await recordAttempt();
+    if (lockRes) return lockRes;
     return res.status(401).json({ message: 'Invalid credentials', attempt: attemptData.count });
   }
 
   const match = await bcrypt.compare(password, passwordHash);
   if (!match) {
-    attemptData.count = (attemptData.count || 0) + 1;
-    if (attemptData.count >= 3) {
-      attemptData.delay = attemptData.delay ? attemptData.delay * 2 : 60;
-      attemptData.lockUntil = now + attemptData.delay * 1000;
-    }
-    await kv.set(ATTEMPT_KEY, attemptData);
-    if (attemptData.count >= 3) {
-      return res.status(429).json({ message: `Too many attempts. Try again in ${attemptData.delay}s`, wait: attemptData.delay, attempt: attemptData.count });
-    }
+    const lockRes = await recordAttempt();
+    if (lockRes) return lockRes;
     return res.status(401).json({ message: 'Invalid credentials', attempt: attemptData.count });
   }
 

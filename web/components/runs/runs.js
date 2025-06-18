@@ -78,6 +78,76 @@ function createAccordionItem(r, idx) {
     </div>`;
 }
 
+async function fetchScraperDecisions(runId) {
+  const token = localStorage.getItem('authToken');
+  const logRes = await fetch(`${API_LOGS}?id=${runId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!logRes.ok) {
+    throw new Error(`Failed to fetch logs for summary: ${logRes.status}`);
+  }
+  const blob = await logRes.blob();
+  const zip = await JSZip.loadAsync(blob);
+  let rawLogText = '';
+  let foundLogFile = false;
+  const normalizedStepName = 'runstockchecker';
+  for (const fname of Object.keys(zip.files)) {
+    const normalizedFname = fname.toLowerCase().replace(/[\s_]+/g, '');
+    if (normalizedFname.includes(normalizedStepName)) {
+      rawLogText = await zip.files[fname].async('string');
+      foundLogFile = true;
+      break;
+    }
+  }
+  if (!foundLogFile) {
+    for (const fname of Object.keys(zip.files)) {
+      const lower = fname.toLowerCase();
+      if (lower.includes('run_stock_checker') || lower.includes('stock checker') || lower.includes('stock-checker')) {
+        rawLogText = await zip.files[fname].async('string');
+        foundLogFile = true;
+        break;
+      }
+    }
+  }
+  if (!foundLogFile) {
+    const firstFile = Object.keys(zip.files)[0];
+    rawLogText = firstFile ? await zip.files[firstFile].async('string') : 'No log file found in archive.';
+  }
+  const trimmed = extractCheckStockLog(rawLogText);
+  const cleaned = cleanLogText(trimmed);
+  return parseScraperDecisionsFromLog(cleaned);
+}
+
+function appendSummary(overviewTabPane, decisions) {
+  let summaryHtml = '<h4 class="mt-3">Product Stock Summary:</h4>';
+  if (decisions.length > 0) {
+    summaryHtml += '<div>';
+    decisions.forEach(decision => {
+      let statusHtml = '';
+      if (decision.status === 'IN STOCK') {
+        statusHtml = `<span style="color: green;"><i data-lucide="check-circle" class="me-1"></i>IN STOCK</span>`;
+      } else if (decision.status === 'OUT OF STOCK') {
+        statusHtml = `<span style="color: red;"><i data-lucide="x-circle" class="me-1"></i>OUT OF STOCK</span>`;
+      } else {
+        statusHtml = `<span>${decision.status}</span>`;
+      }
+      summaryHtml += `<div class="mb-2"><span>${decision.name}: </span><strong>${statusHtml}</strong></div>`;
+    });
+    summaryHtml += '</div>';
+    overviewTabPane.innerHTML += summaryHtml;
+  } else {
+    overviewTabPane.innerHTML += '<p class="mt-3 text-muted">No product stock decisions found in logs.</p>';
+  }
+  overviewTabPane.dataset.productSummaryLoaded = 'true';
+  if (decisions.length > 0) {
+    setTimeout(() => {
+      if (typeof lucide !== 'undefined' && lucide && typeof lucide.replace === 'function') {
+        lucide.replace();
+      }
+    }, 50);
+  }
+}
+
 async function loadOverview(col, idx) {
   if (col.dataset.overviewLoaded) return;
   const runId = col.dataset.runId;
@@ -99,71 +169,12 @@ async function loadOverview(col, idx) {
 
     if (!overviewTabPane.dataset.productSummaryLoaded) {
       try {
-        const token = localStorage.getItem('authToken');
-        const logRes = await fetch(`${API_LOGS}?id=${runId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!logRes.ok) throw new Error(`Failed to fetch logs for summary: ${logRes.status}`);
-        const blob = await logRes.blob();
-        const zip = await JSZip.loadAsync(blob);
-        let rawLogText = '';
-        let foundLogFile = false;
-        const normalizedStepName = 'runstockchecker';
-        for (const fname of Object.keys(zip.files)) {
-          const lowerFname = fname.toLowerCase();
-          const normalizedFname = lowerFname.replace(/[\s_]+/g, '');
-          if (normalizedFname.includes(normalizedStepName)) {
-            rawLogText = await zip.files[fname].async('string');
-            foundLogFile = true;
-            break;
-          }
-        }
-        if (!foundLogFile) {
-          for (const fname of Object.keys(zip.files)) {
-            const lowerFname = fname.toLowerCase();
-            if (lowerFname.includes('run_stock_checker') || lowerFname.includes('stock checker') || lowerFname.includes('stock-checker')) {
-              rawLogText = await zip.files[fname].async('string');
-              foundLogFile = true;
-              break;
-            }
-          }
-        }
-        if (!foundLogFile) {
-          const firstFile = Object.keys(zip.files)[0];
-          rawLogText = firstFile ? await zip.files[firstFile].async('string') : 'No log file found in archive.';
-        }
-        const trimmedLog = extractCheckStockLog(rawLogText);
-        const cleanedLogText = cleanLogText(trimmedLog);
-        const scraperDecisions = parseScraperDecisionsFromLog(cleanedLogText);
-        let summaryContentHtml = '<h4 class="mt-3">Product Stock Summary:</h4>';
-        if (scraperDecisions.length > 0) {
-          summaryContentHtml += '<div>';
-          scraperDecisions.forEach(decision => {
-            let statusHtml = '';
-            if (decision.status === 'IN STOCK') {
-              statusHtml = `<span style="color: green;"><i data-lucide="check-circle" class="me-1"></i>IN STOCK</span>`;
-            } else if (decision.status === 'OUT OF STOCK') {
-              statusHtml = `<span style="color: red;"><i data-lucide="x-circle" class="me-1"></i>OUT OF STOCK</span>`;
-            } else {
-              statusHtml = `<span>${decision.status}</span>`;
-            }
-            summaryContentHtml += `<div class="mb-2"><span>${decision.name}: </span><strong>${statusHtml}</strong></div>`;
-          });
-          summaryContentHtml += '</div>';
-          overviewTabPane.innerHTML += summaryContentHtml;
-        } else {
-          overviewTabPane.innerHTML += '<p class="mt-3 text-muted">No product stock decisions found in logs.</p>';
-        }
-        overviewTabPane.dataset.productSummaryLoaded = 'true';
-        if (scraperDecisions.length > 0) {
-          setTimeout(() => {
-            if (typeof lucide !== 'undefined' && lucide && typeof lucide.replace === 'function') {
-              lucide.replace();
-            }
-          }, 50);
-        }
+        const decisions = await fetchScraperDecisions(runId);
+        appendSummary(overviewTabPane, decisions);
       } catch (logErr) {
         console.error(`Error loading or parsing log for product summary (run ${runId}):`, logErr);
         overviewTabPane.innerHTML += `<p class="text-warning mt-3">Could not load product stock summary: ${logErr.message}</p>`;
-        overviewTabPane.dataset.productSummaryLoaded = 'true';
+        overviewTabPane.dataset.productSummaryLoaded = "true";
       }
     }
     overviewTabPane.classList.add('fade-in-content');

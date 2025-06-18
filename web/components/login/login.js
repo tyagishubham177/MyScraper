@@ -48,6 +48,64 @@ export async function initLogin() {
   let adminCountdownTimer = null;
   let userCountdownTimer = null;
 
+  function showError(elem, msg) {
+    if (elem) {
+      elem.textContent = msg;
+      elem.style.display = 'block';
+    }
+  }
+
+  function handleAdminError(result) {
+    if (result.wait) {
+      const lockUntil = Date.now() + result.wait * 1000;
+      localStorage.setItem('adminLockUntil', lockUntil);
+      if (adminCountdownTimer) clearInterval(adminCountdownTimer);
+      adminCountdownTimer = startCountdown(
+        adminLoginBtn,
+        lockUntil,
+        adminErrorMessage,
+        'adminLockUntil'
+      );
+    } else if (result.attempt) {
+      let msg = `Unsuccessful attempt ${result.attempt}/3`;
+      if (result.attempt === 2) msg += ' - last attempt';
+      showError(adminErrorMessage, msg);
+    } else {
+      showError(adminErrorMessage, result.message || 'Invalid credentials.');
+    }
+  }
+
+  function handleUserError(result) {
+    if (result.wait) {
+      const lockUntil = Date.now() + result.wait * 1000;
+      localStorage.setItem('userLockUntil', lockUntil);
+      if (userCountdownTimer) clearInterval(userCountdownTimer);
+      userCountdownTimer = startCountdown(
+        userLoginBtn,
+        lockUntil,
+        userErrorMessage,
+        'userLockUntil',
+        userContactLinks
+      );
+    } else {
+      let msg;
+      if (result.attempt) {
+        msg = `Email unregistered or incorrect attempt (${result.attempt}/3)`;
+        if (result.attempt === 2) msg += ' - last attempt';
+        msg += '. Please contact admin to register via options below';
+      } else {
+        msg = result.message || 'Email not registered. Please contact admin to register via options below';
+      }
+      showError(userErrorMessage, msg);
+      if (userContactLinks) {
+        userContactLinks.style.display = 'block';
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      }
+    }
+  }
+
   function clearCountdown(timerVar, storageKey, messageElem, contactLinks) {
     if (timerVar) {
       clearInterval(timerVar);
@@ -159,142 +217,72 @@ export async function initLogin() {
     });
   }
 
+  async function handleAdminLogin() {
+    showGlobalLoader();
+    const email = adminEmailInput ? adminEmailInput.value.trim() : '';
+    const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
+    if (!email || !password) {
+      showError(adminErrorMessage, 'Please enter both email and password.');
+      return;
+    }
+    try {
+      const res = await fetch(API_LOGIN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('authToken', data.token);
+        adminCountdownTimer = clearCountdown(adminCountdownTimer, 'adminLockUntil', adminErrorMessage);
+        window.location.href = "components/admin-main/admin.html";
+      } else {
+        const result = await res.json().catch(() => ({}));
+        handleAdminError(result);
+      }
+    } catch (e) {
+      showError(adminErrorMessage, 'Login failed.');
+    } finally {
+      hideGlobalLoader();
+    }
+  }
+
   if (adminLoginBtn) {
-    adminLoginBtn.addEventListener('click', async () => {
-      showGlobalLoader();
-      const email = adminEmailInput ? adminEmailInput.value.trim() : '';
-      const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
-
-      if (email === '' || password === '') {
-        if (adminErrorMessage) {
-          adminErrorMessage.textContent = 'Please enter both email and password.';
-          adminErrorMessage.style.display = 'block';
-        }
-        return;
-      }
-
-      try {
-        const res = await fetch(API_LOGIN, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          localStorage.setItem('authToken', data.token);
-          adminCountdownTimer = clearCountdown(adminCountdownTimer, 'adminLockUntil', adminErrorMessage);
-          window.location.href = "components/admin-main/admin.html";
-        } else {
-          const result = await res.json().catch(() => ({}));
-          if (result.wait) {
-            const lockUntil = Date.now() + result.wait * 1000;
-            localStorage.setItem('adminLockUntil', lockUntil);
-            if (adminCountdownTimer) {
-              clearInterval(adminCountdownTimer);
-            }
-            adminCountdownTimer = startCountdown(
-              adminLoginBtn,
-              lockUntil,
-              adminErrorMessage,
-              'adminLockUntil'
-            );
-          } else if (result.attempt) {
-            let msg = `Unsuccessful attempt ${result.attempt}/3`;
-            if (result.attempt === 2) msg += ' - last attempt';
-            if (adminErrorMessage) {
-              adminErrorMessage.textContent = msg;
-              adminErrorMessage.style.display = 'block';
-            }
-          } else if (adminErrorMessage) {
-            adminErrorMessage.textContent = result.message || 'Invalid credentials.';
-            adminErrorMessage.style.display = 'block';
-          }
-        }
-      } catch (e) {
-        if (adminErrorMessage) {
-          adminErrorMessage.textContent = 'Login failed.';
-          adminErrorMessage.style.display = 'block';
-        }
-      } finally {
-        hideGlobalLoader();
-      }
-    });
+    adminLoginBtn.addEventListener('click', handleAdminLogin);
   }
 
   // New User Login Logic
-  if (userLoginBtn) {
-    userLoginBtn.addEventListener('click', async () => {
-      showGlobalLoader();
-      const email = userEmailInput ? userEmailInput.value.trim() : '';
-
-      if (email === '') {
-        if (userErrorMessage) {
-          userErrorMessage.textContent = 'Please enter your email.';
-          userErrorMessage.style.display = 'block';
-        }
-        if (userContactLinks) userContactLinks.style.display = 'none';
+  async function handleUserLogin() {
+    showGlobalLoader();
+    const email = userEmailInput ? userEmailInput.value.trim() : '';
+    if (email === '') {
+      showError(userErrorMessage, 'Please enter your email.');
+      if (userContactLinks) userContactLinks.style.display = 'none';
+      return;
+    }
+    try {
+      const res = await fetch(API_USER_LOGIN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (res.ok) {
+        userCountdownTimer = clearCountdown(userCountdownTimer, 'userLockUntil', userErrorMessage, userContactLinks);
+        localStorage.setItem('userEmail', email);
+        window.location.href = 'components/user-main/user.html';
         return;
       }
+      const result = await res.json().catch(() => ({}));
+      handleUserError(result);
+    } catch (e) {
+      showError(userErrorMessage, 'Login failed.');
+    } finally {
+      hideGlobalLoader();
+    }
+  }
 
-      try {
-        const res = await fetch(API_USER_LOGIN, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        });
-
-        if (res.ok) {
-          userCountdownTimer = clearCountdown(userCountdownTimer, 'userLockUntil', userErrorMessage, userContactLinks);
-          localStorage.setItem('userEmail', email);
-          window.location.href = 'components/user-main/user.html';
-          return;
-        }
-
-        const result = await res.json().catch(() => ({}));
-
-        if (result.wait) {
-          const lockUntil = Date.now() + result.wait * 1000;
-          localStorage.setItem('userLockUntil', lockUntil);
-          if (userCountdownTimer) {
-            clearInterval(userCountdownTimer);
-          }
-          userCountdownTimer = startCountdown(
-            userLoginBtn,
-            lockUntil,
-            userErrorMessage,
-            'userLockUntil',
-            userContactLinks
-          );
-        } else {
-          let msg;
-          if (result.attempt) {
-            msg = `Email unregistered or incorrect attempt (${result.attempt}/3)`;
-            if (result.attempt === 2) msg += ' - last attempt';
-            msg += '. Please contact admin to register via options below';
-          } else {
-            msg = result.message || 'Email not registered. Please contact admin to register via options below';
-          }
-          if (userErrorMessage) {
-            userErrorMessage.textContent = msg;
-            userErrorMessage.style.display = 'block';
-          }
-          if (userContactLinks) {
-            userContactLinks.style.display = 'block';
-            if (window.lucide && typeof window.lucide.createIcons === 'function') {
-              window.lucide.createIcons();
-            }
-          }
-        }
-      } catch (e) {
-        if (userErrorMessage) {
-          userErrorMessage.textContent = 'Login failed.';
-          userErrorMessage.style.display = 'block';
-        }
-      } finally {
-        hideGlobalLoader();
-      }
-    });
+  if (userLoginBtn) {
+    userLoginBtn.addEventListener('click', handleUserLogin);
   }
 
   if (userMailBtn) {
