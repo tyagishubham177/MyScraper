@@ -71,7 +71,7 @@ Ready to catch some Lassi? Here’s how to set up the project:
    You can execute the Python script directly to verify everything is working:
 
    ```bash
-   python check_stock.py
+   python scripts/check_stock.py
    ```
 
    The script will open a headless browser, navigate to the product page, input the pincode, and report the stock status. You’ll see console logs for each step (e.g., “Page loaded”, “Add to Cart enabled: visible”, etc.), and it will save a screenshot in the `artifacts/` folder. If an item is in stock and you’ve configured email/SMS, it will attempt to send out notifications. (Don’t worry, it also logs if it actually sent or if it skipped due to time windows or missing config.)
