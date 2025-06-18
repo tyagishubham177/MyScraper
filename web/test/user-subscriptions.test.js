@@ -11,6 +11,8 @@ function makeEl() {
     classList: { add(){}, remove(){}, contains(){ return true; } },
     style: {},
     dataset: {},
+    setAttribute() {},
+    getAttribute() { return null; },
     innerHTML: '',
     textContent: ''
   };
@@ -42,7 +44,8 @@ test('renders products and empty state', async () => {
       if (id === 'allProductsListCollapse') return collapse;
       if (id === 'global-loader') return makeEl();
       return makeEl();
-    }
+    },
+    createElement: () => makeEl(),
   };
   global.localStorage = { getItem: key => key === 'userEmail' ? 'test@example.com' : null };
   global.window = { location: { href: '' } };
@@ -82,7 +85,8 @@ test('renders existing subscription', async () => {
       if (id === 'allProductsListCollapse') return collapse;
       if (id === 'global-loader') return makeEl();
       return makeEl();
-    }
+    },
+    createElement: () => makeEl(),
   };
   global.localStorage = { getItem: key => key === 'userEmail' ? 'user@test.com' : null };
   global.window = { location: { href: '' } };
