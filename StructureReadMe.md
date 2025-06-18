@@ -3,20 +3,42 @@
 This repo combines a small Python backend with a Node/JavaScript dashboard. Below is a quick tour of the layout and what each part does.
 
 ```
-MyScraper/
-├── check_stock.py
-├── scraper.py
-├── notifications.py
-├── config.py
-├── requirements.txt
-├── .github/
-│   └── workflows/
-│       └── schedule.yml
-└── web/
-    ├── index.html
-    ├── style.css
-    ├── api/
-    └── components/
+MyScraper/  
+├── check_stock.py  
+├── scraper.py  
+├── notifications.py  
+├── config.py  
+├── requirements.txt  
+├── .github/  
+│   └── workflows/  
+│       └── schedule.yml  
+└── web/  
+    ├── index.html  
+    ├── style.css  
+    ├── particles.js, vanilla-tilt.min.js, lucide-icons.js  
+    ├── api/  
+    │   ├── login.js  
+    │   ├── user-login.js  
+    │   ├── status.js  
+    │   ├── runs.js  
+    │   ├── run.js  
+    │   ├── artifact.js  
+    │   ├── logs.js  
+    │   ├── products.js  
+    │   ├── recipients.js  
+    │   └── subscriptions.js  
+    └── components/  
+        ├── login/ (login.html, login.js, login.css, login-main.js)  
+        ├── admin-main/ (admin.html, admin.js)  
+        ├── user-main/ (user.html, user.js)  
+        ├── recipients-ui/ (recipients-ui.js, recipients-ui.html)  
+        ├── products-ui/ (products-ui.js, products-ui.html)  
+        ├── subscription/ (subscriptions-ui.js)  
+        ├── status/ (status.js)  
+        ├── runs/ (runs.js)  
+        ├── icons/ (icons.js)  
+        ├── particles-config/ (particles-config.js)  
+        └── utils/ (utils.js)
 ```
 
 ## Python bits 🐍
