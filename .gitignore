@@ -19,3 +19,14 @@ venv/
 # ─── OS cruft ────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# Coverage reports
+htmlcov/
+coverage.xml
+.coverage
+
+# Pytest cache
+.pytest_cache/
+
+# Scraper artifacts
+artifacts/
