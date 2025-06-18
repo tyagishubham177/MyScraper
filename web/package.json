@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "c8 node --test"
+    "test": "c8 --reporter=text --reporter=lcov node --test"
   },
   "dependencies": {
     "@vercel/kv": "^1.0.1",
