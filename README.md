@@ -1,17 +1,31 @@
 [![License](https://img.shields.io/badge/license-Unlicense-blue.svg?logo=unlicense&logoColor=white&style=flat)](http://unlicense.org/)
 
 # 🥤 Amul Tracker
-
-[![Build](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main&logo=github-actions&logoColor=white&style=flat)](https://github.com/tyagishubham177/MyScraper/actions)
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/scorecard.yml?branch=main&logo=github&logoColor=white&style=flat&label=CodeQL)](https://github.com/tyagishubham177/MyScraper/actions/workflows/scorecard.yml)
-[![Quality](https://img.shields.io/codefactor/grade/github/tyagishubham177/MyScraper/main?logo=codefactor&logoColor=white&style=flat)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper/overview/main)
-[![Security](https://api.scorecard.dev/projects/github.com/tyagishubham177/MyScraper/badge?style=flat)](https://scorecard.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)
-
-[![Commit](https://img.shields.io/github/last-commit/tyagishubham177/MyScraper?logo=git&logoColor=white&style=flat)](https://github.com/tyagishubham177/MyScraper/commits/main)
-[![Coverage](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper?logo=codecov&logoColor=white&label=coverage)](https://codecov.io/gh/tyagishubham177/MyScraper)
-
-
 **Amul Tracker** is a cheeky little bot that keeps an eye on Amul’s online store so you don’t have to. Specifically, it watches for the elusive *High-Protein Rose Lassi (Pack of 30)* that tends to vanish from stock faster than free doughnuts in the office. When the amul products are back on the menu, this tool **alerts you immediately** – giving you a fighting chance to snag it before it’s gone again. The best part? It runs entirely on free tiers (GitHub Actions and Vercel), so you get round-the-clock monitoring without burning a hole in your pocket.
+# 🚀 MyScraper: Status Dashboard
+
+Stay updated on the health, hygiene, and hustle of the MyScraper project. Here’s your badge-powered cockpit 🛸✨
+
+---
+
+## 🛠 Build & Activity
+
+| Badge                                                                                                                                                                                                                                                        | What It Means                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| [![Build](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main\&logo=github-actions\&logoColor=white\&style=flat)](https://github.com/tyagishubham177/MyScraper/actions)                                 | **Build Status** – Are the gears grinding smoothly or throwing sparks? Tracks scheduled workflows. ⚙️ |
+| [![CodeQL](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/scorecard.yml?branch=main\&logo=github\&logoColor=white\&style=flat\&label=CodeQL)](https://github.com/tyagishubham177/MyScraper/actions/workflows/scorecard.yml) | **CodeQL Scan** – Looks deep into the matrix to catch security bugs before they catch you. 🐛🔍       |
+| [![Commit](https://img.shields.io/github/last-commit/tyagishubham177/MyScraper?logo=git\&logoColor=white\&style=flat)](https://github.com/tyagishubham177/MyScraper/commits/main)                                                                            | **Last Commit** – Timestamp of the last code push. Because fresh commits are happy commits 🕒🚀       |
+
+---
+
+## 🧪 Quality & Coverage
+
+| Badge                                                                                                                                                                                                                         | What It Means                                                                                              |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [![Quality](https://img.shields.io/codefactor/grade/github/tyagishubham177/MyScraper/main?logo=codefactor\&logoColor=white\&style=flat)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper/overview/main) | **Code Quality** – How shiny is your codebase? This badge tells if it’s sparkling or needs scrubbing ✨🧽   |
+| [![Security](https://api.scorecard.dev/projects/github.com/tyagishubham177/MyScraper/badge?style=flat)](https://scorecard.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)                                               | **Security Scorecard** – Scans your repo like a bouncer at a nightclub. Only the secure stuff gets in 🔐💪 |
+| [![Coverage](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper?logo=codecov\&logoColor=white\&label=coverage)](https://codecov.io/gh/tyagishubham177/MyScraper)                                               | **Test Coverage** – Measures how much of your code actually gets tested. Don't ship blindfolded! 🧪👀      |
+
 
 ## Key Features
 
