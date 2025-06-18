@@ -74,7 +74,7 @@ jobs:
       # Upload the results to GitHub's code scanning dashboard (optional).
       # Commenting out will disable upload of results to your repo's Code Scanning dashboard
       - name: "Upload to code-scanning"
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@84b6d8847242e5f4d5713ce3c08af0addc25d7e8 # v3
         with:
           sarif_file: results.sarif
 
@@ -87,12 +87,12 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@d6e5d4f626abc3420396b079f8c3d323f7fd5401 # v3
         with:
           languages: python
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@5b02df6c1e17116e0ef5c975c3ac3e07258ae0c2 # v3
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@8452c5361b77c7eb5c17b4eb653ea9f2a69a0e7e # v3
