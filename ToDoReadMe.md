@@ -3,11 +3,6 @@
 <!-- Codecov (needs the GH Action upload before it shows % instead of unknown) -->
 [![Coverage](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper?logo=codecov&logoColor=white&label=coverage)](https://codecov.io/gh/tyagishubham177/MyScraper)
 
-<!-- 🔒 OpenSSF Scorecard (zero setup; auto-scans public repos) -->
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/tyagishubham177/MyScraper/badge)](https://scorecard.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)
-
-
-
 *(A living list of enhancements and fixes for MyScraper – highest priority items first.)*
 
 1. **Streamline User Signup & Authentication** 🔐: *Priority: High.*
