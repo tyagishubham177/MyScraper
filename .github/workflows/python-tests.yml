@@ -34,7 +34,9 @@ jobs:
           pytest --cov=. --cov-report=xml
           cd web
           npm test
+          mv coverage/lcov.info ../coverage-web.lcov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml,coverage-web.lcov
