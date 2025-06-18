@@ -1,8 +1,8 @@
 # TODO & Roadmap 🚧
 
-[![Codecov](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper/main?logo=codecov&logoColor=white)](https://codecov.io/gh/tyagishubham177/MyScraper)
-[![CodeFactor](https://img.shields.io/codefactor/grade/tyagishubham177/MyScraper/main)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper)
-[![Security Score](https://img.shields.io/github/security-score/tyagishubham177/MyScraper)](https://github.com/tyagishubham177/MyScraper/security)
+![Codecov](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper.svg?logo=codecov)  
+[![CodeFactor Grade](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper/badge)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper)  
+[![Security Score](https://img.shields.io/github/security-score/tyagishubham177/MyScraper?logo=github&logoColor=white)](https://github.com/tyagishubham177/MyScraper/security)
 
 
 *(A living list of enhancements and fixes for MyScraper – highest priority items first.)*
