@@ -344,3 +344,6 @@ export async function fetchRuns() {
     acc.innerHTML = `<div class="text-danger">Error loading runs. Details: ${e.message}</div>`;
   }
 }
+
+// Export internal helpers for testing
+export { parseScraperDecisionsFromLog, createSkeleton, createAccordionItem };
