@@ -27,14 +27,12 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install web dependencies
         run: |
-          cd web
-          npm install
+          npm install --prefix web
       - name: Run tests
         run: |
           pytest --cov=. --cov-report=xml
-          cd web
-          npm test
-          mv coverage/lcov.info ../coverage-web.lcov
+          npm --prefix web test
+          mv web/coverage/lcov.info coverage-web.lcov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
