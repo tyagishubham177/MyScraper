@@ -20,9 +20,20 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-cov pytest-asyncio
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+      - name: Install web dependencies
+        run: |
+          cd web
+          npm install
       - name: Run tests
         run: |
           pytest --cov=. --cov-report=xml
+          cd web
+          npm test
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
