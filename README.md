@@ -1,9 +1,10 @@
 # 🥤 Amul Tracker
 
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main)](https://github.com/tyagishubham177/MyScraper/actions)
-[![Last Commit](https://img.shields.io/github/last-commit/tyagishubham177/MyScraper)](https://github.com/tyagishubham177/MyScraper/commits/main)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main&label=build&logo=github-actions&style=flat-square)](https://github.com/tyagishubham177/MyScraper/actions)
+[![Last Commit](https://img.shields.io/github/last-commit/tyagishhubham177/MyScraper?label=&logo=git-commit&logoColor=white&style=flat-square)](https://github.com/tyagishhubham177/MyScraper/commits/main)
 [![CodeFactor](https://img.shields.io/codefactor/grade/github/tyagishubham177/MyScraper/main?logo=codefactor)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper/overview/main)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/tyagishubham177/MyScraper/badge)](https://scorecard.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)
+[![Scorecard](https://img.shields.io/github/actions/workflow/status/tyagishhubham177/MyScraper/scorecard.yml?branch=main&label=CodeQL&logo=github-actions&style=flat-square)](https://github.com/tyagishhubham177/MyScraper/actions/workflows/scorecard.yml)
 
 
 **Amul Tracker** is a cheeky little bot that keeps an eye on Amul’s online store so you don’t have to. Specifically, it watches for the elusive *High-Protein Rose Lassi (Pack of 30)* that tends to vanish from stock faster than free doughnuts in the office. When the amul products are back on the menu, this tool **alerts you immediately** – giving you a fighting chance to snag it before it’s gone again. The best part? It runs entirely on free tiers (GitHub Actions and Vercel), so you get round-the-clock monitoring without burning a hole in your pocket.
