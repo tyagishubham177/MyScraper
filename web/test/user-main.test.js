@@ -13,7 +13,8 @@ function runInlineScript(html, globals) {
 }
 
 test('user-main registers DOMContentLoaded handler', async () => {
-  const html = await fs.readFile('./components/user-main/user.html', 'utf8');
+  const htmlPath = new URL('../components/user-main/user.html', import.meta.url);
+  const html = await fs.readFile(htmlPath, 'utf8');
   const events = {};
   const globals = {
     document: {

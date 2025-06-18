@@ -18,6 +18,7 @@ async function load(compareResult=true) {
   const jwt = await import('jsonwebtoken');
   jwt.default.sign = () => 'tok';
   const mod = await import('../api/login.js?' + Date.now());
+  mod.__setKv({ get: async () => null, set: async () => {}, del: async () => {} });
   return mod.default;
 }
 
