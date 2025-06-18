@@ -1,3 +1,5 @@
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
+
 # 🥤 Amul Tracker
 
 [![Build](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main&logo=github-actions&logoColor=white&style=flat)](https://github.com/tyagishubham177/MyScraper/actions)
