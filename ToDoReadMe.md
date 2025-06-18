@@ -3,9 +3,6 @@
 <!-- Codecov (needs the GH Action upload before it shows % instead of unknown) -->
 [![Coverage](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper?logo=codecov&logoColor=white&label=coverage)](https://codecov.io/gh/tyagishubham177/MyScraper)
 
-<!-- CodeFactor grade (pulls latest grade for main branch) -->
-[![CodeFactor](https://img.shields.io/codefactor/grade/github/tyagishubham177/MyScraper/main?logo=codefactor)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper/overview/main)
-
 <!-- 🔒 OpenSSF Scorecard (zero setup; auto-scans public repos) -->
 [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/tyagishubham177/MyScraper?label=OpenSSF%20Scorecard&logo=openssf)](https://securityscorecards.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)
 
