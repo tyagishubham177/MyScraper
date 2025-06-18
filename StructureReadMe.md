@@ -52,7 +52,7 @@ MyScraper/
 
 ## GitHub Actions 🤖
 - **schedule.yml** – runs `check_stock.py` every two hours and uploads screenshots as artifacts.
-- **dependabot.yml** – keeps Python dependencies updated automatically.
+- **dependabot.yml** – keeps Python dependencies updated automatically (located at `.github/dependabot.yml`).
 
 ## Dashboard (web/) 🌐
 - **index.html** & **style.css** – the simple front end.
