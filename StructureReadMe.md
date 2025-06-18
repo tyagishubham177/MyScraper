@@ -1,4 +1,5 @@
 # Project Structure & Design 🗂️
+[![Repo Size](https://img.shields.io/github/repo-size/tyagishubham177/MyScraper)](https://github.com/tyagishubham177/MyScraper)
 
 This repo combines a small Python backend with a Node/JavaScript dashboard. Below is a quick tour of the layout and what each part does.
 

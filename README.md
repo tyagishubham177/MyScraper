@@ -1,5 +1,9 @@
 # 🥤 Amul Tracker
 
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main)](https://github.com/tyagishubham177/MyScraper/actions)
+[![Last Commit](https://img.shields.io/github/last-commit/tyagishubham177/MyScraper)](https://github.com/tyagishubham177/MyScraper/commits/main)
+
+
 **Amul Tracker** is a cheeky little bot that keeps an eye on Amul’s online store so you don’t have to. Specifically, it watches for the elusive *High-Protein Rose Lassi (Pack of 30)* that tends to vanish from stock faster than free doughnuts in the office. When the amul products are back on the menu, this tool **alerts you immediately** – giving you a fighting chance to snag it before it’s gone again. The best part? It runs entirely on free tiers (GitHub Actions and Vercel), so you get round-the-clock monitoring without burning a hole in your pocket.
 
 ## Key Features
