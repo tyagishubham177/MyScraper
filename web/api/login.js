@@ -1,6 +1,14 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { kv } from '@vercel/kv';
+import { kv as defaultKv } from '@vercel/kv';
+
+let kv = defaultKv;
+export function __setKv(obj) {
+  kv = obj;
+}
+export function __resetKv() {
+  kv = defaultKv;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

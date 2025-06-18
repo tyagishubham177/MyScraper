@@ -1,4 +1,12 @@
-import { requireAdmin } from './auth.js';
+import { requireAdmin as defaultRequireAdmin } from './auth.js';
+
+let requireAdmin = defaultRequireAdmin;
+export function __setRequireAdmin(fn) {
+  requireAdmin = fn;
+}
+export function __resetRequireAdmin() {
+  requireAdmin = defaultRequireAdmin;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
