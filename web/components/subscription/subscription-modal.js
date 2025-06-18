@@ -9,6 +9,69 @@ let currentModalRecipientId = null;
 let initialSubscriptionDataForModal = '';
 let initialSubscribedProductIds = new Set();
 
+function toggleSaveButton(disabled, text) {
+  const btn = document.getElementById('saveAllSubscriptionsBtn');
+  if (!btn) return;
+  btn.disabled = disabled;
+  btn.innerHTML = disabled ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...' : text;
+}
+
+async function updateSubscription(item, recipientId, results) {
+  const mainCheckbox = item.querySelector('.subscription-toggle');
+  if (!mainCheckbox) return;
+  const productId = mainCheckbox.dataset.productId;
+  const isSubscribed = mainCheckbox.checked;
+  const startInput = item.querySelector('.sub-time-start');
+  const endInput = item.querySelector('.sub-time-end');
+  const startVal = startInput ? startInput.value : '00:00';
+  const endVal = endInput ? endInput.value : '23:59';
+  try {
+    if (isSubscribed) {
+      const payload = { recipient_id: recipientId, product_id: productId, start_time: startVal, end_time: endVal };
+      const data = await fetchAPI('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      results.push({ productId, success: true, data });
+    } else if (initialSubscribedProductIds.has(productId)) {
+      const payload = { recipient_id: recipientId, product_id: productId };
+      const data = await fetchAPI('/api/subscriptions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      results.push({ productId, success: true, data, operation: 'deleted' });
+    }
+  } catch (error) {
+    showToastNotification(`Failed to update product ${productId}: ${error.message}`, 'error');
+    results.push({ productId, success: false, error });
+  }
+}
+
+function summarizeResults(results) {
+  let successCount = 0;
+  let errorCount = 0;
+  const errorMessages = [];
+  results.forEach(result => {
+    if (result.success) {
+      successCount++;
+    } else {
+      errorCount++;
+      const msg = result.error && result.error.message ? result.error.message : 'Unknown error';
+      errorMessages.push(`Product ID ${result.productId}: ${msg}`);
+    }
+  });
+  let feedbackMessage = '';
+  if (successCount > 0) feedbackMessage += `${successCount} subscription operation(s) processed successfully. `;
+  if (errorCount > 0) feedbackMessage += `Encountered ${errorCount} error(s): ${errorMessages.join('; ')}.`;
+  let toastType = 'info';
+  if (errorCount > 0 && successCount > 0) toastType = 'warning';
+  else if (errorCount > 0 && successCount === 0) toastType = 'error';
+  else if (successCount > 0 && errorCount === 0) toastType = 'success';
+  if (feedbackMessage.trim()) showToastNotification(feedbackMessage.trim(), toastType);
+}
+
 function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, recipientId, modalBodyElement) {
   modalBodyElement.innerHTML = '';
   if (!allProducts || allProducts.length === 0) {
@@ -77,21 +140,14 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
 }
 
 async function handleSaveAllSubscriptionSettings() {
-  const saveBtn = document.getElementById('saveAllSubscriptionsBtn');
   const originalBtnText = 'Save All Subscriptions';
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
-  }
+  toggleSaveButton(true, originalBtnText);
 
   const recipientId = currentModalRecipientId;
   const modalBodyElement = document.getElementById('subscriptionModalBody');
   if (!recipientId || !modalBodyElement) {
     showToastNotification('Error: Cannot save settings. Recipient or modal body not found.', 'error');
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = originalBtnText;
-    }
+    toggleSaveButton(false, originalBtnText);
     return;
   }
 
@@ -99,77 +155,22 @@ async function handleSaveAllSubscriptionSettings() {
   const results = [];
 
   for (const item of productItems) {
-    const mainCheckbox = item.querySelector('.subscription-toggle');
-    if (!mainCheckbox) continue;
-    const productId = mainCheckbox.dataset.productId;
-    const isSubscribed = mainCheckbox.checked;
-    const startInput = item.querySelector('.sub-time-start');
-    const endInput = item.querySelector('.sub-time-end');
-    const startVal = startInput ? startInput.value : '00:00';
-    const endVal = endInput ? endInput.value : '23:59';
-    try {
-      if (isSubscribed) {
-        const payload = { recipient_id: recipientId, product_id: productId, start_time: startVal, end_time: endVal };
-        const data = await fetchAPI('/api/subscriptions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        results.push({ productId, success: true, data });
-      } else if (initialSubscribedProductIds.has(productId)) {
-        const payload = { recipient_id: recipientId, product_id: productId };
-        const data = await fetchAPI('/api/subscriptions', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        results.push({ productId, success: true, data, operation: 'deleted' });
-      }
-    } catch (error) {
-      showToastNotification(`Failed to update product ${productId}: ${error.message}`, 'error');
-      results.push({ productId, success: false, error });
-    }
+    await updateSubscription(item, recipientId, results);
   }
 
   if (results.length === 0) {
     showToastNotification('No changes to save.', 'info');
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = originalBtnText;
-    }
+    toggleSaveButton(false, originalBtnText);
     initialSubscriptionDataForModal = storeInitialFormStateHelper();
     updateSaveButtonStateHelper(initialSubscriptionDataForModal);
     return;
   }
 
-  let successCount = 0;
-  let errorCount = 0;
-  const errorMessages = [];
-  results.forEach(result => {
-    if (result.success) {
-      successCount++;
-    } else {
-      errorCount++;
-      const msg = result.error && result.error.message ? result.error.message : 'Unknown error';
-      errorMessages.push(`Product ID ${result.productId}: ${msg}`);
-    }
-  });
-
-  let feedbackMessage = '';
-  if (successCount > 0) feedbackMessage += `${successCount} subscription operation(s) processed successfully. `;
-  if (errorCount > 0) feedbackMessage += `Encountered ${errorCount} error(s): ${errorMessages.join('; ')}.`;
-  let toastType = 'info';
-  if (errorCount > 0 && successCount > 0) toastType = 'warning';
-  else if (errorCount > 0 && successCount === 0) toastType = 'error';
-  else if (successCount > 0 && errorCount === 0) toastType = 'success';
-  if (feedbackMessage.trim()) showToastNotification(feedbackMessage.trim(), toastType);
+  summarizeResults(results);
 
   await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement);
 
-  if (saveBtn) {
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = originalBtnText;
-  }
+  toggleSaveButton(false, originalBtnText);
   initialSubscriptionDataForModal = storeInitialFormStateHelper();
   updateSaveButtonStateHelper(initialSubscriptionDataForModal);
 }

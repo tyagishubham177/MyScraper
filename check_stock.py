@@ -28,21 +28,162 @@ async def fetch_api_data(session, url):
         print(f"API request to {url} failed: {e}")
         return None
 
+
+async def load_recipients(session):
+    recipients_url = f"{config.APP_BASE_URL}/api/recipients"
+    data = await fetch_api_data(session, recipients_url)
+    return {r.get('id'): r.get('email') for r in data or [] if r.get('id') and r.get('email')}
+
+
+async def load_products(session):
+    products_url = f"{config.APP_BASE_URL}/api/products"
+    return await fetch_api_data(session, products_url)
+
+
+async def fetch_subscriptions(session, product_id):
+    url = f"{config.APP_BASE_URL}/api/subscriptions?product_id={product_id}"
+    return await fetch_api_data(session, url)
+
+
+def filter_active_subs(subs, current_time):
+    active = []
+    for sub in subs:
+        if sub.get('paused'):
+            continue
+        start_t = sub.get('start_time', '00:00')
+        end_t = sub.get('end_time', '23:59')
+        if within_time_window(start_t, end_t, current_time):
+            active.append(sub)
+    return active
+
+
+async def notify_users(effective_name, product_url, subs, recipients_map, current_time):
+    current_summary = []
+    valid_emails = []
+    for sub in subs:
+        rid = sub.get('recipient_id')
+        email = recipients_map.get(rid)
+        start_t = sub.get('start_time', '00:00')
+        end_t = sub.get('end_time', '23:59')
+
+        if sub.get('paused'):
+            status = 'Skipped - Paused'
+        elif not within_time_window(start_t, end_t, current_time):
+            status = 'Skipped - Subscription Not Due'
+        elif email:
+            valid_emails.append(email)
+            status = 'Sent'
+        else:
+            status = 'Not Sent - Recipient Email Missing'
+
+        current_summary.append({'user_email': email or 'Unknown', 'status': status})
+
+    sent_count = 0
+    if valid_emails and config.EMAIL_HOST and config.EMAIL_SENDER:
+        try:
+            notifications.send_email_notification(
+                subject=f"{effective_name.strip()} In Stock Alert!",
+                body=notifications.format_long_message(effective_name, product_url),
+                sender=config.EMAIL_SENDER,
+                recipients=valid_emails,
+                host=config.EMAIL_HOST,
+                port=config.EMAIL_PORT,
+                username=config.EMAIL_HOST_USER,
+                password=config.EMAIL_HOST_PASSWORD
+            )
+            print(f"📨 Email notifications sent for '{effective_name}'.")
+            sent_count = len(valid_emails)
+        except Exception as e:
+            print(f"Error sending email for '{effective_name}': {e}")
+            for summary in current_summary:
+                if summary['status'] == 'Sent':
+                    summary['status'] = 'Not Sent - Email Send Error'
+    else:
+        if valid_emails:
+            print(f"Email configuration missing for '{effective_name}'.")
+            for summary in current_summary:
+                if summary['status'] == 'Sent':
+                    summary['status'] = 'Not Sent - Email Config Missing'
+    return current_summary, sent_count
+
+
+async def process_product(session, page, product_info, recipients_map, current_time, pincode_entered):
+    product_id = product_info.get('id')
+    product_url = product_info.get('url')
+    product_name = product_info.get('name', 'N/A')
+    effective_name = product_name
+
+    if not product_id or not product_url:
+        print(f"Skipping product due to missing data: {product_info}")
+        return None, 0, pincode_entered
+
+    subs = await fetch_subscriptions(session, product_id)
+    if not subs or not isinstance(subs, list):
+        print(f"Could not fetch subscriptions for product ID {product_id}.")
+        return {
+            'product_name': effective_name,
+            'product_url': product_url,
+            'subscriptions': [{'user_email': 'N/A', 'status': 'Error fetching subscriptions'}]
+        }, 0, pincode_entered
+
+    subs = filter_active_subs(subs, current_time)
+    if not subs:
+        print(f"Skipping product '{effective_name}' - no active subscribers.")
+        return {
+            'product_name': effective_name,
+            'product_url': product_url,
+            'subscriptions': [{'user_email': 'N/A', 'status': 'Skipped - No Active Subscribers'}]
+        }, 0, pincode_entered
+
+    try:
+        in_stock, scraped_name = await scraper.check_product_availability(
+            product_url,
+            config.PINCODE,
+            page=page,
+            skip_pincode=pincode_entered,
+        )
+        if not pincode_entered:
+            pincode_entered = True
+        if scraped_name:
+            effective_name = scraped_name
+    except Exception as e:
+        print(f"Error checking {product_url}: {e}")
+        return {
+            'product_name': effective_name,
+            'product_url': product_url,
+            'subscriptions': [{'user_email': 'N/A', 'status': f'Error checking product: {e}'}]
+        }, 0, pincode_entered
+
+    if in_stock:
+        print(f"✅ Product '{effective_name}' is IN STOCK.")
+        current_summary, sent_count = await notify_users(effective_name, product_url, subs, recipients_map, current_time)
+    else:
+        print(f"❌ Product '{effective_name}' is OUT OF STOCK.")
+        current_summary = [
+            {
+                'user_email': recipients_map.get(sub.get('recipient_id'), 'Email not found'),
+                'status': 'Not Sent - Out of Stock'
+            } for sub in subs
+        ]
+        sent_count = 0
+
+    return {
+        'product_name': effective_name,
+        'product_url': product_url,
+        'subscriptions': current_summary
+    }, sent_count, pincode_entered
+
 async def main():
     print("Starting stock check...")
     summary_email_data = []
     total_sent = 0
 
     async with aiohttp.ClientSession() as session:
-        recipients_url = f"{config.APP_BASE_URL}/api/recipients"
-        recipients_data = await fetch_api_data(session, recipients_url)
-        recipients_map = {r.get('id'): r.get('email') for r in recipients_data or [] if r.get('id') and r.get('email')}
-
+        recipients_map = await load_recipients(session)
         if not recipients_map:
             print("No recipients found. Notifications may not be sent.")
 
-        products_url = f"{config.APP_BASE_URL}/api/products"
-        all_products = await fetch_api_data(session, products_url)
+        all_products = await load_products(session)
         if not all_products:
             print("No products fetched from API. Exiting.")
             return
@@ -55,137 +196,16 @@ async def main():
             pincode_entered = False
 
             for product_info in all_products:
-                product_id = product_info.get('id')
-                product_url = product_info.get('url')
-                product_name = product_info.get('name', 'N/A')
-                effective_name = product_name
-    
-                if not product_id or not product_url:
-                    print(f"Skipping product due to missing data: {product_info}")
-                    continue
-    
-                subscriptions_url = f"{config.APP_BASE_URL}/api/subscriptions?product_id={product_id}"
-                subs = await fetch_api_data(session, subscriptions_url)
-                current_summary = []
-                if not subs or not isinstance(subs, list):
-                    print(f"Could not fetch subscriptions for product ID {product_id}.")
-                    summary_email_data.append({
-                        'product_name': effective_name,
-                        'product_url': product_url,
-                        'subscriptions': [{'user_email': 'N/A', 'status': 'Error fetching subscriptions'}]
-                    })
-                    continue
-    
-                # Filter subscriptions to only those that are active (not paused and within time window)
-                active_subs = []
-                for sub in subs:
-                    if sub.get('paused'):
-                        continue
-                    start_t = sub.get('start_time', '00:00')
-                    end_t = sub.get('end_time', '23:59')
-                    if not within_time_window(start_t, end_t, current_time):
-                        continue
-                    active_subs.append(sub)
-    
-                if not active_subs:
-                    print(f"Skipping product '{effective_name}' - no active subscribers.")
-                    summary_email_data.append({
-                        'product_name': effective_name,
-                        'product_url': product_url,
-                        'subscriptions': [{'user_email': 'N/A', 'status': 'Skipped - No Active Subscribers'}]
-                    })
-                    continue
-    
-                subs = active_subs
-    
-                try:
-                    in_stock, scraped_name = await scraper.check_product_availability(
-                        product_url,
-                        config.PINCODE,
-                        page=page,
-                        skip_pincode=pincode_entered,
-                    )
-                    if not pincode_entered:
-                        pincode_entered = True
-                    if scraped_name:
-                        effective_name = scraped_name
-                except Exception as e:
-                    print(f"Error checking {product_url}: {e}")
-                    for sub in subs:
-                        email = recipients_map.get(sub.get('recipient_id'), 'Email not found')
-                        current_summary.append({'user_email': email, 'status': 'Not Sent - Scraping Error'})
-                    summary_email_data.append({
-                        'product_name': effective_name,
-                        'product_url': product_url,
-                        'subscriptions': current_summary
-                    })
-                    continue
-    
-                if in_stock:
-                    print(f"✅ Product '{effective_name}' is IN STOCK.")
-                    valid_emails = []
-                    for sub in subs:
-                        rid = sub.get('recipient_id')
-                        email = recipients_map.get(rid)
-                        start_t = sub.get('start_time', '00:00')
-                        end_t = sub.get('end_time', '23:59')
-                        if sub.get('paused'):
-                            if email:
-                                current_summary.append({'user_email': email, 'status': 'Skipped - Paused'})
-                            else:
-                                current_summary.append({'user_email': 'Unknown', 'status': 'Skipped - Paused'})
-                            continue
-                        if not within_time_window(start_t, end_t, current_time):
-                            if email:
-                                current_summary.append({'user_email': email, 'status': 'Skipped - Subscription Not Due'})
-                            else:
-                                current_summary.append({'user_email': 'Unknown', 'status': 'Skipped - Subscription Not Due'})
-                            continue
-                        if email:
-                            valid_emails.append(email)
-                            current_summary.append({'user_email': email, 'status': 'Sent'})
-                        else:
-                            current_summary.append({'user_email': 'Unknown', 'status': 'Not Sent - Recipient Email Missing'})
-    
-                    if valid_emails and config.EMAIL_HOST and config.EMAIL_SENDER:
-                        try:
-                            notifications.send_email_notification(
-                                subject=f"{effective_name.strip()} In Stock Alert!",
-                                body=notifications.format_long_message(effective_name, product_url),
-                                sender=config.EMAIL_SENDER,
-                                recipients=valid_emails,
-                                host=config.EMAIL_HOST,
-                                port=config.EMAIL_PORT,
-                                username=config.EMAIL_HOST_USER,
-                                password=config.EMAIL_HOST_PASSWORD
-                            )
-                            print(f"📨 Email notifications sent for '{effective_name}'.")
-                            total_sent += len(valid_emails)
-                        except Exception as e:
-                            print(f"Error sending email for '{effective_name}': {e}")
-                            for summary in current_summary:
-                                if summary['status'] == 'Sent':
-                                    summary['status'] = 'Not Sent - Email Send Error'
-                    else:
-                        print(f"Email configuration missing or no valid emails for '{effective_name}'.")
-                        for summary in current_summary:
-                            if summary['status'] == 'Sent':
-                                summary['status'] = 'Not Sent - Email Config Missing'
-                else:
-                    print(f"❌ Product '{effective_name}' is OUT OF STOCK.")
-                    for sub in subs:
-                        email = recipients_map.get(sub.get('recipient_id'), 'Email not found')
-                        current_summary.append({'user_email': email, 'status': 'Not Sent - Out of Stock'})
-    
-                summary_email_data.append({
-                    'product_name': effective_name,
-                    'product_url': product_url,
-                    'subscriptions': current_summary
-                })
-    
+                summary, sent, pincode_entered = await process_product(
+                    session, page, product_info, recipients_map, current_time, pincode_entered
+                )
+                if summary:
+                    summary_email_data.append(summary)
+                total_sent += sent
+
                 delay = getattr(config, 'DELAY_BETWEEN_REQUESTS', 1)
                 await asyncio.sleep(delay)
-    
+
         await browser.close()
 
     print("\nStock check finished.")
