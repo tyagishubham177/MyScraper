@@ -81,7 +81,7 @@ async def notify_users(effective_name, product_url, subs, recipients_map, curren
     sent_count = 0
     if valid_emails and config.EMAIL_HOST and config.EMAIL_SENDER:
         try:
-            notifications.send_email_notification(
+            await notifications.send_email_notification(
                 subject=f"{effective_name.strip()} In Stock Alert!",
                 body=notifications.format_long_message(effective_name, product_url),
                 sender=config.EMAIL_SENDER,
@@ -222,21 +222,24 @@ async def main():
     ]
     summary_body = format_summary_email_body(run_timestamp_str, sent_only_data, total_sent)
 
-    if total_sent > 0 and config.EMAIL_SENDER:
-        try:
-            notifications.send_email_notification(
-                subject=subject,
-                body=summary_body,
-                sender=config.EMAIL_SENDER,
-                recipients=[config.EMAIL_SENDER],
-                host=config.EMAIL_HOST,
-                port=config.EMAIL_PORT,
-                username=config.EMAIL_HOST_USER,
-                password=config.EMAIL_HOST_PASSWORD
-            )
-            print("✅ Summary email sent successfully.")
-        except Exception as e:
-            print(f"Error sending summary email: {e}")
+    if total_sent > 0:
+        if config.EMAIL_SENDER and config.EMAIL_HOST: # Also check EMAIL_HOST for sending
+            try:
+                await notifications.send_email_notification( # Added await
+                    subject=subject,
+                    body=summary_body,
+                    sender=config.EMAIL_SENDER,
+                    recipients=[config.EMAIL_SENDER], # Summary sent to self
+                    host=config.EMAIL_HOST,
+                    port=config.EMAIL_PORT,
+                    username=config.EMAIL_HOST_USER,
+                    password=config.EMAIL_HOST_PASSWORD
+                )
+                print("✅ Summary email sent successfully.")
+            except Exception as e:
+                print(f"Error sending summary email: {e}")
+        else:
+            print("Email sender or host not configured, cannot send summary email.")
     else:
         print("No user notifications were sent. Skipping summary email.")
 
