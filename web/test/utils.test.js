@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'assert';
-import { escapeHTML, formatRunDate, cleanLogText, sanitizeUrl } from '../components/utils/utils.js';
+import { escapeHTML, formatRunDate, cleanLogText, sanitizeUrl, extractCheckStockLog, getStatusBadge } from '../components/utils/utils.js';
 
 global.window = { location: { origin: 'http://example.com' } };
 
@@ -22,4 +22,15 @@ test('cleanLogText removes debug prefixes', () => {
 test('sanitizeUrl filters unsafe protocols', () => {
   assert.equal(sanitizeUrl('javascript:alert(1)'), '');
   assert.equal(sanitizeUrl('/path'), 'http://example.com/path');
+});
+
+test('extractCheckStockLog trims relevant section', () => {
+  const log = 'start\nLaunching browser\nwork\nRun actions/upload-artifact@v4\nend';
+  assert.equal(extractCheckStockLog(log), 'Launching browser\nwork\n');
+});
+
+test('getStatusBadge renders badge html', () => {
+  const html = getStatusBadge('queued', '');
+  assert(html.includes('loader-2'));
+  assert(html.includes('queued'.charAt(0).toUpperCase() + 'queued'.slice(1))); // 'Queued'
 });
