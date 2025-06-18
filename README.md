@@ -1,6 +1,6 @@
 # 🥤 Amul Tracker
 
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main)](https://github.com/tyagishubham177/MyScraper/actions)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main&label=build&logo=github-actions&style=flat-square)](https://github.com/tyagishubham177/MyScraper/actions)
 [![Last Commit](https://img.shields.io/github/last-commit/tyagishubham177/MyScraper)](https://github.com/tyagishubham177/MyScraper/commits/main)
 [![CodeFactor](https://img.shields.io/codefactor/grade/github/tyagishubham177/MyScraper/main?logo=codefactor)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper/overview/main)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/tyagishubham177/MyScraper/badge)](https://scorecard.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)
