@@ -1,26 +1,10 @@
 import test from 'node:test';
 import assert from 'assert';
 
-// capture event handler
-
-test('registers DOMContentLoaded handler', async () => {
-  const events = {};
-  function makeEl() {
-    return { style: {}, classList: { add(){}, remove(){} } };
-  }
-  global.document = {
-    addEventListener: (ev, cb) => events[ev] = cb,
-    getElementById: () => makeEl(),
-    createElement: () => makeEl()
-  };
-  await import('../components/login/login-main.js?' + Date.now());
-  assert(events['DOMContentLoaded']);
-});
-
 function makeEl() {
   return {
     style: {},
-    classList: { add(){}, remove(){} },
+    classList: { add(){ this.added=true; }, remove(){ this.removed=true; } },
     addEventListener(){},
     prepend(){},
     appendChild(){},
@@ -50,34 +34,46 @@ function setupEnv(storage={}) {
     'user-mail-btn': makeEl(),
     'user-reddit-link': makeEl(),
     'main-app-content': makeEl(),
-    'global-loader': makeEl(),
-    'particles-js-bg': makeEl()
+    'global-loader': makeEl()
   };
   const events = {};
   global.document = {
     addEventListener: (ev, cb) => { events[ev] = cb; },
     getElementById: id => elements[id] || null,
     createElement: () => makeEl(),
-    body: { prepend(){}, style:{} },
-    querySelector: () => null,
-    querySelectorAll: () => []
+    body: { prepend(){}, style:{} }
   };
-  global.window = { location: { href: '' }, lucide: { createIcons(){} }, addEventListener(){}, innerHeight: 0 };
+  global.window = { location: { href: '' }, lucide: { createIcons(){} } };
   global.localStorage = {
     getItem: key => storage[key] || null,
     setItem: (k,v) => { storage[k] = v; },
     removeItem: k => { delete storage[k]; }
   };
   global.fetch = async () => ({ text: async () => '' });
-  global.particlesJS = () => {};
-  global.bootstrap = { Tooltip: function() {} };
-  return { elements, events };
+  return { elements, events, storage };
 }
 
-test('DOMContentLoaded triggers login flow', async () => {
-  const { elements, events } = setupEnv();
-  await import('../components/login/login-main.js?' + Date.now());
-  events['DOMContentLoaded']();
-  assert.equal(elements['login-popup'].style.display, 'flex');
+async function loadModule() {
+  return await import('../components/login/login.js?' + Date.now());
+}
+
+test('redirects to admin when token stored', async () => {
+  const env = setupEnv({ authToken: 'tok' });
+  const mod = await loadModule();
+  await mod.initLogin();
+  assert.equal(global.window.location.href, 'components/admin-main/admin.html');
 });
 
+test('redirects to user page when user email stored', async () => {
+  const env = setupEnv({ userEmail: 'x@example.com' });
+  const mod = await loadModule();
+  await mod.initLogin();
+  assert.equal(global.window.location.href, 'components/user-main/user.html');
+});
+
+test('shows login popup when no credentials', async () => {
+  const env = setupEnv();
+  const mod = await loadModule();
+  await mod.initLogin();
+  assert.equal(env.elements['login-popup'].style.display, 'flex');
+});
