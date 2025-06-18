@@ -1,4 +1,4 @@
-name: Amul Watchdog
+name: Dependency Update Tool
 version: 2
 updates:
   - package-ecosystem: "pip"
