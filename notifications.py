@@ -112,56 +112,57 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
         "Not Sent - Email Config Missing"
     }
 
-    for product_data in summary_data_list:
-        product_name = product_data.get('product_name', 'N/A')
-        product_url = product_data.get('product_url', '#')
-        subscriptions = product_data.get('subscriptions', [])
-
-        user_emails_list = []
-        failed_to_notify_list = []
-        is_in_stock_attempted = False  # True if any notification attempt was made (Sent, OOS, or specific failures)
-        all_out_of_stock = True  # Assume all OOS until an in-stock or failed (but attempted) notification is found
-
+    def summarize_subscriptions(subscriptions: list):
         if not subscriptions:
-            subscribed_emails_csv = "N/A"
-            product_status_overall = "No subscriptions for this product."
+            return "N/A", "No subscriptions for this product."
+
+        user_emails = []
+        failed_to_notify = []
+        is_in_stock_attempted = False
+        all_out_of_stock = True
+
+        for sub_info in subscriptions:
+            user_email = sub_info.get('user_email', 'N/A')
+            status = sub_info.get('status', 'N/A')
+
+            if status == "Sent":
+                if user_email not in user_emails:
+                    user_emails.append(user_email)
+                is_in_stock_attempted = True
+                all_out_of_stock = False
+            elif status == "Not Sent - Out of Stock":
+                is_in_stock_attempted = True
+            elif status in failed_notification_for_instock_statuses:
+                is_in_stock_attempted = True
+                all_out_of_stock = False
+                if user_email not in failed_to_notify:
+                    failed_to_notify.append(user_email)
+            elif status not in ignorable_statuses:
+                all_out_of_stock = False
+
+        subscribed_emails_csv = ", ".join(user_emails) if user_emails else "N/A"
+
+        if not is_in_stock_attempted and all_out_of_stock:
+            product_status_overall = "Status inconclusive (e.g., all subscriptions skipped/delayed)"
+        elif all_out_of_stock and is_in_stock_attempted:
+            product_status_overall = "Out of stock"
+        elif is_in_stock_attempted:
+            if failed_to_notify:
+                product_status_overall = f"Failed to notify: {', '.join(failed_to_notify)}"
+            else:
+                product_status_overall = "Notification sent"
         else:
-            for sub_info in subscriptions:
-                user_email = sub_info.get('user_email', 'N/A')
-                current_sub_status = sub_info.get('status', 'N/A')
+            product_status_overall = "Status inconclusive (e.g., all subscriptions skipped/delayed)"
 
-                if current_sub_status == "Sent":
-                    if user_email not in user_emails_list:  # Avoid duplicate emails in the list
-                        user_emails_list.append(user_email)
-                    is_in_stock_attempted = True
-                    all_out_of_stock = False
-                elif current_sub_status == "Not Sent - Out of Stock":
-                    is_in_stock_attempted = True
-                    # all_out_of_stock remains true if this is the status for all relevant subs
-                elif current_sub_status in failed_notification_for_instock_statuses:
-                    is_in_stock_attempted = True
-                    all_out_of_stock = False  # Product was in stock, but notification failed
-                    if user_email not in failed_to_notify_list:
-                        failed_to_notify_list.append(user_email)
-                elif current_sub_status not in ignorable_statuses:
-                    # Any other non-ignorable status means we can't definitively say all were OOS
-                    all_out_of_stock = False
+        return subscribed_emails_csv, product_status_overall
 
-            subscribed_emails_csv = ", ".join(user_emails_list) if user_emails_list else "N/A"
+"""
+    for product_data in summary_data_list:
+        product_name = product_data.get("product_name", "N/A")
+        product_url = product_data.get("product_url", "#")
+        subscriptions = product_data.get("subscriptions", [])
 
-            # Determine product_status_overall
-            if not is_in_stock_attempted and all_out_of_stock: # This implies all subscriptions were ignorable
-                 product_status_overall = "Status inconclusive (e.g., all subscriptions skipped/delayed)"
-            elif all_out_of_stock and is_in_stock_attempted:
-                product_status_overall = "Out of stock"
-            elif is_in_stock_attempted:
-                if failed_to_notify_list:
-                    product_status_overall = f"Failed to notify: {', '.join(failed_to_notify_list)}"
-                else:
-                    product_status_overall = "Notification sent" # Implies in stock and successfully notified or no one to notify
-            else: # Should ideally be covered by the first condition, but as a fallback
-                product_status_overall = "Status inconclusive (e.g., all subscriptions skipped/delayed)"
-
+        subscribed_emails_csv, product_status_overall = summarize_subscriptions(subscriptions)
 
         html_output += f"""
     <tr>
