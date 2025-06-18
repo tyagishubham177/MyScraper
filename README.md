@@ -116,6 +116,10 @@ When contributing code, please follow the existing style:
 
 * For Python: adhere to PEP8 where possible, add comments to explain any complex logic (the script is short, let’s keep it readable).
 * For the web UI: it’s plain HTML/JS with Bootstrap 5. Try to keep it modular (see how components are split into their own files). And yes, you *may* add yourself to the list of people who got a lassi because of this tool 😄 (just kidding, maybe).
+## Security
+
+Please see [SECURITY.md](SECURITY.md) for information on reporting vulnerabilities.
+
 
 ## License
 
