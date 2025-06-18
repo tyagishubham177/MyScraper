@@ -4,7 +4,7 @@
 [![Coverage](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper?logo=codecov&logoColor=white&label=coverage)](https://codecov.io/gh/tyagishubham177/MyScraper)
 
 <!-- 🔒 OpenSSF Scorecard (zero setup; auto-scans public repos) -->
-[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/tyagishubham177/MyScraper?label=OpenSSF%20Scorecard&logo=openssf)](https://securityscorecards.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/tyagishubham177/MyScraper/badge)](https://scorecard.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)
 
 
 
