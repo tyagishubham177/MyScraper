@@ -285,8 +285,7 @@ export async function initUserSubscriptionsUI() {
 
     items.forEach(item => {
       const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
-      const matches =
-        searchWords.length === 0 || searchWords.every(word => title.includes(word));
+      const matches = searchWords.every(word => title.includes(word));
 
       if (matches) {
         item.classList.remove('product-item-hidden');
