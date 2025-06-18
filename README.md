@@ -75,7 +75,7 @@ Ready to catch some Lassi? Here’s how to set up the project:
    The script will open a headless browser, navigate to the product page, input the pincode, and report the stock status. You’ll see console logs for each step (e.g., “Page loaded”, “Add to Cart enabled: visible”, etc.), and it will save a screenshot in the `artifacts/` folder. If an item is in stock and you’ve configured email/SMS, it will attempt to send out notifications. (Don’t worry, it also logs if it actually sent or if it skipped due to time windows or missing config.)
 
 4. **Set Up Automated Checks with GitHub Actions**
-   The real magic is in automation. By default, this repository includes a workflow file at `.github/workflows/schedule.yml` that is set to run the check every 2 hours. To set it up:
+   The real magic is in automation. By default, this repository includes a workflow file at `.github/workflows/schedule.yml` that is set to run the check every 2 hours. In addition, dependency updates are handled by `.github/workflows/dependabot.yml`. To set it up:
 
    * Fork this repo to your own GitHub account (or push it to a new repo under your account).
    * In your repository settings, add the required secrets (those environment vars from step 2) – at the very least `PINCODE`, and the SMTP settings if you want email alerts. Fast2SMS keys if you use that.
