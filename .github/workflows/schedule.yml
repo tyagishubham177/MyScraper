@@ -44,7 +44,7 @@ jobs:
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
           EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
           APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
-        run: python check_stock.py
+        run: python scripts/check_stock.py
 
         # - name: Upload screenshots  # see how it improves time
         #   uses: actions/upload-artifact@v4
