@@ -1,4 +1,4 @@
-[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
+[![License](https://img.shields.io/badge/license-Unlicense-blue.svg?logo=unlicense&logoColor=white&style=flat)](http://unlicense.org/)
 
 # 🥤 Amul Tracker
 
