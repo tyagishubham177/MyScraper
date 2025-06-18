@@ -3,10 +3,11 @@
 # 🥤 Amul Tracker
 
 [![Build](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/schedule.yml?branch=main&logo=github-actions&logoColor=white&style=flat)](https://github.com/tyagishubham177/MyScraper/actions)
-[![Commit](https://img.shields.io/github/last-commit/tyagishubham177/MyScraper?logo=git&logoColor=white&style=flat)](https://github.com/tyagishubham177/MyScraper/commits/main)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/scorecard.yml?branch=main&logo=github&logoColor=white&style=flat&label=CodeQL)](https://github.com/tyagishubham177/MyScraper/actions/workflows/scorecard.yml)
 [![Quality](https://img.shields.io/codefactor/grade/github/tyagishubham177/MyScraper/main?logo=codefactor&logoColor=white&style=flat)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper/overview/main)
 [![Security](https://api.scorecard.dev/projects/github.com/tyagishubham177/MyScraper/badge?style=flat)](https://scorecard.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/tyagishubham177/MyScraper/scorecard.yml?branch=main&logo=github&logoColor=white&style=flat&label=CodeQL)](https://github.com/tyagishubham177/MyScraper/actions/workflows/scorecard.yml)
+
+[![Commit](https://img.shields.io/github/last-commit/tyagishubham177/MyScraper?logo=git&logoColor=white&style=flat)](https://github.com/tyagishubham177/MyScraper/commits/main)
 [![Coverage](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper?logo=codecov&logoColor=white&label=coverage)](https://codecov.io/gh/tyagishubham177/MyScraper)
 
 
