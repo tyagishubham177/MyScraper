@@ -1,8 +1,5 @@
 # TODO & Roadmap 🚧
 
-<!-- Codecov (needs the GH Action upload before it shows % instead of unknown) -->
-[![Coverage](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper?logo=codecov&logoColor=white&label=coverage)](https://codecov.io/gh/tyagishubham177/MyScraper)
-
 *(A living list of enhancements and fixes for MyScraper – highest priority items first.)*
 
 1. **Streamline User Signup & Authentication** 🔐: *Priority: High.*
