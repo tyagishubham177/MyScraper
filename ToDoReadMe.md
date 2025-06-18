@@ -1,5 +1,10 @@
 # TODO & Roadmap 🚧
 
+[![Codecov](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper/main?logo=codecov&logoColor=white)](https://codecov.io/gh/tyagishubham177/MyScraper)
+[![CodeFactor](https://img.shields.io/codefactor/grade/tyagishubham177/MyScraper/main)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper)
+[![Security Score](https://img.shields.io/github/security-score/tyagishubham177/MyScraper)](https://github.com/tyagishubham177/MyScraper/security)
+
+
 *(A living list of enhancements and fixes for MyScraper – highest priority items first.)*
 
 1. **Streamline User Signup & Authentication** 🔐: *Priority: High.*
