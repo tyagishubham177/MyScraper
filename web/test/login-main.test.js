@@ -5,7 +5,14 @@ import assert from 'assert';
 
 test('registers DOMContentLoaded handler', async () => {
   const events = {};
-  global.document = { addEventListener: (ev, cb) => events[ev] = cb };
+  function makeEl() {
+    return { style: {}, classList: { add(){}, remove(){} } };
+  }
+  global.document = {
+    addEventListener: (ev, cb) => events[ev] = cb,
+    getElementById: () => makeEl(),
+    createElement: () => makeEl()
+  };
   await import('../components/login/login-main.js?' + Date.now());
   assert(events['DOMContentLoaded']);
 });

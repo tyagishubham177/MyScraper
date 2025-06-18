@@ -3,7 +3,11 @@ import assert from 'assert';
 
 function makeEl() {
   return {
-    addEventListener: () => {},
+    addEventListener(){},
+    appendChild(){},
+    prepend(){},
+    querySelector(){ return null; },
+    querySelectorAll(){ return []; },
     style: {},
     classList: { add(){}, remove(){} }
   };
@@ -15,8 +19,9 @@ test('handler redirects to index when no token', async () => {
   global.document = {
     addEventListener: (ev, cb) => events[ev] = cb,
     getElementById: id => elements[id] || makeEl(),
+    createElement: () => makeEl(),
     querySelectorAll: () => [],
-    body: { scrollHeight: 0, classList: { add(){}, remove(){} } }
+    body: Object.assign(makeEl(), { scrollHeight: 0 })
   };
   global.window = { location: { href: '' } };
   global.localStorage = { getItem: () => null };
