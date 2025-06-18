@@ -2,6 +2,10 @@
   "name": "web-api",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "NODE_V8_COVERAGE=./coverage node --test --experimental-test-coverage"
+  },
   "dependencies": {
     "@vercel/kv": "^1.0.1",
     "bcryptjs": "^2.4.3",
