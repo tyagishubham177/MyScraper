@@ -4,20 +4,20 @@
 
 ## Key Features
 
-* **Automated Stock Checks:** Leverages [GitHub Actions](https://docs.github.com/en/actions) to run a stock-check script every 2 hours (cron schedule `0 */2 * * *`). No server needed – GitHub’s runners do the heavy lifting for free.
-* **Headless Browser Scraping:** Uses [Playwright](https://playwright.dev) to spin up a headless browser and navigate to the product page like a real user. This means it can handle dynamic content (and Amul’s pesky pincode modal) to reliably detect the “Add to Cart” button.
-* **Instant Notifications:** Fires off an alert as soon as the product is in stock. By default, it sends a **fancy email** with the product link and a celebratory message. (The code originally included SMS support via Fast2SMS – you can re-enable it if you’re feeling nostalgic or need text messages 🚀).
-* **Multi-Product & Multi-User Support:** Not limited to lassi – you can configure *any number of products* (as long as they’re on Amul’s shop) to watch. Multiple recipients can subscribe to different products with customizable notification windows (e.g., only get alerts during daytime).
-* **Optional Web Dashboard:** Includes a lightweight web interface (deployable on [Vercel](https://vercel.com) with one click) that lets you:
+* ⏰ **Automated Stock Checks:** Leverages [GitHub Actions](https://docs.github.com/en/actions) to run a stock-check script every 2 hours (cron schedule `0 */2 * * *`). No server needed – GitHub’s runners do the heavy lifting for free.
+* 🕵️ **Headless Browser Scraping:** Uses [Playwright](https://playwright.dev) to spin up a headless browser and navigate to the product page like a real user. This means it can handle dynamic content (and Amul’s pesky pincode modal) to reliably detect the “Add to Cart” button.
+* 📢 **Instant Notifications:** Fires off an alert as soon as the product is in stock. By default, it sends a **fancy email** with the product link and a celebratory message. (The code originally included SMS support via Fast2SMS – you can re-enable it if you’re feeling nostalgic or need text messages 🚀).
+* 👥 **Multi-Product & Multi-User Support:** Not limited to lassi – you can configure *any number of products* (as long as they’re on Amul’s shop) to watch. Multiple recipients can subscribe to different products with customizable notification windows (e.g., only get alerts during daytime).
+* 💻 **Optional Web Dashboard:** Includes a lightweight web interface (deployable on [Vercel](https://vercel.com) with one click) that lets you:
 
   * See a live status of the GitHub Action (is the watcher running or snoozing?).
   * View recent check runs and outcomes (including an archive of screenshots for each run).
   * Add or remove products to track, and manage recipient subscriptions without digging into code.
   * Toggle the monitoring on/off (requires admin login) in case you need to pause the chaos.
    
-* **Detailed Logging & Artifacts:** Every run saves a screenshot of the product page (so you know what it looked like when marked in-stock or out-of-stock). There’s also a summary email after each run listing which notifications were sent and which were skipped (and why). It’s like a report card for each cycle.
+* 📝 **Detailed Logging & Artifacts:** Every run saves a screenshot of the product page (so you know what it looked like when marked in-stock or out-of-stock). There’s also a summary email after each run listing which notifications were sent and which were skipped (and why). It’s like a report card for each cycle.
 
-## Getting Started
+## Getting Started 🚀
 
 Ready to catch some Lassi? Here’s how to set up the project:
 
@@ -113,6 +113,11 @@ When contributing code, please follow the existing style:
 ## License
 
 This project is open-source and available under the **MIT License**. That means you’re free to use, modify, and distribute it. (See the `LICENSE` file for the legalese, if provided, or the DeepWiki page for more info.) In short, play nice and give credit where it’s due.
+
+## Documentation 📚
+
+* [Project structure](StructureReadMe.md) 🗂️
+* [Todo & roadmap](ToDoReadMe.md) ✅
 
 ## References
 
