@@ -104,7 +104,7 @@ test('renderRecipientsList populates DOM', async () => {
   global.window.lucide.createIcons = () => { created = true; };
   const mod = await loadModule();
   mod.initRecipientsUI();
-  await Promise.resolve();
+  await new Promise(r => setImmediate(r));
   const list = env.elements['recipients-list'];
   assert.equal(list.children.length, 1);
   assert.equal(list.children[0].dataset.recipientId, 1);
