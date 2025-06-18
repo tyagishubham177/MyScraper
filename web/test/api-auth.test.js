@@ -10,7 +10,7 @@ function makeRes() {
   };
 }
 
-test('missing secret returns 500', async t => {
+test('missing secret returns 500', async () => {
   const req = { headers: {} };
   const res = makeRes();
   process.env.JWT_SECRET = '';
@@ -20,7 +20,7 @@ test('missing secret returns 500', async t => {
   assert.deepEqual(res.data, { message: 'Server configuration missing' });
 });
 
-test('missing auth header returns 401', async t => {
+test('missing auth header returns 401', async () => {
   const req = { headers: {} };
   const res = makeRes();
   process.env.JWT_SECRET = 's';
@@ -29,8 +29,9 @@ test('missing auth header returns 401', async t => {
   assert.equal(res.code, 401);
 });
 
-test('invalid token returns 401', async t => {
-  await t.mock.module('jsonwebtoken', { default: { verify: () => { throw new Error('bad'); } } });
+test('invalid token returns 401', async () => {
+  const jwt = await import('jsonwebtoken');
+  jwt.default.verify = () => { throw new Error('bad'); };
   const req = { headers: { Authorization: 'Bearer xx' } };
   const res = makeRes();
   process.env.JWT_SECRET = 's';
@@ -39,8 +40,9 @@ test('invalid token returns 401', async t => {
   assert.equal(res.code, 401);
 });
 
-test('non admin role returns 403', async t => {
-  await t.mock.module('jsonwebtoken', { default: { verify: () => ({ role: 'user' }) } });
+test('non admin role returns 403', async () => {
+  const jwt = await import('jsonwebtoken');
+  jwt.default.verify = () => ({ role: 'user' });
   const req = { headers: { Authorization: 'Bearer xx' } };
   const res = makeRes();
   process.env.JWT_SECRET = 's';
@@ -49,9 +51,10 @@ test('non admin role returns 403', async t => {
   assert.equal(res.code, 403);
 });
 
-test('valid admin returns decoded object', async t => {
+test('valid admin returns decoded object', async () => {
   const decoded = { role: 'admin' };
-  await t.mock.module('jsonwebtoken', { default: { verify: () => decoded } });
+  const jwt = await import('jsonwebtoken');
+  jwt.default.verify = () => decoded;
   const req = { headers: { Authorization: 'Bearer good' } };
   const res = makeRes();
   process.env.JWT_SECRET = 's';

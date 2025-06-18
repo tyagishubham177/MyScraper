@@ -12,11 +12,14 @@ function makeRes() {
   };
 }
 
-async function setup(t, adminReturn) {
-  await t.mock.module('../api/auth.js', { requireAdmin: () => adminReturn });
+
+async function load(adminReturn) {
+  const mod = await import('../api/artifact.js?' + Date.now());
+  mod.__setRequireAdmin(() => adminReturn);
+  return mod;
 }
 
-test('rejects non-GET', async t => {
+test('rejects non-GET', async () => {
   const res = makeRes();
   const { default: handler } = await import('../api/artifact.js?' + Date.now());
   await handler({ method: 'POST' }, res);
@@ -24,45 +27,41 @@ test('rejects non-GET', async t => {
   assert.equal(res.sent, 'Method Not Allowed');
 });
 
-test('requires admin', async t => {
-  await setup(t, null);
+test('requires admin', async () => {
+  const { default: handler } = await load(null);
   const res = makeRes();
-  const { default: handler } = await import('../api/artifact.js?' + Date.now());
   await handler({ method: 'GET', query:{} }, res);
   assert.equal(res.code, null);
   assert.equal(res.sent, null);
 });
 
-test('missing id', async t => {
-  await setup(t, true);
+test('missing id', async () => {
+  const { default: handler } = await load(true);
   const res = makeRes();
-  const { default: handler } = await import('../api/artifact.js?' + Date.now());
   await handler({ method: 'GET', query:{} }, res);
   assert.equal(res.code, 400);
   assert.equal(res.sent, 'Missing id');
 });
 
-test('fetch error propagates', async t => {
-  await setup(t, true);
+test('fetch error propagates', async () => {
+  const { default: handler } = await load(true);
   global.fetch = async () => ({ ok: false, status: 404, text: async () => 'oops' });
   process.env.GH_REPO = 'r';
   process.env.GH_TOKEN = 't';
   const res = makeRes();
-  const { default: handler } = await import('../api/artifact.js?' + Date.now());
   await handler({ method: 'GET', query:{ id: '1' } }, res);
   assert.equal(res.code, 404);
   assert.equal(res.sent, 'oops');
 });
 
-test('successful fetch sends zip', async t => {
-  await setup(t, true);
+test('successful fetch sends zip', async () => {
+  const { default: handler } = await load(true);
   const buf = Buffer.from('zip');
   global.fetch = async () => ({ ok: true, arrayBuffer: async () => buf });
   process.env.GH_REPO = 'r';
   process.env.GH_TOKEN = 't';
   const res = makeRes();
-  const { default: handler } = await import('../api/artifact.js?' + Date.now());
   await handler({ method: 'GET', query:{ id:'1' } }, res);
   assert.equal(res.headers['Content-Type'], 'application/zip');
-  assert.equal(res.sent, buf);
+  assert.deepStrictEqual(res.sent, buf);
 });

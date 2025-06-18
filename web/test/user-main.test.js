@@ -1,32 +1,30 @@
 import test from 'node:test';
 import assert from 'assert';
 import fs from 'fs/promises';
+import vm from 'vm';
 
-// Helper to mock modules used by the inline script
-async function mockModules(t) {
-  await t.mock.module('../components/particles-config/particles-config.js', { initParticles(){ } });
-  await t.mock.module('../components/icons/icons.js', { initIcons(){ } });
-  await t.mock.module('../components/ui/ui.js', { initBackground(){ } });
-  await t.mock.module('../components/user-subscriptions/user-subscriptions.js', { initUserSubscriptionsUI(){ } });
-  await t.mock.module('../components/utils/utils.js', {
-    showGlobalLoader(){},
-    hideGlobalLoader(){},
-    escapeHTML: s => s
-  });
+function runInlineScript(html, globals) {
+  const match = html.match(/<script type="module">([\s\S]*?)<\/script>/);
+  if (!match) return;
+  let script = match[1];
+  script = script.replace(/^\s*import .*?;\n/gm, '');
+  const context = { ...globals };
+  vm.runInNewContext(script, context, { filename: 'user-main-inline.js' });
 }
 
-test('user-main registers DOMContentLoaded handler', async t => {
-  await mockModules(t);
-  const html = await fs.readFile('../components/user-main/user.html', 'utf8');
-  const match = html.match(/<script type="module">([\s\S]*?)<\/script>/);
-  const script = match ? match[1] : '';
+test('user-main registers DOMContentLoaded handler', async () => {
+  const html = await fs.readFile('./components/user-main/user.html', 'utf8');
   const events = {};
-  global.document = { addEventListener: (ev, cb) => events[ev] = cb };
-  global.window = {};
-  global.localStorage = { getItem: () => 'test@example.com', setItem(){}, removeItem(){} };
-  global.bootstrap = { Modal: { getInstance: () => ({ hide(){} }), getOrCreateInstance: () => ({ show(){}, hide(){} }) } };
-  global.fetch = async () => ({ text: async () => '' });
-  const dataUrl = 'data:text/javascript;base64,' + Buffer.from(script).toString('base64');
-  await import(dataUrl + '?cache=' + Date.now());
+  const globals = {
+    document: {
+      addEventListener: (ev, cb) => (events[ev] = cb),
+      getElementById: () => ({ addEventListener() {}, classList: { remove(){}, add(){} } })
+    },
+    window: {},
+    localStorage: { getItem: () => 'test@example.com', setItem() {}, removeItem() {} },
+    bootstrap: { Modal: { getInstance: () => ({ hide() {} }), getOrCreateInstance: () => ({ show() {}, hide() {} }) } },
+    fetch: async () => ({ text: async () => '' })
+  };
+  runInlineScript(html, globals);
   assert(events['DOMContentLoaded']);
 });
