@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA for actions/checkout
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: '3.12'
@@ -46,7 +46,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA for actions/checkout
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: '3.11'
