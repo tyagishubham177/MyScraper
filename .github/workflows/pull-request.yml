@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a1DE18960A24 # v4.1.7 <- CORRECT CASE HERE
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: '3.12'
@@ -46,12 +46,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a1DE18960A24 # v4.1.7 <- CORRECT CASE HERE
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: Install dependencies # atheris and other fuzzing deps must be in requirements.txt
+      - name: Install dependencies
         run: |
           pip install --require-hashes -r requirements.txt
       - name: Run fuzzing
@@ -70,7 +70,7 @@ jobs:
       matrix:
         language: ['python', 'javascript']
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0 (retained for this job)
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Original SHA
         with:
@@ -89,7 +89,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0 (retained for this job)
         with:
           persist-credentials: false
       - name: Run analysis
@@ -109,7 +109,7 @@ jobs:
         with:
           sarif_file: results.sarif
 
-  scorecard_codeql: # This job seems redundant
+  scorecard_codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
     permissions:
@@ -118,7 +118,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0 (retained for this job)
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Original SHA
         with:
