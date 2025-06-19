@@ -24,14 +24,11 @@ attrs==25.3.0 \
 certifi==2025.6.15 \
     --hash=sha256:2e0c7ce7cb5d8f8634ca55d2ba7e6ec2689a2fd6537d8dec1296a477a4910057
 charset-normalizer==3.4.2 \
-    --hash=sha256:4e594135de17ab3866138f496755f302b72157d115086d100c3f19370839dd3a \
-    --hash=sha256:fdb20a30fe1175ecabed17cbf7812f7b804b8a315a25f24678bcdf120a90077f \
-    --hash=sha256:6986fc242c75a409f987013ac1c05d762955f242e971a0808b4af9f6874e4ac1
+    --hash=sha256:4e594135de17ab3866138f496755f302b72157d115086d100c3f19370839dd3a
 frozenlist==1.7.0 \
-    --hash=sha256:488d0a7d6a0008ca0db273c542098a0fa9e7dfaa7e57f70acef43f32b3f69dca \
-    --hash=sha256:61d1a5baeaac6c0798ff6edfaeaa00e0e412d49946c53fae8d4b8e8b3566c4ae
+    --hash=sha256:488d0a7d6a0008ca0db273c542098a0fa9e7dfaa7e57f70acef43f32b3f69dca
 greenlet==3.0.3 \
-    --hash=sha256:fcd2469d6a2cf298f198f0487e0a5b1a47a42ca0fa4dfd1b6862c999f018ebbf
+    --hash=sha256:b7f009caad047246ed379e1c4dbcb8b020f0a390667ea74d2387be2998f58a22
 idna==3.10 \
     --hash=sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3
 multidict==6.5.0 \
@@ -50,18 +47,3 @@ urllib3==2.5.0 \
     --hash=sha256:3fc47733c7e419d4bc3f6b3dc2b4f890bb743906a30d56ba4a5bfa4bbff92760
 yarl==1.20.1 \
     --hash=sha256:a97d67108e79cfe22e2b430d80d7571ae57d19f17cda8bb967057ca8a7bf5bfd
-
-# Added development/testing dependencies (regenerate with pip-compile for correct hashes and transitive deps)
-pytest==8.2.2 \
-    --hash=sha256:PLEASE_REGENERATE_THIS_HASH_cafef00ddeadbeef \
-    --hash=sha256:PLEASE_REGENERATE_THIS_HASH_0123456789abcdef
-pytest-cov==5.0.0 \
-    --hash=sha256:PLEASE_REGENERATE_THIS_HASH_cafef00ddeadbeef \
-    --hash=sha256:PLEASE_REGENERATE_THIS_HASH_0123456789abcdef
-pytest-asyncio==0.23.7 \
-    --hash=sha256:PLEASE_REGENERATE_THIS_HASH_cafef00ddeadbeef \
-    --hash=sha256:PLEASE_REGENERATE_THIS_HASH_0123456789abcdef
-atheris==2.3.0 \
-    --hash=sha256:PLEASE_REGENERATE_THIS_HASH_cafef00ddeadbeef \
-    --hash=sha256:PLEASE_REGENERATE_THIS_HASH_0123456789abcdef
-# --- End of added dependencies ---
