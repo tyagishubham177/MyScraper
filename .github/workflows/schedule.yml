@@ -14,7 +14,7 @@ jobs:
     env:
       PLAYWRIGHT_BROWSERS_PATH: pw-browsers
     steps:
-      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a1DE18960A24 # v4.1.7 <- CORRECT CASE HERE
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA
 
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
@@ -26,13 +26,13 @@ jobs:
         uses: actions/cache@13aacd865c20de90d75decf172eb5f54f8a99820 # v4.0.2
         with:
           path: pw-browsers
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }} # Consider Playwright version in key
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
           restore-keys: ${{ runner.os }}-playwright-
 
       - name: Install deps
         run: |
           pip install --require-hashes -r requirements.txt
-          playwright install chromium # This installs browsers, not python deps
+          playwright install chromium
 
       - name: Run stock checker
         env:
