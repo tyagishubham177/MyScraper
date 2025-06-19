@@ -25,7 +25,6 @@ Stay updated on the health, hygiene, and hustle of the MyScraper project. Here�
 | [![Quality](https://img.shields.io/codefactor/grade/github/tyagishubham177/MyScraper/main?logo=codefactor\&logoColor=white\&style=flat)](https://www.codefactor.io/repository/github/tyagishubham177/MyScraper/overview/main) | **Code Quality** – How shiny is your codebase? This badge tells if it’s sparkling or needs scrubbing ✨🧽   |
 | [![Security](https://api.scorecard.dev/projects/github.com/tyagishubham177/MyScraper/badge?style=flat)](https://scorecard.dev/viewer/?uri=github.com/tyagishubham177/MyScraper)                                               | **Security Scorecard** – Scans your repo like a bouncer at a nightclub. Only the secure stuff gets in 🔐💪 |
 | [![Coverage](https://img.shields.io/codecov/c/github/tyagishubham177/MyScraper?logo=codecov\&logoColor=white\&label=coverage)](https://codecov.io/gh/tyagishubham177/MyScraper)                                               | **Test Coverage** – Measures how much of your code actually gets tested. Don't ship blindfolded! 🧪👀      |
-| ![OpenSSF Badge](https://img.shields.io/badge/OpenSSF%20Badge-not%20earned-lightgrey?style=flat) | **CII-Best-Practices: low** – Determines if the project has an OpenSSF (formerly CII) Best Practices Badge. Reason: no effort to earn an OpenSSF best practices badge detected. |
 
 
 ## Key Features
