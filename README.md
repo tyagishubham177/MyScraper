@@ -147,6 +147,7 @@ This project is open-source and available under the **MIT License**. That means 
 
 * [Project structure](StructureReadMe.md) 🗂️
 * [Todo & roadmap](ToDoReadMe.md) ✅
+* [Fuzzing harness](fuzz/README.md) 🐛
 
 ## References
 
