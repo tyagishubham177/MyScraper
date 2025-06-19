@@ -14,25 +14,25 @@ jobs:
     env:
       PLAYWRIGHT_BROWSERS_PATH: pw-browsers
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Pinning to specific commit SHA (consistent with other files)
+      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a1DE18960A24 # v4.1.7
 
-      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # Already pinned by SHA
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: requirements.txt
 
       - name: Cache Playwright browsers
-        uses: actions/cache@2f8e54208210a422b2efd51efaa6bd6d7ca8920f # Already pinned by SHA
+        uses: actions/cache@13aacd865c20de90d75decf172eb5f54f8a99820 # v4.0.2
         with:
           path: pw-browsers
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }} # Consider Playwright version in key
           restore-keys: ${{ runner.os }}-playwright-
 
       - name: Install deps
         run: |
           pip install --require-hashes -r requirements.txt
-          playwright install chromium
+          playwright install chromium # This installs browsers, not python deps
 
       - name: Run stock checker
         env:
@@ -45,10 +45,3 @@ jobs:
           EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
           APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
         run: python scripts/check_stock.py
-
-        # - name: Upload screenshots  # see how it improves time
-        #   uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # Already pinned
-        #   with:
-        #     name: screenshots
-        #     path: artifacts
-        #     retention-days: 3
