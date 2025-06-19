@@ -20,7 +20,7 @@ attrs==25.3.0 \
 certifi==2025.6.15 \
     --hash=sha256:2e0c7ce7cb5d8f8634ca55d2ba7e6ec2689a2fd6537d8dec1296a477a4910057
 charset-normalizer==3.4.2 \
-    --hash=sha256:4e594135de17ab3866138f496755f302b72157d115086d100c3f19370839dd3a
+    --hash=sha256:fdb20a30fe1175ecabed17cbf7812f7b804b8a315a25f24678bcdf120a90077f
 frozenlist==1.7.0 \
     --hash=sha256:488d0a7d6a0008ca0db273c542098a0fa9e7dfaa7e57f70acef43f32b3f69dca
 greenlet==3.0.3 \
