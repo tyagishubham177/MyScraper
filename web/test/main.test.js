@@ -73,9 +73,11 @@ function setupLoginEnv(){
     querySelector: () => makeLoginEl(),
     querySelectorAll: () => []
   };
-  global.window = { location:{ href:'' }, lucide:{ createIcons(){} } };
+  global.window = { location:{ href:'' }, lucide:{ createIcons(){} }, addEventListener(){}, innerHeight:0 };
   global.localStorage = { getItem: () => null, setItem(){}, removeItem(){} };
   global.fetch = async () => ({ text: async () => '' });
+  global.particlesJS = () => {};
+  global.VanillaTilt = { init(){} };
   return { elements, events };
 }
 

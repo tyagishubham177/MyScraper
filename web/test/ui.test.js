@@ -78,6 +78,6 @@ test('initPage attaches handlers and calls helpers', async () => {
   await mod.initPage();
   assert(elements['refresh'].getEvent('click'), 'refresh handler');
   assert(elements['refresh-runs'].getEvent('click'), 'refresh runs handler');
-  assert(recBtn.getEvent('show.bs.collapse'), 'collapse handler');
+  assert(elements['recipientManagementCollapse'].getEvent('show.bs.collapse'), 'collapse handler');
   assert(fetchCount > 0, 'fetch called');
 });
