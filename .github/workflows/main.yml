@@ -1,12 +1,7 @@
-name: CI on main
+name: CI on pull request
 
 on:
-  push:
-    branches: ["main"]
-  schedule:
-    - cron: '0 0 * * 0'
-    - cron: '30 20 * * 3'
-  branch_protection_rule:
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -18,7 +13,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA for actions/checkout
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: '3.12'
@@ -51,7 +46,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA for actions/checkout
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: '3.11'
@@ -75,7 +70,7 @@ jobs:
       matrix:
         language: ['python', 'javascript']
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0 as per your file (retained for this job)
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0 (retained for this job)
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Original SHA
         with:
