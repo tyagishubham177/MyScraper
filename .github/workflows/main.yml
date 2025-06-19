@@ -1,7 +1,12 @@
-name: CI on pull request
+name: CI on main
 
 on:
-  pull_request:
+  push:
+    branches: ["main"]
+  schedule:
+    - cron: '0 0 * * 0'
+    - cron: '30 20 * * 3'
+  branch_protection_rule:
   workflow_dispatch:
 
 permissions:
@@ -70,7 +75,7 @@ jobs:
       matrix:
         language: ['python', 'javascript']
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0 (retained for this job)
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Original v4.1.0 as per your file (retained for this job)
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Original SHA
         with:
