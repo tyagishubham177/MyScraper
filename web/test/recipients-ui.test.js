@@ -110,3 +110,95 @@ test('renderRecipientsList populates DOM', async () => {
   assert.equal(list.children[0].dataset.recipientId, 1);
   assert(created, 'icons created');
 });
+
+// New tests for deletion and subscription management
+
+test('delete button calls API and clears selection', async () => {
+  const env = setupEnv();
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url, opts });
+    if (url.startsWith('/api/recipients?id=')) return { ok: true, status: 204 };
+    return { ok: true, status: 200, json: async () => [] };
+  };
+  const mod = await loadModule();
+  mod.initRecipientsUI();
+  await Promise.resolve();
+  const li = makeEl();
+  li.setAttribute('data-recipient-id', '1');
+  li.setAttribute('data-recipient-email', 'a@b.com');
+  env.elements['recipients-list'].appendChild(li);
+  let cleared = false;
+  global.window.selectedRecipient = { id: '1', email: 'a@b.com' };
+  global.window.clearSubscriptionProducts = () => { cleared = true; };
+  const btn = {
+    classList: { contains(c){ return c === 'delete-recipient-btn'; } },
+    closest(sel){ if(sel === 'button.delete-recipient-btn, button.manage-subscriptions-btn, span') return this;
+                   if(sel === 'li[data-recipient-id]') return li; return null; }
+  };
+  await trigger(env.elements['recipients-list'], 'click', { target: btn });
+  await Promise.resolve();
+  const del = calls.find(c => c.opts && c.opts.method === 'DELETE');
+  assert(del, 'DELETE call made');
+  assert.equal(env.elements['recipient-subscriptions-section'].style.display, 'none');
+  assert.equal(global.window.selectedRecipient.id, null);
+  assert(cleared);
+});
+
+test('manage button opens modal when available', async () => {
+  const env = setupEnv();
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => [] });
+  let args;
+  global.window.openSubscriptionModal = (...a) => { args = a; };
+  const mod = await loadModule();
+  mod.initRecipientsUI();
+  const li = makeEl();
+  li.setAttribute('data-recipient-id', '2');
+  li.setAttribute('data-recipient-email', 'c@d.com');
+  env.elements['recipients-list'].appendChild(li);
+  const btn = {
+    classList: { contains(c){ return c === 'manage-subscriptions-btn'; } },
+    closest(sel){ if(sel === 'button.delete-recipient-btn, button.manage-subscriptions-btn, span') return this;
+                   if(sel === 'li[data-recipient-id]') return li; return null; }
+  };
+  await trigger(env.elements['recipients-list'], 'click', { target: btn });
+  assert.deepStrictEqual(global.window.selectedRecipient, { id: '2', email: 'c@d.com' });
+  assert(args && args[0] === '2');
+});
+
+test('manage button alerts when modal missing', async () => {
+  const env = setupEnv();
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => [] });
+  let alerted = false;
+  global.alert = () => { alerted = true; };
+  const mod = await loadModule();
+  mod.initRecipientsUI();
+  const li = makeEl();
+  li.setAttribute('data-recipient-id', '3');
+  li.setAttribute('data-recipient-email', 'e@f.com');
+  env.elements['recipients-list'].appendChild(li);
+  const btn = {
+    classList: { contains(c){ return c === 'manage-subscriptions-btn'; } },
+    closest(sel){ if(sel === 'button.delete-recipient-btn, button.manage-subscriptions-btn, span') return this;
+                   if(sel === 'li[data-recipient-id]') return li; return null; }
+  };
+  await trigger(env.elements['recipients-list'], 'click', { target: btn });
+  assert.deepStrictEqual(global.window.selectedRecipient, { id: '3', email: 'e@f.com' });
+  assert(alerted);
+});
+
+test('close subscriptions clears state', async () => {
+  const env = setupEnv();
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => [] });
+  let cleared = false;
+  global.window.clearSubscriptionProducts = () => { cleared = true; };
+  const mod = await loadModule();
+  mod.initRecipientsUI();
+  global.window.selectedRecipient = { id: '4', email: 'x@y.com' };
+  env.elements['recipient-subscriptions-section'].style.display = 'block';
+  const handler = env.elements['close-subscriptions-btn'].getEvent('click');
+  handler();
+  assert.equal(env.elements['recipient-subscriptions-section'].style.display, 'none');
+  assert.equal(global.window.selectedRecipient.id, null);
+  assert(cleared);
+});
