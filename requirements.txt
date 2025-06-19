@@ -6,7 +6,7 @@ playwright==1.42.0 \
 requests==2.32.2 \
     --hash=sha256:fc06670dd0ed212426dfeb94fc1b983d917c4f9847c863f313c9dfaaffb7c23c
 aiohttp==3.9.5 \
-    --hash=sha256:da00da442a0e31f1c69d26d224e1efd3a1ca5bcbf210978a2ca7426dfcae9f58
+    --hash=sha256:f22eb3a6c1080d862befa0a89c380b4dafce29dc6cd56083f630073d102eb595
 python-dateutil==2.9.0.post0 \
     --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
 pytz==2024.1 \
