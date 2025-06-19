@@ -22,6 +22,9 @@ jobs:
       - name: Install Atheris
         run: |
           pip install atheris
+      - name: Install project dependencies
+        run: |
+          pip install -r requirements.txt
       - name: Run fuzzing
         run: |
           python fuzz/fuzz_notifications.py -runs=100

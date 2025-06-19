@@ -21,6 +21,7 @@ To run a fuzzer locally:
 
 ```bash
 pip install atheris
+pip install -r requirements.txt
 python fuzz/<fuzzer_name>.py -runs=100
 ```
 
