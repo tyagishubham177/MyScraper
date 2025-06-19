@@ -19,9 +19,8 @@ jobs:
           # Atheris 2.3 does not build with Python 3.12 yet
           python-version: '3.11'
           cache: 'pip'
-      - name: Install dependencies
+      - name: Install Atheris
         run: |
-          pip install -r requirements.txt
           pip install atheris
       - name: Run fuzzing
         run: |
