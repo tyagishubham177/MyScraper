@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a1DE18960A24 # v4.1.7
+      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a1DE18960A24 # v4.1.7 <- CORRECT CASE HERE
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: '3.12'
@@ -51,7 +51,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a1DE18960A24 # v4.1.7
+      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a1DE18960A24 # v4.1.7 <- CORRECT CASE HERE
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
         with:
           python-version: '3.11'
