@@ -21,9 +21,10 @@ test('handler redirects to index when no token', async () => {
     getElementById: id => elements[id] || makeEl(),
     createElement: () => makeEl(),
     querySelectorAll: () => [],
+    querySelector: () => null,
     body: Object.assign(makeEl(), { scrollHeight: 0 })
   };
-  global.window = { location: { href: '' } };
+  global.window = { location: { href: '' }, addEventListener(){}, innerHeight:0 };
   global.localStorage = { getItem: () => null };
 
   await import('../components/admin-main/admin-main.js?' + Date.now());
@@ -32,3 +33,45 @@ test('handler redirects to index when no token', async () => {
   assert.equal(global.window.location.href, '../../index.html');
 });
 
+
+function makeEventEl(){
+  return {
+    events:{},
+    style:{},
+    classList:{ add(){}, remove(){} },
+    addEventListener(ev,cb){ this.events[ev]=cb; },
+    getEvent(ev){ return this.events[ev]; },
+    appendChild(){},
+    prepend(){},
+    querySelector(){return null;},
+    querySelectorAll(){return[];}
+  };
+}
+
+test('initializes logout handler when token present', async () => {
+  const events = {};
+  const logoutBtn = makeEventEl();
+  const elements = { loader: makeEventEl(), status: makeEventEl(), 'logout-btn': logoutBtn };
+  global.document = {
+    addEventListener: (ev, cb) => events[ev] = cb,
+    getElementById: id => elements[id] || makeEventEl(),
+    createElement: () => makeEventEl(),
+    querySelectorAll: () => [],
+    querySelector: () => null,
+    body: Object.assign(makeEventEl(), { scrollHeight: 0 })
+  };
+  global.window = { location: { href: '' }, addEventListener(){}, innerHeight:0 };
+  let removedToken = false;
+  global.localStorage = { getItem: () => 'tok', removeItem: () => { removedToken = true; } };
+  global.particlesJS = () => {};
+  global.bootstrap = { Tooltip: function(){} };
+  global.lucide = { createIcons(){} };
+  global.VanillaTilt = { init(){} };
+  global.fetch = async () => ({ ok:true, status:200, json: async () => ({ runs:[], state:'enabled' }) });
+  await import('../components/admin-main/admin-main.js?' + Date.now());
+  events['DOMContentLoaded']();
+  assert(logoutBtn.getEvent('click'), 'logout click handler added');
+  logoutBtn.getEvent('click')();
+  assert(removedToken, 'token removed');
+  assert.equal(global.window.location.href, '../../index.html');
+});
