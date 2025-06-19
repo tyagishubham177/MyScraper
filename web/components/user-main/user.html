@@ -97,10 +97,19 @@
       function updateWelcome() {
         const username = localStorage.getItem(`username_${email}`) || '';
         const safeName = escapeHTML(username);
+        const safeEmail = escapeHTML(email);
         const hi = username ? `Hi ${safeName}!` : 'Hi!';
-        const mailPart = username ? '' : ` ${email}`;
-        const icon = username ? '' : ` <i id="edit-username" data-lucide="edit" class="ms-1" role="button" style="cursor:pointer"></i>`;
-        welcomeEl.innerHTML = `${hi} ${getGreeting()},${mailPart}${icon}`;
+        const mailPart = username ? '' : ` ${safeEmail}`;
+        welcomeEl.textContent = `${hi} ${getGreeting()},${mailPart}`;
+        if (!username) {
+          const iconEl = document.createElement('i');
+          iconEl.id = 'edit-username';
+          iconEl.dataset.lucide = 'edit';
+          iconEl.className = 'ms-1';
+          iconEl.role = 'button';
+          iconEl.style.cursor = 'pointer';
+          welcomeEl.appendChild(iconEl);
+        }
         if (window.lucide) window.lucide.createIcons();
       }
 
