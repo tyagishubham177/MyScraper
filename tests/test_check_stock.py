@@ -5,7 +5,22 @@ import sys
 import types
 
 # Import aiohttp for mocking
-import aiohttp
+try:
+    import aiohttp
+except ImportError:  # pragma: no cover - fallback for environments without aiohttp
+    class ClientError(Exception):
+        pass
+
+    class ClientResponseError(Exception):
+        def __init__(self, *, request_info=None, history=None, status=None, message=""):
+            super().__init__(message)
+            self.request_info = request_info
+            self.history = history
+            self.status = status
+            self.message = message
+
+    aiohttp = types.SimpleNamespace(ClientError=ClientError, ClientResponseError=ClientResponseError)
+    sys.modules.setdefault("aiohttp", aiohttp)
 
 # Provide dummy modules for optional dependencies
 # sys.modules.setdefault("aiohttp", types.ModuleType("aiohttp")) # Keep real aiohttp for ClientError
