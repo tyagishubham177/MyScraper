@@ -14,16 +14,16 @@ jobs:
     env:
       PLAYWRIGHT_BROWSERS_PATH: pw-browsers
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # Pinning to v4 tag's current SHA for actions/checkout
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.8.0
+      - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.3.0
         with:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: requirements.txt
 
       - name: Cache Playwright browsers
-        uses: actions/cache@13aacd865c20de90d75decf172eb5f54f8a99820 # v4.0.2
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           path: pw-browsers
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
@@ -31,7 +31,7 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install --require-hashes -r requirements.txt
+          pip install -r requirements.txt
           playwright install chromium
 
       - name: Run stock checker
@@ -45,3 +45,10 @@ jobs:
           EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
           APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
         run: python scripts/check_stock.py
+
+        # - name: Upload screenshots  # see how it improves time
+        #   uses: actions/upload-artifact@v4
+        #   with:
+        #     name: screenshots
+        #     path: artifacts
+        #     retention-days: 3
