@@ -241,6 +241,6 @@ test('fetchRuns populates accordion and hooks events', async () => {
   global.JSZip = { async loadAsync(){ return { files:{ } }; } };
   await fetchRuns();
   assert.equal(acc.children.length, 1);
-  col.getEvent('show.bs.collapse')();
+  await col.getEvent('show.bs.collapse')();
   assert.equal(pane.dataset.productSummaryLoaded, 'true');
 });
