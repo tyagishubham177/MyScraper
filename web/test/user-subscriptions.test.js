@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'assert';
 
 function makeEl() {
-  return {
+  const el = {
     children: [],
     events: {},
     style: {},
@@ -27,9 +27,13 @@ function makeEl() {
       }
     },
     getAttribute() { return null; },
-    innerHTML: '',
     textContent: ''
   };
+  Object.defineProperty(el, 'innerHTML', {
+    get() { return this._innerHTML || ''; },
+    set(val) { this._innerHTML = val; this.children = []; }
+  });
+  return el;
 }
 
 test('redirects to index when no email', async () => {
