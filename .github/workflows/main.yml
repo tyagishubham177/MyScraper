@@ -9,6 +9,9 @@ on:
   branch_protection_rule:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest

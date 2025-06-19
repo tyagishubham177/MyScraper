@@ -19,13 +19,13 @@ function displayError(elementId, message, timeout = 5000) {
     clearTimeout(errorTimers[elementId]);
   }
 
-  errorElement.innerHTML = message;
+  errorElement.textContent = message;
   errorElement.classList.add('alert', 'alert-danger');
   errorElement.style.display = 'block'; // Ensure it's visible
 
   // Set new timeout
   errorTimers[elementId] = setTimeout(() => {
-    errorElement.innerHTML = '';
+    errorElement.textContent = '';
     errorElement.classList.remove('alert', 'alert-danger');
     errorElement.style.display = 'none'; // Hide it again
     delete errorTimers[elementId]; // Remove timer ID once done
@@ -40,7 +40,7 @@ function clearError(elementId) {
     clearTimeout(errorTimers[elementId]);
     delete errorTimers[elementId];
   }
-  errorElement.innerHTML = '';
+  errorElement.textContent = '';
   errorElement.classList.remove('alert', 'alert-danger');
   errorElement.style.display = 'none'; // Ensure it's hidden
 }
