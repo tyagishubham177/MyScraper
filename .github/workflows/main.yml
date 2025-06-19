@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a204ce06b333 # v4.1.7
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.6
       - uses: actions/setup-python@82c7e631bb3cdc8f0f68e0deca8891bf90624617 # v5.1.0
         with:
           python-version: '3.12'
@@ -52,7 +52,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a204ce06b333 # v4.1.7
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.6
       - uses: actions/setup-python@82c7e631bb3cdc8f0f68e0deca8891bf90624617 # v5.1.0
         with:
           python-version: '3.11'
