@@ -16,7 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          # Atheris 2.3 does not build with Python 3.12 yet
+          python-version: '3.11'
           cache: 'pip'
       - name: Install dependencies
         run: |
