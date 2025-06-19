@@ -13,8 +13,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a204ce06b333 # v4.1.7
+      - uses: actions/setup-python@82c7e631bb3cdc8f0f68e0deca8891bf90624617 # v5.1.0
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -22,22 +22,22 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
-      - uses: actions/setup-node@v4
+          pip install pytest==8.2.2 pytest-cov==5.0.0 pytest-asyncio==0.23.7
+      - uses: actions/setup-node@60edb5dd545a775178f5252418ed0ae1d1d43dec # v4.0.3
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
       - name: Install web dependencies
         run: |
-          npm install --prefix web
+          npm ci --prefix web
       - name: Run tests
         run: |
           pytest --cov=. --cov-report=xml
           npm --prefix web test
           mv web/coverage/lcov.info coverage-web.lcov
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@e0b68c6749509c5f83f984ea9f37bddc5f3a797b # v4.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml,coverage-web.lcov
@@ -47,14 +47,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@a5ac7e51b4109f5124bf94ecd736a204ce06b333 # v4.1.7
+      - uses: actions/setup-python@82c7e631bb3cdc8f0f68e0deca8891bf90624617 # v5.1.0
         with:
           python-version: '3.11'
           cache: 'pip'
       - name: Install Atheris
         run: |
-          pip install atheris
+          pip install atheris==2.4.0
       - name: Run fuzzing
         run: |
           python fuzz/fuzz_notifications.py -runs=100
