@@ -1,4 +1,5 @@
 import smtplib
+import asyncio
 from scripts import notifications
 
 
@@ -35,7 +36,7 @@ def test_send_email_notification(monkeypatch):
             sent["sender"] = sender
 
     monkeypatch.setattr(smtplib, "SMTP", DummySMTP)
-    notifications.send_email_notification(
+    asyncio.run(notifications.send_email_notification(
         subject="sub",
         body="body",
         sender="s@example.com",
@@ -44,7 +45,7 @@ def test_send_email_notification(monkeypatch):
         port=587,
         username="u",
         password="p",
-    )
+    ))
     assert sent["host"] == "smtp.example.com"
     assert sent["recipients"] == ["r@example.com"]
     assert sent["starttls"] is True # Ensure login path was taken
@@ -80,7 +81,7 @@ def test_send_email_no_auth(monkeypatch):
             sent_args["recipients"] = recipients
 
     monkeypatch.setattr(smtplib, "SMTP", MockSMTPNoAuth)
-    notifications.send_email_notification(
+    asyncio.run(notifications.send_email_notification(
         subject="sub_no_auth",
         body="body_no_auth",
         sender="s_noauth@example.com",
@@ -89,7 +90,7 @@ def test_send_email_no_auth(monkeypatch):
         port=25,
         username=None,  # No username
         password=None   # No password
-    )
+    ))
     assert sent_args["host"] == "smtp.noauth.com"
     assert not sent_args["login_called"]
     assert not sent_args["starttls_called"] # starttls should only be called if login is attempted
@@ -104,14 +105,14 @@ def test_send_email_smtp_connect_exception(monkeypatch, capsys):
 
     monkeypatch.setattr(smtplib, "SMTP", mock_smtp_connect_fails)
 
-    notifications.send_email_notification(
+    asyncio.run(notifications.send_email_notification(
         subject="sub_fail",
         body="body_fail",
         sender="s@example.com",
         recipients=["r@example.com"],
         host="smtp.fail.com",
         port=587
-    )
+    ))
     captured = capsys.readouterr()
     assert "SMTP error occurred: Connection failed" in captured.out
 
@@ -134,7 +135,7 @@ def test_send_email_smtp_sendmail_exception(monkeypatch, capsys):
             raise smtplib.SMTPException("Sendmail failed")
 
     monkeypatch.setattr(smtplib, "SMTP", MockSMTPSendFail)
-    notifications.send_email_notification(
+    asyncio.run(notifications.send_email_notification(
         subject="sub_sendfail",
         body="body_sendfail",
         sender="s@example.com",
@@ -143,7 +144,7 @@ def test_send_email_smtp_sendmail_exception(monkeypatch, capsys):
         port=587,
         username="u", # Provide credentials to go through login path
         password="p"
-    )
+    ))
     captured = capsys.readouterr()
     assert "SMTP error occurred: Sendmail failed" in captured.out
 
@@ -174,10 +175,10 @@ def test_send_email_missing_config(monkeypatch, capsys):
 
     for case in test_cases:
         smtp_called = False # Reset for each case
-        notifications.send_email_notification(
+        asyncio.run(notifications.send_email_notification(
             subject="sub", body="body", sender=case["sender"], recipients=case["recipients"],
             host=case["host"], port=case["port"]
-        )
+        ))
         assert not smtp_called, f"SMTP should not be called for: {case['desc']}"
         captured = capsys.readouterr()
         assert "Essential email configuration or recipient list is missing or invalid." in captured.out

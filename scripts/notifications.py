@@ -1,4 +1,5 @@
 import smtplib
+import asyncio
 from email.mime.text import MIMEText
 
 # ——————————————————————————————————————————
@@ -183,30 +184,41 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
 def format_short_message(product_name: str) -> str:
     return f"ALERT: {product_name.strip()} is back in stock!"
 
-def send_email_notification(subject: str, body: str, sender: str, recipients: list[str], host: str, port: int, username: str = None, password: str = None):
-    """Sends an email notification."""
+async def send_email_notification(
+    subject: str,
+    body: str,
+    sender: str,
+    recipients: list[str],
+    host: str,
+    port: int,
+    username: str | None = None,
+    password: str | None = None,
+) -> None:
+    """Sends an email notification asynchronously."""
+
     if not (host and sender and recipients and all(recipients)):
         print("⚠️ Essential email configuration or recipient list is missing or invalid.")
         return
-    try:
-        msg = MIMEText(body, 'html')
-        msg['Subject'] = subject
-        msg['From'] = sender
-        msg['To'] = sender  # Display sender in the "To" field
-        # Do not include a visible Bcc header. Recipients are passed to
-        # sendmail directly so they will not see each other's addresses.
 
-        with smtplib.SMTP(host, port) as server:
-            if username and password:
-                server.starttls()  # Upgrade connection to secure
-                server.login(username, password)
-            # Recipients are passed here so the email is Bcc'd to them
-            server.sendmail(sender, recipients, msg.as_string())
-        print("Email notification sent successfully.")
-    except smtplib.SMTPException as e:
-        print(f"SMTP error occurred: {e}")
-    except Exception as e:
-        print(f"An error occurred while sending email: {e}")
+    def _send() -> None:
+        try:
+            msg = MIMEText(body, "html")
+            msg["Subject"] = subject
+            msg["From"] = sender
+            msg["To"] = sender  # Display sender in the "To" field
+
+            with smtplib.SMTP(host, port) as server:
+                if username and password:
+                    server.starttls()
+                    server.login(username, password)
+                server.sendmail(sender, recipients, msg.as_string())
+            print("Email notification sent successfully.")
+        except smtplib.SMTPException as e:
+            print(f"SMTP error occurred: {e}")
+        except Exception as e:
+            print(f"An error occurred while sending email: {e}")
+
+    await asyncio.to_thread(_send)
 
 # def send_fast2sms(msg: str):
 #     """POST a Quick SMS via Fast2SMS API."""
