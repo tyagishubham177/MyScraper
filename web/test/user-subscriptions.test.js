@@ -221,3 +221,142 @@ test('filterProducts hides unmatched items', async () => {
   assert(liA.classList.classes.includes('product-item-hidden'));
   assert(!liB.classList.classes.includes('product-item-hidden'));
 });
+
+test('unsubscribe button deletes subscription and updates lists', async () => {
+  const { subsList, allList } = setupEnv();
+  const calls = [];
+  const responses = {
+    '/api/recipients': [{ id: 1, email: 'test@example.com' }],
+    '/api/products': [
+      { id: 1, name: 'A', url: 'http://a' },
+      { id: 2, name: 'B', url: 'http://b' }
+    ],
+    '/api/subscriptions?recipient_id=1': [
+      { product_id: 1, start_time: '00:00', end_time: '23:59', paused: false }
+    ]
+  };
+  global.fetch = async (url, opts) => {
+    calls.push({ url, opts });
+    if (url === '/api/subscriptions' && opts && opts.method === 'DELETE') {
+      return { ok: true, status: 200, json: async () => ({}) };
+    }
+    return { ok: true, status: 200, json: async () => responses[url] };
+  };
+
+  const mod = await import('../components/user-subscriptions/user-subscriptions.js?' + Date.now());
+  await mod.initUserSubscriptionsUI();
+
+  const li = subsList.children[0];
+  trigger(subsList, 'click', {
+    target: {
+      closest(sel) {
+        if (sel === '.unsub-btn') return {};
+        if (sel === 'li[data-product-id]') return li;
+        return null;
+      }
+    }
+  });
+  await new Promise(r => setImmediate(r));
+
+  const del = calls.find(c => c.url === '/api/subscriptions' && c.opts && c.opts.method === 'DELETE');
+  assert(del, 'DELETE call made');
+  assert.equal(allList.children.length, 2);
+  assert.equal(subsList.children.length, 1); // only empty state
+});
+
+test('pause and resume toggle subscription state', async () => {
+  const { subsList } = setupEnv();
+  const calls = [];
+  const responses = {
+    '/api/recipients': [{ id: 1, email: 'test@example.com' }],
+    '/api/products': [ { id: 1, name: 'A', url: 'http://a' } ],
+    '/api/subscriptions?recipient_id=1': [
+      { product_id: 1, start_time: '00:00', end_time: '23:59', paused: false }
+    ]
+  };
+  global.fetch = async (url, opts) => {
+    calls.push({ url, opts });
+    if (url === '/api/subscriptions' && opts && opts.method === 'POST') {
+      const body = JSON.parse(opts.body);
+      return { ok: true, status: 200, json: async () => ({ product_id: 1, start_time: body.start_time, end_time: body.end_time, paused: body.paused }) };
+    }
+    return { ok: true, status: 200, json: async () => responses[url] };
+  };
+
+  const mod = await import('../components/user-subscriptions/user-subscriptions.js?' + Date.now());
+  await mod.initUserSubscriptionsUI();
+
+  let li = subsList.children[0];
+  const startInput = { value: '00:00', classList: { contains: c => c === 'sub-start' }, closest: sel => (sel === 'li[data-product-id]' ? li : null) };
+  const endInput = { value: '23:59', classList: { contains: c => c === 'sub-end' }, closest: sel => (sel === 'li[data-product-id]' ? li : null) };
+  li.querySelector = sel => sel === '.sub-start' ? startInput : sel === '.sub-end' ? endInput : null;
+
+  // Pause
+  trigger(subsList, 'click', {
+    target: {
+      closest(sel) {
+        if (sel === '.pause-btn') return {};
+        if (sel === 'li[data-product-id]') return li;
+        return null;
+      }
+    }
+  });
+  await new Promise(r => setImmediate(r));
+
+  const pauseCall = calls.find(c => c.opts && c.opts.method === 'POST' && JSON.parse(c.opts.body).paused === true);
+  assert(pauseCall, 'pause POST made');
+  li = subsList.children[0];
+  assert(li.className.includes('paused'));
+  li.querySelector = sel => sel === '.sub-start' ? startInput : sel === '.sub-end' ? endInput : null;
+
+  // Resume
+  trigger(subsList, 'click', {
+    target: {
+      closest(sel) {
+        if (sel === '.pause-btn') return {};
+        if (sel === 'li[data-product-id]') return li;
+        return null;
+      }
+    }
+  });
+  await new Promise(r => setImmediate(r));
+
+  const resumeCall = calls.find(c => c.opts && c.opts.method === 'POST' && JSON.parse(c.opts.body).paused === false && c !== pauseCall);
+  assert(resumeCall, 'resume POST made');
+  assert(!subsList.children[0].className.includes('paused'));
+});
+
+test('changing time inputs updates subscription', async () => {
+  const { subsList } = setupEnv();
+  const calls = [];
+  const responses = {
+    '/api/recipients': [{ id: 1, email: 'test@example.com' }],
+    '/api/products': [ { id: 1, name: 'A', url: 'http://a' } ],
+    '/api/subscriptions?recipient_id=1': [
+      { product_id: 1, start_time: '00:00', end_time: '23:59', paused: false }
+    ]
+  };
+  global.fetch = async (url, opts) => {
+    calls.push({ url, opts });
+    if (url === '/api/subscriptions' && opts && opts.method === 'POST') {
+      const body = JSON.parse(opts.body);
+      return { ok: true, status: 200, json: async () => ({ product_id: 1, start_time: body.start_time, end_time: body.end_time, paused: body.paused }) };
+    }
+    return { ok: true, status: 200, json: async () => responses[url] };
+  };
+
+  const mod = await import('../components/user-subscriptions/user-subscriptions.js?' + Date.now());
+  await mod.initUserSubscriptionsUI();
+
+  const li = subsList.children[0];
+  const startInput = { value: '01:00', classList: { contains: c => c === 'sub-start' }, closest: sel => (sel === 'li[data-product-id]' ? li : null) };
+  const endInput = { value: '22:00', classList: { contains: c => c === 'sub-end' }, closest: sel => (sel === 'li[data-product-id]' ? li : null) };
+  li.querySelector = sel => sel === '.sub-start' ? startInput : sel === '.sub-end' ? endInput : null;
+
+  trigger(subsList, 'change', { target: startInput });
+  await new Promise(r => setImmediate(r));
+
+  const post = calls.find(c => c.opts && c.opts.method === 'POST' && JSON.parse(c.opts.body).start_time === '01:00');
+  assert(post, 'update times POST made');
+});
+
