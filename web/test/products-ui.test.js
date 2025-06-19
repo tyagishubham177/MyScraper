@@ -116,7 +116,7 @@ test('handleAddProduct shows error for missing fields', async () => {
   env.elements['product-name'].value = '';
   env.elements['product-url'].value = '';
   await trigger(env.elements['add-product-btn'], 'click', { preventDefault(){} });
-  assert.equal(env.elements['add-product-error-message'].innerHTML, 'Please enter both product name and URL.');
+  assert.equal(env.elements['add-product-error-message'].textContent, 'Please enter both product name and URL.');
 });
 
 test('renderProductsList creates list items', async () => {

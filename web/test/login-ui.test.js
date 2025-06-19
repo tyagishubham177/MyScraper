@@ -170,7 +170,8 @@ test('user mail button opens gmail on desktop', async () => {
   global.navigator = global.window.navigator;
   env.elements['user-email'].value = 'me@example.com';
   env.elements['user-mail-btn'].events.click({ preventDefault(){} });
-  assert.ok(opened.includes('mail.google.com'));
+  const mailUrl = new URL(opened);
+  assert.equal(mailUrl.hostname, 'mail.google.com');
 });
 
 test('user reddit link opens compose url', async () => {
@@ -181,5 +182,7 @@ test('user reddit link opens compose url', async () => {
   global.window.open = (url) => { opened = url; };
   env.elements['user-email'].value = 'me@example.com';
   env.elements['user-reddit-link'].events.click({ preventDefault(){} });
-  assert.ok(opened.includes('reddit.com/message/compose'));
+  const redditUrl = new URL(opened);
+  assert.equal(redditUrl.hostname, 'www.reddit.com');
+  assert.ok(redditUrl.pathname.startsWith('/message/compose'));
 });
