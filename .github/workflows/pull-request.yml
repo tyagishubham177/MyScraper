@@ -13,31 +13,31 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Pinning to specific commit SHA
+      - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # Pinning to specific commit SHA
         with:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements.txt
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
-      - uses: actions/setup-node@v4
+          pip install --require-hashes -r requirements.txt
+          # pytest, pytest-cov, pytest-asyncio are now expected to be in requirements.txt
+      - uses: actions/setup-node@49933ea5ede8d12f8512a9b11d2850247e109e63 # Pinning to specific commit SHA
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
       - name: Install web dependencies
         run: |
-          npm install --prefix web
+          npm ci --prefix web --prefer-offline --no-audit
       - name: Run tests
         run: |
           pytest --cov=. --cov-report=xml
           npm --prefix web test
           mv web/coverage/lcov.info coverage-web.lcov
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@0cfda153f5b0ba8f075d9e51ba0e860938676d08 # Pinning v3 to specific commit SHA
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml,coverage-web.lcov
@@ -47,14 +47,16 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Pinning to specific commit SHA
+      - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # Pinning to specific commit SHA
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: Install Atheris
+          cache-dependency-path: requirements.txt # Assuming requirements.txt is used
+      - name: Install dependencies (including Atheris)
         run: |
-          pip install atheris
+          pip install --require-hashes -r requirements.txt
+          # Atheris is now expected to be in requirements.txt
       - name: Run fuzzing
         run: |
           python fuzz/fuzz_notifications.py -runs=100
@@ -71,15 +73,15 @@ jobs:
       matrix:
         language: ['python', 'javascript']
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Already pinned
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3
+        uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Already pinned
         with:
           languages: ${{ matrix.language }}
       - name: Autobuild
-        uses: github/codeql-action/autobuild@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3
+        uses: github/codeql-action/autobuild@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Already pinned
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3
+        uses: github/codeql-action/analyze@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Already pinned
 
   scorecard_analysis:
     name: Scorecard analysis
@@ -90,28 +92,28 @@ jobs:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Already pinned
         with:
           persist-credentials: false
       - name: Run analysis
-        uses: ossf/scorecard-action@f49aabe0b5af0936a0987cfb85d86b75731b0186 # v2.4.1
+        uses: ossf/scorecard-action@f49aabe0b5af0936a0987cfb85d86b75731b0186 # Already pinned
         with:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
       - name: Upload artifact
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # Already pinned
         with:
           name: SARIF file
           path: results.sarif
           retention-days: 5
       - name: Upload to code-scanning
-        uses: github/codeql-action/upload-sarif@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3
+        uses: github/codeql-action/upload-sarif@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Already pinned
         with:
           sarif_file: results.sarif
 
   scorecard_codeql:
-    name: CodeQL Analysis
+    name: CodeQL Analysis # Note: This job has the same name as codeql_analyze. Consider renaming for clarity.
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -119,12 +121,12 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # Already pinned
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3
+        uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Already pinned
         with:
           languages: python
       - name: Autobuild
-        uses: github/codeql-action/autobuild@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3
+        uses: github/codeql-action/autobuild@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Already pinned
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3
+        uses: github/codeql-action/analyze@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # Already pinned
