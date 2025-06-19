@@ -346,4 +346,4 @@ export async function fetchRuns() {
 }
 
 // Export internal helpers for testing
-export { parseScraperDecisionsFromLog, createSkeleton, createAccordionItem };
+export { parseScraperDecisionsFromLog, createSkeleton, createAccordionItem, appendSummary };
