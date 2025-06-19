@@ -28,7 +28,7 @@ charset-normalizer==3.4.2 \
 frozenlist==1.7.0 \
     --hash=sha256:488d0a7d6a0008ca0db273c542098a0fa9e7dfaa7e57f70acef43f32b3f69dca
 greenlet==3.0.3 \
-    --hash=sha256:b7f009caad047246ed379e1c4dbcb8b020f0a390667ea74d2387be2998f58a22
+    --hash=sha256:fcd2469d6a2cf298f198f0487e0a5b1a47a42ca0fa4dfd1b6862c999f018ebbf
 idna==3.10 \
     --hash=sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3
 multidict==6.5.0 \
