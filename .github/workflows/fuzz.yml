@@ -25,3 +25,6 @@ jobs:
       - name: Run fuzzing
         run: |
           python fuzz/fuzz_notifications.py -runs=100
+          python fuzz/fuzz_check_stock.py -runs=100
+          python fuzz/fuzz_config.py -runs=100
+          python fuzz/fuzz_scraper.py -runs=100
