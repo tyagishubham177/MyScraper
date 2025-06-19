@@ -1,6 +1,15 @@
 // JSZip is loaded globally via a script tag in index.html
 import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from '../config/config.js';
-import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog, fetchAPI} from '../utils/utils.js';
+import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog, fetchAPI as defaultFetchAPI} from '../utils/utils.js';
+
+// Allow tests to stub the fetchAPI utility
+let fetchAPI = defaultFetchAPI;
+export function __setFetchAPI(fn) {
+  fetchAPI = fn;
+}
+export function __resetFetchAPI() {
+  fetchAPI = defaultFetchAPI;
+}
 
 function parseScraperDecisionsFromLog(logText) {
   if (!logText) return [];
@@ -78,7 +87,7 @@ function createAccordionItem(r, idx) {
     </div>`;
 }
 
-async function fetchScraperDecisions(runId) {
+async function fetchScraperDecisionsBase(runId) {
   const token = localStorage.getItem('authToken');
   const logRes = await fetch(`${API_LOGS}?id=${runId}`, {
     headers: { Authorization: `Bearer ${token}` }
@@ -116,6 +125,14 @@ async function fetchScraperDecisions(runId) {
   const trimmed = extractCheckStockLog(rawLogText);
   const cleaned = cleanLogText(trimmed);
   return parseScraperDecisionsFromLog(cleaned);
+}
+
+let fetchScraperDecisions = fetchScraperDecisionsBase;
+export function __setFetchScraperDecisions(fn) {
+  fetchScraperDecisions = fn;
+}
+export function __resetFetchScraperDecisions() {
+  fetchScraperDecisions = fetchScraperDecisionsBase;
 }
 
 function appendSummary(overviewTabPane, decisions) {
@@ -346,4 +363,13 @@ export async function fetchRuns() {
 }
 
 // Export internal helpers for testing
-export { parseScraperDecisionsFromLog, createSkeleton, createAccordionItem, appendSummary };
+export {
+  parseScraperDecisionsFromLog,
+  createSkeleton,
+  createAccordionItem,
+  appendSummary,
+  __setFetchAPI,
+  __resetFetchAPI,
+  __setFetchScraperDecisions,
+  __resetFetchScraperDecisions
+};
