@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
+          pip install pytest==8.3.4 pytest-cov==6.0.0 pytest-asyncio==0.24.0
       - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: '20'
@@ -59,7 +59,7 @@ jobs:
           cache: 'pip'
       - name: Install Atheris
         run: |
-          pip install atheris
+          pip install atheris==2.3.0
       - name: Run fuzzing
         run: |
           python fuzz/fuzz_notifications.py -runs=100
