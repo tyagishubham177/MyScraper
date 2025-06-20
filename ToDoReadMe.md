@@ -1,5 +1,7 @@
 # TODO & Roadmap 🚧
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10769/badge)](https://www.bestpractices.dev/projects/10769)
+
 *(A living list of enhancements and fixes for MyScraper – highest priority items first.)*
 
 1. **Streamline User Signup & Authentication** 🔐: *Priority: High.*
