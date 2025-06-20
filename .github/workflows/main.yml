@@ -59,7 +59,7 @@ jobs:
           cache: 'pip'
       - name: Install Atheris
         run: |
-          pip install atheris==2.3.1
+          pip install atheris==2.3.0
       - name: Run fuzzing
         run: |
           python fuzz/fuzz_notifications.py -runs=100
