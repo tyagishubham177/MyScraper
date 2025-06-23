@@ -40,6 +40,21 @@ async def load_products(session):
     return await fetch_api_data(session, products_url)
 
 
+async def load_subscriptions(session):
+    """Fetch all subscriptions and return a dict keyed by product_id."""
+    subs_url = f"{config.APP_BASE_URL}/api/subscriptions"
+    data = await fetch_api_data(session, subs_url)
+    if not data or not isinstance(data, list):
+        return {}
+    subs_by_product = {}
+    for sub in data:
+        pid = sub.get("product_id")
+        if pid is None:
+            continue
+        subs_by_product.setdefault(pid, []).append(sub)
+    return subs_by_product
+
+
 async def fetch_subscriptions(session, product_id):
     url = f"{config.APP_BASE_URL}/api/subscriptions?product_id={product_id}"
     return await fetch_api_data(session, url)
@@ -107,7 +122,7 @@ async def notify_users(effective_name, product_url, subs, recipients_map, curren
     return current_summary, sent_count
 
 
-async def process_product(session, page, product_info, recipients_map, current_time, pincode_entered):
+async def process_product(session, page, product_info, recipients_map, current_time, pincode_entered, subs_map):
     product_id = product_info.get('id')
     product_url = product_info.get('url')
     product_name = product_info.get('name', 'N/A')
@@ -117,7 +132,7 @@ async def process_product(session, page, product_info, recipients_map, current_t
         print(f"Skipping product due to missing data: {product_info}")
         return None, 0, pincode_entered
 
-    subs = await fetch_subscriptions(session, product_id)
+    subs = subs_map.get(product_id)
     if not subs or not isinstance(subs, list):
         print(f"Could not fetch subscriptions for product ID {product_id}.")
         return {
@@ -188,6 +203,8 @@ async def main():
             print("No products fetched from API. Exiting.")
             return
 
+        subs_map = await load_subscriptions(session)
+
         current_time = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).time()
 
         async with async_playwright() as pw:
@@ -197,7 +214,7 @@ async def main():
 
             for product_info in all_products:
                 summary, sent, pincode_entered = await process_product(
-                    session, page, product_info, recipients_map, current_time, pincode_entered
+                    session, page, product_info, recipients_map, current_time, pincode_entered, subs_map
                 )
                 if summary:
                     summary_email_data.append(summary)
