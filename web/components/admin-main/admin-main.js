@@ -4,6 +4,7 @@ import {initParticles} from '../particles-config/particles-config.js';
 import {initIcons} from '../icons/icons.js';
 import {initRecipientsUI} from '../recipients-ui/recipients-ui.js';
 import {initProductsUI} from '../products-ui/products-ui.js';
+import { escapeHTML } from '../utils/utils.js';
 import '../subscription/subscriptions-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Email Blast Modal & Editor Initialization
   const emailBlastModalElement = document.getElementById('emailBlastModal');
   const emailBlastBtn = document.getElementById('email-blast-btn');
-  let quillEditor;
 
   if (emailBlastModalElement && emailBlastBtn) {
     const emailBlastModal = new bootstrap.Modal(emailBlastModalElement);
@@ -53,28 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
       emailBlastModal.show();
     });
 
-    // Initialize Quill editor
-    // Doing it here to ensure it's ready when modal is shown,
-    // but could also be done on modal 'shown.bs.modal' event if preferred.
-    quillEditor = new Quill('#html-editor-container', {
-      theme: 'snow', // 'snow' is a common theme with a toolbar
-      modules: {
-        toolbar: [
-          [{ 'header': [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-          [{ 'color': [] }, { 'background': [] }],
-          ['link'],
-          ['clean']
-        ]
-      }
-    });
 
     const sendEmailBlastBtn = document.getElementById('send-email-blast-btn');
     const emailBlastSubject = document.getElementById('email-blast-subject');
-    const plainTextEditor = document.getElementById('plain-text-editor');
+    const htmlEditor = document.getElementById('html-editor');
+    const htmlPreview = document.getElementById('html-preview');
     const emailBlastStatus = document.getElementById('email-blast-status');
-    const htmlEditorTab = document.getElementById('html-editor-tab');
     const recipientInput = document.getElementById('recipient-input');
     const recipientList = document.getElementById('recipient-list');
     let extraRecipients = [];
@@ -135,6 +119,15 @@ document.addEventListener('DOMContentLoaded', () => {
       renderRecipients();
     };
 
+    if (htmlEditor && htmlPreview) {
+      const updatePreview = () => {
+        htmlPreview.innerHTML = escapeHTML(htmlEditor.value || '');
+      };
+      htmlEditor.addEventListener('input', updatePreview);
+      document.getElementById('preview-tab')?.addEventListener('shown.bs.tab', updatePreview);
+      updatePreview();
+    }
+
     if (recipientInput && recipientList) {
       document.querySelectorAll('input[name="recipientType"]').forEach(r => {
         r.addEventListener('change', updateBaseRecipients);
@@ -154,25 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    if (sendEmailBlastBtn && emailBlastSubject && plainTextEditor && emailBlastStatus && htmlEditorTab) {
+    if (sendEmailBlastBtn && emailBlastSubject && htmlEditor && emailBlastStatus) {
       sendEmailBlastBtn.addEventListener('click', async () => {
         const subject = emailBlastSubject.value.trim();
         const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
 
-        let htmlBody = '';
-        let plainBody = '';
-
-        if (htmlEditorTab.classList.contains('active')) {
-          htmlBody = quillEditor.root.innerHTML; // Get HTML content from Quill
-          // A simple way to get plain text from Quill's HTML, or use quill.getText()
-          // For now, let's assume if HTML is active, plainBody might be derived or empty if not explicitly provided.
-          // For simplicity, if HTML is active, we'll primarily send HTML.
-          // The API will need to handle if only one format is provided.
-          plainBody = quillEditor.getText(); // Get plain text version from Quill
-        } else {
-          plainBody = plainTextEditor.value.trim();
-          // If plain text is active, HTML body will be empty or derived by server if needed.
-        }
+        const htmlBody = escapeHTML(htmlEditor.value.trim());
+        const doc = new DOMParser().parseFromString(htmlBody, 'text/html');
+        const plainBody = (doc.body.textContent || '').trim();
 
         if (!subject) {
           emailBlastStatus.innerHTML = '<div class="alert alert-danger">Subject is required.</div>';
@@ -210,8 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
             emailBlastStatus.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
             // Optionally close modal or clear form here
             // emailBlastSubject.value = '';
-            // quillEditor.setText('');
-            // plainTextEditor.value = '';
+            // htmlEditor.value = '';
+            // htmlPreview.innerHTML = '';
           } else {
             emailBlastStatus.innerHTML = `<div class="alert alert-danger">Error: ${result.message || 'Failed to send emails.'}</div>`;
           }
