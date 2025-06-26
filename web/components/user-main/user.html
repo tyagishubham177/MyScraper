@@ -167,6 +167,14 @@
         window.location.href = '../../index.html';
       });
 
+      const backBtn = document.getElementById('back-to-admin-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => {
+          localStorage.removeItem('userEmail');
+          window.location.href = '../admin-main/admin.html';
+        });
+      }
+
       initParticles();
       initIcons();
       initBackground();
