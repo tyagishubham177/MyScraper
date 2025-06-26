@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 
-  const { subject, htmlBody, plainBody, recipientType, adminEmail } = req.body;
+  const { subject, htmlBody, plainBody, recipientType, adminEmail, extraRecipients = [] } = req.body;
 
   if (!subject || (!htmlBody && !plainBody)) {
     return res.status(400).json({ message: 'Subject and body (HTML or Plain) are required.' });
@@ -67,7 +67,8 @@ export default async function handler(req, res) {
       const subscribedRecipientIds = new Set();
       allSubscriptions.forEach(sub => {
         // Consider a subscription active if it's not explicitly paused
-        if (!sub.paused) {
+        const paused = sub.paused === true || sub.paused === 'true';
+        if (!paused) {
           subscribedRecipientIds.add(sub.recipient_id);
         }
       });
@@ -77,6 +78,13 @@ export default async function handler(req, res) {
         .map(r => r.email);
     } else {
       return res.status(400).json({ message: 'Invalid recipient type specified.' });
+    }
+
+    // Merge any extra recipients provided by the admin
+    if (Array.isArray(extraRecipients)) {
+      extraRecipients.forEach(r => {
+        if (r && !targetEmails.includes(r)) targetEmails.push(r);
+      });
     }
 
     if (targetEmails.length === 0) {
@@ -95,50 +103,37 @@ export default async function handler(req, res) {
       },
     });
 
-    const senderEmail = process.env.EMAIL_SENDER;
+    let senderEmail = process.env.EMAIL_SENDER;
     if (!senderEmail) {
-        console.error('EMAIL_SENDER environment variable is not set.');
-        return res.status(500).json({ message: 'Email sender configuration is missing on the server.' });
+        // Fallback to EMAIL_HOST_USER when a dedicated sender isn't specified
+        senderEmail = process.env.EMAIL_HOST_USER;
+        if (!senderEmail) {
+            console.error('EMAIL_SENDER environment variable is not set.');
+            return res.status(500).json({ message: 'Email sender configuration is missing on the server.' });
+        }
     }
 
-    let emailsSentCount = 0;
-    let failedSends = [];
-
-    for (const email of targetEmails) {
-      if (!email) continue; // Skip if email is somehow undefined/null
-
-      const mailOptions = {
-        from: senderEmail,
-        to: email,
-        subject: subject,
-      };
-      if (htmlBody) {
-        mailOptions.html = htmlBody;
-      }
-      if (plainBody) {
-        mailOptions.text = plainBody;
-      }
-      // If both html and text are provided, nodemailer will use html and include text as fallback.
-      // If only plainBody is provided, text will be used. If only htmlBody, html will be used.
-
-      try {
-        await transporter.sendMail(mailOptions);
-        emailsSentCount++;
-      } catch (error) {
-        console.error(`Failed to send email to ${email}:`, error);
-        failedSends.push({ email, error: error.message });
-      }
+    const mailOptions = {
+      from: senderEmail,
+      to: senderEmail,
+      bcc: targetEmails,
+      subject: subject,
+    };
+    if (htmlBody) {
+      mailOptions.html = htmlBody;
+    }
+    if (plainBody) {
+      mailOptions.text = plainBody;
     }
 
-    if (failedSends.length > 0) {
-        return res.status(207).json({ // Multi-Status
-            message: `Email blast partially completed. Sent to ${emailsSentCount} users. Failed for ${failedSends.length} users.`,
-            successful_sends: emailsSentCount,
-            failed_sends: failedSends
-        });
+    try {
+      await transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Failed to send email blast:', error);
+      return res.status(500).json({ message: 'Failed to send email blast.', error: error.message });
     }
 
-    return res.status(200).json({ message: `Email blast sent successfully to ${emailsSentCount} users.` });
+    return res.status(200).json({ message: `Email blast sent successfully to ${targetEmails.length} users.` });
 
   } catch (error) {
     console.error('Error processing email blast:', error);
