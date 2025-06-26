@@ -20,9 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('authToken');
-      window.location.href = '../../index.html';
-    });
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('adminEmail');
+        window.location.href = '../../index.html';
+      });
   }
 });
