@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const subject = emailBlastSubject.value.trim();
         const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
 
-        const htmlBody = htmlEditor.value.trim();
+        const htmlBody = escapeHTML(htmlEditor.value.trim());
         const doc = new DOMParser().parseFromString(htmlBody, 'text/html');
         const plainBody = (doc.body.textContent || '').trim();
 
