@@ -75,6 +75,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const plainTextEditor = document.getElementById('plain-text-editor');
     const emailBlastStatus = document.getElementById('email-blast-status');
     const htmlEditorTab = document.getElementById('html-editor-tab');
+    const extraRecipientInput = document.getElementById('extra-recipient-input');
+    const extraRecipientList = document.getElementById('extra-recipient-list');
+    const extraRecipientSection = document.getElementById('extra-recipient-section');
+    let extraRecipients = [];
+
+    if (extraRecipientInput && extraRecipientList && extraRecipientSection) {
+      const updateSectionVisibility = () => {
+        const rb = document.querySelector('input[name="recipientType"]:checked');
+        const type = rb ? rb.value : 'self';
+        extraRecipientSection.style.display = (type === 'all' || type === 'non-subscribers') ? 'block' : 'none';
+      };
+
+      document.querySelectorAll('input[name="recipientType"]').forEach(r => {
+        r.addEventListener('change', updateSectionVisibility);
+      });
+      updateSectionVisibility();
+
+      extraRecipientInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const email = extraRecipientInput.value.trim();
+          if (email && /\S+@\S+\.\S+/.test(email)) {
+            extraRecipients.push(email);
+            const chip = document.createElement('span');
+            chip.className = 'badge bg-secondary me-1 mb-1';
+            chip.textContent = email;
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'btn-close btn-close-white btn-sm ms-1';
+            closeBtn.addEventListener('click', () => {
+              extraRecipients = extraRecipients.filter(e => e !== email);
+              chip.remove();
+            });
+            chip.appendChild(closeBtn);
+            extraRecipientList.appendChild(chip);
+            extraRecipientInput.value = '';
+          }
+        }
+      });
+    }
 
     if (sendEmailBlastBtn && emailBlastSubject && plainTextEditor && emailBlastStatus && htmlEditorTab) {
       sendEmailBlastBtn.addEventListener('click', async () => {
@@ -121,7 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
               htmlBody,
               plainBody,
               recipientType,
-              adminEmail: localStorage.getItem('adminEmail') // For "self" recipient type
+              adminEmail: localStorage.getItem('adminEmail'), // For "self" recipient type
+              extraRecipients
             })
           });
 
