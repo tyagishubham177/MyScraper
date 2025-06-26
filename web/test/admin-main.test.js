@@ -15,7 +15,7 @@ function makeEl() {
 
 test('handler redirects to index when no token', async () => {
   const events = {};
-  const elements = { loader: makeEl(), status: makeEl() };
+  const elements = { loader: makeEl(), status: makeEl(), 'html-editor': makeEl(), 'html-preview': makeEl() };
   global.document = {
     addEventListener: (ev, cb) => events[ev] = cb,
     getElementById: id => elements[id] || makeEl(),
@@ -27,7 +27,6 @@ test('handler redirects to index when no token', async () => {
   global.window = { location: { href: '' }, addEventListener(){}, innerHeight:0 };
   global.localStorage = { getItem: () => null };
   global.bootstrap = { Modal: function(){ return { show(){} }; }, Tooltip: function(){} };
-  global.Quill = function(){ this.root = { innerHTML: '' }; this.getText = () => ''; };
   global.window.fetchAPI = async () => [];
 
   await import('../components/admin-main/admin-main.js?' + Date.now());
@@ -54,7 +53,7 @@ function makeEventEl(){
 test('initializes logout handler when token present', async () => {
   const events = {};
   const logoutBtn = makeEventEl();
-  const elements = { loader: makeEventEl(), status: makeEventEl(), 'logout-btn': logoutBtn };
+  const elements = { loader: makeEventEl(), status: makeEventEl(), 'logout-btn': logoutBtn, 'html-editor': makeEventEl(), 'html-preview': makeEventEl() };
   global.document = {
     addEventListener: (ev, cb) => events[ev] = cb,
     getElementById: id => elements[id] || makeEventEl(),
@@ -68,7 +67,6 @@ test('initializes logout handler when token present', async () => {
   global.localStorage = { getItem: () => 'tok', removeItem: () => { removedToken = true; } };
   global.particlesJS = () => {};
   global.bootstrap = { Tooltip: function(){}, Modal: function(){ return { show(){} }; } };
-  global.Quill = function(){ this.root = { innerHTML: '' }; this.getText = () => ''; };
   global.lucide = { createIcons(){} };
   global.VanillaTilt = { init(){} };
   global.window.fetchAPI = async () => [];
