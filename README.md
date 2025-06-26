@@ -109,6 +109,10 @@ Ready to catch some Lassi? Here’s how to set up the project:
    * Deploy the app. Once deployed, visit the URL. You should see a login screen. Log in with the admin credentials you configured.
    * After login, you’ll see the current status (whether the GitHub Action schedule is active), a list of recent runs with their timestamps and outcomes, and sections to add products or recipients. You can add new product URLs to watch, add recipients (email addresses to notify), and subscribe recipients to products – all through this UI. No coding or manual JSON editing required 🎉.
    * You can also toggle the scheduler on/off (for example, turn it off after you finally secure your lassi stock, and back on when you need it again). The dashboard communicates with GitHub via the token to do this.
+   * The admin login remembers your email in browser storage so switching modes is seamless.
+   * Inside the admin settings pane, use **Switch to User Mode** to open the user dashboard with that saved email.
+   * When the user dashboard is opened from admin, a **Back to Admin** option lets you return to the management view.
+   * **Security note:** admin tokens and emails live in `localStorage`. On shared machines, be sure to logout or clear the browser storage to avoid unintended access.
 
 ## Usage Examples
 
