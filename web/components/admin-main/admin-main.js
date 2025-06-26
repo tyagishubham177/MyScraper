@@ -119,9 +119,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (htmlEditor && htmlPreview) {
-      htmlEditor.addEventListener('input', () => {
+      const updatePreview = () => {
         htmlPreview.innerHTML = htmlEditor.value;
-      });
+      };
+      htmlEditor.addEventListener('input', updatePreview);
+      document.getElementById('preview-tab')?.addEventListener('shown.bs.tab', updatePreview);
+      updatePreview();
     }
 
     if (recipientInput && recipientList) {
