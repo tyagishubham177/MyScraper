@@ -4,6 +4,7 @@ import {initParticles} from '../particles-config/particles-config.js';
 import {initIcons} from '../icons/icons.js';
 import {initRecipientsUI} from '../recipients-ui/recipients-ui.js';
 import {initProductsUI} from '../products-ui/products-ui.js';
+import { escapeHTML } from '../utils/utils.js';
 import '../subscription/subscriptions-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -120,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (htmlEditor && htmlPreview) {
       const updatePreview = () => {
-        htmlPreview.innerHTML = htmlEditor.value;
+        htmlPreview.innerHTML = escapeHTML(htmlEditor.value || '');
       };
       htmlEditor.addEventListener('input', updatePreview);
       document.getElementById('preview-tab')?.addEventListener('shown.bs.tab', updatePreview);
@@ -151,8 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const subject = emailBlastSubject.value.trim();
         const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
 
-        const htmlBody = htmlEditor.value.trim();
-        const plainBody = htmlBody.replace(/<[^>]+>/g, '').trim();
+        const htmlBody = escapeHTML(htmlEditor.value.trim());
+        const doc = new DOMParser().parseFromString(htmlBody, 'text/html');
+        const plainBody = (doc.body.textContent || '').trim();
 
         if (!subject) {
           emailBlastStatus.innerHTML = '<div class="alert alert-danger">Subject is required.</div>';
