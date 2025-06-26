@@ -86,18 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const all = [...new Set([...baseRecipients, ...extraRecipients])];
       all.forEach(email => {
         const chip = document.createElement('span');
-        chip.className = 'badge bg-secondary me-1 mb-1';
-        chip.textContent = email;
-        if (extraRecipients.includes(email)) {
-          const closeBtn = document.createElement('button');
-          closeBtn.type = 'button';
-          closeBtn.className = 'btn-close btn-close-white btn-sm ms-1';
-          closeBtn.addEventListener('click', () => {
-            extraRecipients = extraRecipients.filter(e => e !== email);
-            renderRecipients();
-          });
-          chip.appendChild(closeBtn);
-        }
+        chip.className = 'badge bg-secondary me-1 mb-1 d-flex align-items-center';
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = email;
+        chip.appendChild(textSpan);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn-close btn-close-white btn-sm ms-1';
+        closeBtn.addEventListener('click', () => {
+          extraRecipients = extraRecipients.filter(e => e !== email);
+          baseRecipients = baseRecipients.filter(e => e !== email);
+          renderRecipients();
+        });
+        chip.appendChild(closeBtn);
+
         recipientList.appendChild(chip);
       });
     };
@@ -118,7 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           const subs = await window.fetchAPI('/api/subscriptions');
           const subscribed = new Set();
-          subs.forEach(s => { if (!s.paused) subscribed.add(s.recipient_id); });
+          subs.forEach(s => {
+            const paused = s.paused === true || s.paused === 'true';
+            if (!paused) subscribed.add(s.recipient_id);
+          });
           baseRecipients = recips.filter(r => !subscribed.has(r.id)).map(r => r.email);
         }
       } catch (err) {

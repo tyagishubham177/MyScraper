@@ -67,7 +67,8 @@ export default async function handler(req, res) {
       const subscribedRecipientIds = new Set();
       allSubscriptions.forEach(sub => {
         // Consider a subscription active if it's not explicitly paused
-        if (!sub.paused) {
+        const paused = sub.paused === true || sub.paused === 'true';
+        if (!paused) {
           subscribedRecipientIds.add(sub.recipient_id);
         }
       });
