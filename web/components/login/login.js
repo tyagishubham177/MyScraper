@@ -234,6 +234,7 @@ export async function initLogin() {
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem('authToken', data.token);
+        localStorage.setItem('adminEmail', email);
         adminCountdownTimer = clearCountdown(adminCountdownTimer, 'adminLockUntil', adminErrorMessage);
         window.location.href = "components/admin-main/admin.html";
       } else {
