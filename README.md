@@ -35,9 +35,10 @@ Stay updated on the health, hygiene, and hustle of the MyScraper project. Here�
 * 👥 **Multi-Product & Multi-User Support:** Not limited to lassi – you can configure *any number of products* (as long as they’re on Amul’s shop) to watch. Multiple recipients can subscribe to different products with customizable notification windows (e.g., only get alerts during daytime).
 * 💻 **Optional Web Dashboard:** Includes a lightweight web interface (deployable on [Vercel](https://vercel.com) with one click) that lets you:
 
-  * See a live status of the GitHub Action (is the watcher running or snoozing?).
+     * See a live status of purposefully the GitHub Action (is the watcher running or snoozing?).
   * View recent check runs and outcomes (including an archive of screenshots for each run).
   * Add or remove products to track, and manage recipient subscriptions without digging into code.
+     * **Admin Email Blasts:** Send custom emails (HTML or plain text) to specific user groups: all users, only the admin, or non-subscribers (users with no active product subscriptions). This is useful for announcements or targeted communication.
   * Toggle the monitoring on/off (requires admin login) in case you need to pause the chaos.
    
 * 📝 **Detailed Logging & Artifacts:** Every run saves a screenshot of the product page (so you know what it looked like when marked in-stock or out-of-stock). There’s also a summary email after each run listing which notifications were sent and which were skipped (and why). It’s like a report card for each cycle.

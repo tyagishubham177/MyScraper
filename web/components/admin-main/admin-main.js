@@ -40,4 +40,109 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = '../../index.html';
     });
   }
+
+  // Email Blast Modal & Editor Initialization
+  const emailBlastModalElement = document.getElementById('emailBlastModal');
+  const emailBlastBtn = document.getElementById('email-blast-btn');
+  let quillEditor;
+
+  if (emailBlastModalElement && emailBlastBtn) {
+    const emailBlastModal = new bootstrap.Modal(emailBlastModalElement);
+
+    emailBlastBtn.addEventListener('click', () => {
+      emailBlastModal.show();
+    });
+
+    // Initialize Quill editor
+    // Doing it here to ensure it's ready when modal is shown,
+    // but could also be done on modal 'shown.bs.modal' event if preferred.
+    quillEditor = new Quill('#html-editor-container', {
+      theme: 'snow', // 'snow' is a common theme with a toolbar
+      modules: {
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          [{ 'color': [] }, { 'background': [] }],
+          ['link'],
+          ['clean']
+        ]
+      }
+    });
+
+    const sendEmailBlastBtn = document.getElementById('send-email-blast-btn');
+    const emailBlastSubject = document.getElementById('email-blast-subject');
+    const plainTextEditor = document.getElementById('plain-text-editor');
+    const emailBlastStatus = document.getElementById('email-blast-status');
+    const htmlEditorTab = document.getElementById('html-editor-tab');
+
+    if (sendEmailBlastBtn && emailBlastSubject && plainTextEditor && emailBlastStatus && htmlEditorTab) {
+      sendEmailBlastBtn.addEventListener('click', async () => {
+        const subject = emailBlastSubject.value.trim();
+        const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
+
+        let htmlBody = '';
+        let plainBody = '';
+
+        if (htmlEditorTab.classList.contains('active')) {
+          htmlBody = quillEditor.root.innerHTML; // Get HTML content from Quill
+          // A simple way to get plain text from Quill's HTML, or use quill.getText()
+          // For now, let's assume if HTML is active, plainBody might be derived or empty if not explicitly provided.
+          // For simplicity, if HTML is active, we'll primarily send HTML.
+          // The API will need to handle if only one format is provided.
+          plainBody = quillEditor.getText(); // Get plain text version from Quill
+        } else {
+          plainBody = plainTextEditor.value.trim();
+          // If plain text is active, HTML body will be empty or derived by server if needed.
+        }
+
+        if (!subject) {
+          emailBlastStatus.innerHTML = '<div class="alert alert-danger">Subject is required.</div>';
+          return;
+        }
+        if (!htmlBody && !plainBody) {
+          emailBlastStatus.innerHTML = '<div class="alert alert-danger">Email body cannot be empty.</div>';
+          return;
+        }
+
+        emailBlastStatus.innerHTML = '<div class="alert alert-info">Sending emails...</div>';
+        sendEmailBlastBtn.disabled = true;
+
+        try {
+          const token = localStorage.getItem('authToken');
+          const response = await fetch('/api/email-blast', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              subject,
+              htmlBody,
+              plainBody,
+              recipientType,
+              adminEmail: localStorage.getItem('adminEmail') // For "self" recipient type
+            })
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            emailBlastStatus.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
+            // Optionally close modal or clear form here
+            // emailBlastSubject.value = '';
+            // quillEditor.setText('');
+            // plainTextEditor.value = '';
+          } else {
+            emailBlastStatus.innerHTML = `<div class="alert alert-danger">Error: ${result.message || 'Failed to send emails.'}</div>`;
+          }
+        } catch (error) {
+          console.error('Error sending email blast:', error);
+          emailBlastStatus.innerHTML = `<div class="alert alert-danger">An unexpected error occurred: ${error.message}</div>`;
+        } finally {
+          sendEmailBlastBtn.disabled = false;
+        }
+      });
+    }
+  }
 });
