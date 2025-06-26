@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('authToken');
+      localStorage.removeItem('adminEmail');
       localStorage.removeItem('userEmail');
       localStorage.removeItem('switchedFromAdmin');
       window.location.href = '../../index.html';
