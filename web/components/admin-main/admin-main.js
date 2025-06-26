@@ -34,10 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('authToken');
-<<<<<<< codex/update-logout-handler-to-clear-credentials
       localStorage.removeItem('adminEmail');
-=======
->>>>>>> main
       localStorage.removeItem('userEmail');
       localStorage.removeItem('switchedFromAdmin');
       window.location.href = '../../index.html';
