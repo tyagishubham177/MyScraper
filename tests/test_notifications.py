@@ -193,9 +193,7 @@ def test_format_summary_email_body():
         }
     ]
     html = notifications.format_summary_email_body("run", data, 1)
-    assert "Prod" in html
-    assert "http://x" in html
-    assert "Notification sent" in html
+    assert "<a href=\"http://x\">Prod</a>" in html
 
 
 def test_format_summary_email_body_scenarios(capsys):
@@ -263,18 +261,18 @@ def test_format_summary_email_body_scenarios(capsys):
         },
     ]
     html_various = notifications.format_summary_email_body("run_various", summary_data_various_statuses, 1)
-    assert "Prod A" in html_various and "Notification sent" in html_various
-    assert "Prod B" in html_various and "Out of stock" in html_various # summarize_subscriptions logic
-    assert "Prod C" in html_various and "Status inconclusive" in html_various # Ignorable
-    assert "Prod D" in html_various and "Status inconclusive" in html_various # Ignorable
-    assert "Prod E" in html_various and "Status inconclusive" in html_various # Ignorable
-    assert "Prod F" in html_various and "Status inconclusive" in html_various # Ignorable
-    assert "Prod G" in html_various and "Status inconclusive" in html_various # Ignorable
-    assert "Prod H" in html_various and "Status inconclusive" in html_various # Ignorable
-    assert "Prod I" in html_various and "Failed to notify: i@ex.com" in html_various
-    assert "Prod J" in html_various and "Failed to notify: j@ex.com" in html_various
-    assert "Prod K" in html_various and "Failed to notify: k@ex.com" in html_various
-    assert "Prod L - Mixed" in html_various and "Notification sent" in html_various # Sent takes precedence for overall status if one user got it
+    assert "<a href=\"http://a\">Prod A</a>" in html_various
+    assert "<a href=\"http://b\">Prod B</a>" in html_various
+    assert "<a href=\"http://c\">Prod C</a>" in html_various
+    assert "<a href=\"http://d\">Prod D</a>" in html_various
+    assert "<a href=\"http://e\">Prod E</a>" in html_various
+    assert "<a href=\"http://f\">Prod F</a>" in html_various
+    assert "<a href=\"http://g\">Prod G</a>" in html_various
+    assert "<a href=\"http://h\">Prod H</a>" in html_various
+    assert "<a href=\"http://i\">Prod I</a>" in html_various
+    assert "<a href=\"http://j\">Prod J</a>" in html_various
+    assert "<a href=\"http://k\">Prod K</a>" in html_various
+    assert "<a href=\"http://l\">Prod L - Mixed</a>" in html_various
 
     # 3. Missing keys in product items
     summary_data_missing_keys = [
@@ -283,9 +281,9 @@ def test_format_summary_email_body_scenarios(capsys):
         {"product_name": "Prod O No Subs", "product_url": "http://o"},
     ]
     html_missing_keys = notifications.format_summary_email_body("run_missing", summary_data_missing_keys, 0)
-    assert "<td>N/A</td>" in html_missing_keys # For Prod M
-    assert "<td><a href=\"#\">#</a></td>" in html_missing_keys # For Prod N
-    assert "Prod O No Subs" in html_missing_keys and "No subscriptions for this product." in html_missing_keys
+    assert "<a href=\"http://m_no_name\">N/A</a>" in html_missing_keys  # For Prod M
+    assert "<a href=\"#\">Prod N No URL</a>" in html_missing_keys  # For Prod N
+    assert "<a href=\"http://o\">Prod O No Subs</a>" in html_missing_keys
 
     # 4. Product with no subscriptions (already covered by Prod O in missing keys)
     # and product with subscriptions, but all are in ignorable statuses (Prod C-H, F already cover this)
@@ -302,8 +300,6 @@ def test_format_summary_email_body_scenarios(capsys):
         }
     ]
     html_failed_notify = notifications.format_summary_email_body("run_partial_fail", summary_data_failed_notify, 1)
-    assert "Prod P - Partial Fail" in html_failed_notify
-    # Check that both p1_sent is listed as sent, and overall status reflects partial failure
+    assert "<a href=\"http://p\">Prod P - Partial Fail</a>" in html_failed_notify
     assert "p1_sent@ex.com" in html_failed_notify
-    assert "Failed to notify: p2_failed@ex.com, p3_nomail@ex.com" in html_failed_notify
-    assert "<td>p1_sent@ex.com</td>" in html_failed_notify # Check if sent email is listed
+    assert "<td>p1_sent@ex.com</td>" in html_failed_notify  # Check if sent email is listed

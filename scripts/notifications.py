@@ -88,9 +88,7 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
             <thead>
                 <tr>
                     <th>Product Name</th>
-                    <th>Product URL</th>
                     <th>Email sent to</th>
-                    <th>Overall Product Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -160,14 +158,12 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
         product_url = product_data.get("product_url", "#")
         subscriptions = product_data.get("subscriptions", [])
 
-        subscribed_emails_csv, product_status_overall = summarize_subscriptions(subscriptions)
+        subscribed_emails_csv, _ = summarize_subscriptions(subscriptions)
 
         html_output += f"""
     <tr>
-        <td>{product_name}</td>
-        <td><a href="{product_url}">{product_url}</a></td>
+        <td><a href="{product_url}">{product_name}</a></td>
         <td>{subscribed_emails_csv}</td>
-        <td>{product_status_overall}</td>
     </tr>
 """
 
