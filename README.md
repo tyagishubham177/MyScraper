@@ -30,6 +30,7 @@ Stay updated on the health, hygiene, and hustle of the MyScraper project. Here�
 ## Key Features
 
 * ⏰ **Automated Stock Checks:** Leverages [GitHub Actions](https://docs.github.com/en/actions) to run a stock-check script every 2 hours (cron schedule `0 */2 * * *`). No server needed – GitHub’s runners do the heavy lifting for free.
+* 🧹 **Monthly Cleanup:** A scheduled job prunes recipients that have no subscriptions at the start of each month.
 * 🕵️ **Headless Browser Scraping:** Uses [Playwright](https://playwright.dev) to spin up a headless browser and navigate to the product page like a real user. This means it can handle dynamic content (and Amul’s pesky pincode modal) to reliably detect the “Add to Cart” button.
 * 📢 **Instant Notifications:** Fires off an alert as soon as the product is in stock. By default, it sends a **fancy email** with the product link and a celebratory message. (The code originally included SMS support via Fast2SMS – you can re-enable it if you’re feeling nostalgic or need text messages 🚀).
 * 👥 **Multi-Product & Multi-User Support:** Not limited to lassi – you can configure *any number of products* (as long as they’re on Amul’s shop) to watch. Multiple recipients can subscribe to different products with customizable notification windows (e.g., only get alerts during daytime).
