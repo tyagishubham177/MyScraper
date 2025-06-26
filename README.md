@@ -70,7 +70,7 @@ Ready to catch some Lassi? Here’s how to set up the project:
    * `PINCODE` – Your postal code, used on the Amul store to check availability (e.g. `110001`).
    * `EMAIL_HOST`, `EMAIL_PORT` – SMTP server details for sending email (for example, you can use Gmail’s SMTP or any transactional email service).
    * `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` – SMTP login credentials.
-   * `EMAIL_SENDER` – The sender/from address for notification emails. Also receives the summary emails.
+   * `EMAIL_SENDER` – The sender/from address for notification emails. Also receives the summary emails. If not set, the web dashboard falls back to `EMAIL_HOST_USER`.
    * `EMAIL_RECIPIENTS` – *(Optional)* A comma-separated list of email addresses to notify by default. In most cases, you won’t set this because notifications are sent per user subscription. If you do set it, everyone here gets notified for every product – use with caution (or maybe just stick to the subscription system!).
    * `F2S_API_KEY` – *(Optional)* Fast2SMS API key for SMS notifications. If provided and if you un-comment the SMS code, the script can send an SMS alert as well.
    * `F2S_NUMBERS` – *(Optional)* Comma-separated phone numbers for SMS (e.g. `91xxxxxxxxxx,91yyyyyyyyyy`).

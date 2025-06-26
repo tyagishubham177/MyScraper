@@ -95,10 +95,14 @@ export default async function handler(req, res) {
       },
     });
 
-    const senderEmail = process.env.EMAIL_SENDER;
+    let senderEmail = process.env.EMAIL_SENDER;
     if (!senderEmail) {
-        console.error('EMAIL_SENDER environment variable is not set.');
-        return res.status(500).json({ message: 'Email sender configuration is missing on the server.' });
+        // Fallback to EMAIL_HOST_USER when a dedicated sender isn't specified
+        senderEmail = process.env.EMAIL_HOST_USER;
+        if (!senderEmail) {
+            console.error('EMAIL_SENDER environment variable is not set.');
+            return res.status(500).json({ message: 'Email sender configuration is missing on the server.' });
+        }
     }
 
     let emailsSentCount = 0;
