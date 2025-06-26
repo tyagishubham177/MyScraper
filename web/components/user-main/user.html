@@ -39,6 +39,7 @@
       <div class="mb-4">
         <h6 class="mb-2">Account</h6>
         <button type="button" id="change-username-btn" class="btn btn-primary w-100 mb-2"><i data-lucide="user" class="me-1"></i>Change Display Name</button>
+        <button type="button" id="switch-to-admin-btn" class="btn btn-secondary w-100 mb-2"><i data-lucide="shield" class="me-1"></i>Back to Admin</button>
         <button type="button" id="logout-btn" class="btn btn-danger w-100"><i data-lucide="log-out" class="me-1"></i>Logout</button>
       </div>
       <hr>
@@ -147,12 +148,34 @@
         modal.show();
       });
 
+      const switchAdminBtn = document.getElementById('switch-to-admin-btn');
+      const fromAdmin = localStorage.getItem('switchedFromAdmin') === 'true';
+      if (switchAdminBtn) {
+        if (!fromAdmin) {
+          switchAdminBtn.style.display = 'none';
+        } else {
+          switchAdminBtn.addEventListener('click', () => {
+            localStorage.removeItem('switchedFromAdmin');
+            window.location.href = '../admin-main/admin.html';
+          });
+        }
+      }
+
       document.getElementById('logout-btn').addEventListener('click', () => {
         localStorage.removeItem('userEmail');
         localStorage.removeItem('authToken');
         localStorage.removeItem('adminEmail');
+        localStorage.removeItem('switchedFromAdmin');
         window.location.href = '../../index.html';
       });
+
+      const backBtn = document.getElementById('back-to-admin-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => {
+          localStorage.removeItem('userEmail');
+          window.location.href = '../admin-main/admin.html';
+        });
+      }
 
       initParticles();
       initIcons();
