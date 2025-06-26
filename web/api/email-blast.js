@@ -66,11 +66,8 @@ export default async function handler(req, res) {
       const allSubscriptions = await getSubscriptionsFromKV();
       const subscribedRecipientIds = new Set();
       allSubscriptions.forEach(sub => {
-        // Consider a subscription active if it's not explicitly paused
-        const paused = sub.paused === true || sub.paused === 'true';
-        if (!paused) {
-          subscribedRecipientIds.add(sub.recipient_id);
-        }
+        // Treat paused subscriptions as still subscribed to exclude them
+        subscribedRecipientIds.add(sub.recipient_id);
       });
 
       targetEmails = allRecipients

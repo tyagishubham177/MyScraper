@@ -106,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const subs = await window.fetchAPI('/api/subscriptions');
           const subscribed = new Set();
           subs.forEach(s => {
-            const paused = s.paused === true || s.paused === 'true';
-            if (!paused) subscribed.add(s.recipient_id);
+            // Count paused subscriptions as subscribed so they are excluded
+            subscribed.add(s.recipient_id);
           });
           baseRecipients = recips.filter(r => !subscribed.has(r.id)).map(r => r.email);
         }
