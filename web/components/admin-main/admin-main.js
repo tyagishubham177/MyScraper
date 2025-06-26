@@ -18,10 +18,24 @@ document.addEventListener('DOMContentLoaded', () => {
   initRecipientsUI();
   initProductsUI();
 
+  const switchUserBtn = document.getElementById('switch-user-btn');
+  if (switchUserBtn) {
+    switchUserBtn.addEventListener('click', () => {
+      const email = localStorage.getItem('adminEmail');
+      if (email) {
+        localStorage.setItem('userEmail', email);
+        localStorage.setItem('switchedFromAdmin', 'true');
+        window.location.href = '../user-main/user.html';
+      }
+    });
+  }
+
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('authToken');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('switchedFromAdmin');
       window.location.href = '../../index.html';
     });
   }
