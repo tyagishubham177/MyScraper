@@ -75,42 +75,73 @@ document.addEventListener('DOMContentLoaded', () => {
     const plainTextEditor = document.getElementById('plain-text-editor');
     const emailBlastStatus = document.getElementById('email-blast-status');
     const htmlEditorTab = document.getElementById('html-editor-tab');
-    const extraRecipientInput = document.getElementById('extra-recipient-input');
-    const extraRecipientList = document.getElementById('extra-recipient-list');
-    const extraRecipientSection = document.getElementById('extra-recipient-section');
+    const recipientInput = document.getElementById('recipient-input');
+    const recipientList = document.getElementById('recipient-list');
     let extraRecipients = [];
+    let baseRecipients = [];
 
-    if (extraRecipientInput && extraRecipientList && extraRecipientSection) {
-      const updateSectionVisibility = () => {
-        const rb = document.querySelector('input[name="recipientType"]:checked');
-        const type = rb ? rb.value : 'self';
-        extraRecipientSection.style.display = (type === 'all' || type === 'non-subscribers') ? 'block' : 'none';
-      };
-
-      document.querySelectorAll('input[name="recipientType"]').forEach(r => {
-        r.addEventListener('change', updateSectionVisibility);
+    const renderRecipients = () => {
+      if (!recipientList) return;
+      recipientList.innerHTML = '';
+      const all = [...new Set([...baseRecipients, ...extraRecipients])];
+      all.forEach(email => {
+        const chip = document.createElement('span');
+        chip.className = 'badge bg-secondary me-1 mb-1';
+        chip.textContent = email;
+        if (extraRecipients.includes(email)) {
+          const closeBtn = document.createElement('button');
+          closeBtn.type = 'button';
+          closeBtn.className = 'btn-close btn-close-white btn-sm ms-1';
+          closeBtn.addEventListener('click', () => {
+            extraRecipients = extraRecipients.filter(e => e !== email);
+            renderRecipients();
+          });
+          chip.appendChild(closeBtn);
+        }
+        recipientList.appendChild(chip);
       });
-      updateSectionVisibility();
+    };
 
-      extraRecipientInput.addEventListener('keydown', (e) => {
+    const updateBaseRecipients = async () => {
+      const rb = document.querySelector('input[name="recipientType"]:checked');
+      const type = rb ? rb.value : 'self';
+      const adminEmail = localStorage.getItem('adminEmail');
+      if (type === 'self') {
+        baseRecipients = adminEmail ? [adminEmail] : [];
+        renderRecipients();
+        return;
+      }
+      try {
+        const recips = await window.fetchAPI('/api/recipients');
+        if (type === 'all') {
+          baseRecipients = recips.map(r => r.email);
+        } else {
+          const subs = await window.fetchAPI('/api/subscriptions');
+          const subscribed = new Set();
+          subs.forEach(s => { if (!s.paused) subscribed.add(s.recipient_id); });
+          baseRecipients = recips.filter(r => !subscribed.has(r.id)).map(r => r.email);
+        }
+      } catch (err) {
+        console.error('Error fetching recipients:', err);
+        baseRecipients = [];
+      }
+      renderRecipients();
+    };
+
+    if (recipientInput && recipientList) {
+      document.querySelectorAll('input[name="recipientType"]').forEach(r => {
+        r.addEventListener('change', updateBaseRecipients);
+      });
+      updateBaseRecipients();
+
+      recipientInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          const email = extraRecipientInput.value.trim();
+          const email = recipientInput.value.trim();
           if (email && /\S+@\S+\.\S+/.test(email)) {
             extraRecipients.push(email);
-            const chip = document.createElement('span');
-            chip.className = 'badge bg-secondary me-1 mb-1';
-            chip.textContent = email;
-            const closeBtn = document.createElement('button');
-            closeBtn.type = 'button';
-            closeBtn.className = 'btn-close btn-close-white btn-sm ms-1';
-            closeBtn.addEventListener('click', () => {
-              extraRecipients = extraRecipients.filter(e => e !== email);
-              chip.remove();
-            });
-            chip.appendChild(closeBtn);
-            extraRecipientList.appendChild(chip);
-            extraRecipientInput.value = '';
+            renderRecipients();
+            recipientInput.value = '';
           }
         }
       });
