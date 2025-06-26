@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (htmlEditor && htmlPreview) {
       const updatePreview = () => {
-        htmlPreview.innerHTML = escapeHTML(htmlEditor.value);
+        htmlPreview.innerHTML = escapeHTML(htmlEditor.value || '');
       };
       htmlEditor.addEventListener('input', updatePreview);
       document.getElementById('preview-tab')?.addEventListener('shown.bs.tab', updatePreview);
