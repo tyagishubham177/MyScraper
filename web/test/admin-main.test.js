@@ -26,6 +26,9 @@ test('handler redirects to index when no token', async () => {
   };
   global.window = { location: { href: '' }, addEventListener(){}, innerHeight:0 };
   global.localStorage = { getItem: () => null };
+  global.bootstrap = { Modal: function(){ return { show(){} }; }, Tooltip: function(){} };
+  global.Quill = function(){ this.root = { innerHTML: '' }; this.getText = () => ''; };
+  global.window.fetchAPI = async () => [];
 
   await import('../components/admin-main/admin-main.js?' + Date.now());
   assert(events['DOMContentLoaded']);
@@ -64,9 +67,11 @@ test('initializes logout handler when token present', async () => {
   let removedToken = false;
   global.localStorage = { getItem: () => 'tok', removeItem: () => { removedToken = true; } };
   global.particlesJS = () => {};
-  global.bootstrap = { Tooltip: function(){} };
+  global.bootstrap = { Tooltip: function(){}, Modal: function(){ return { show(){} }; } };
+  global.Quill = function(){ this.root = { innerHTML: '' }; this.getText = () => ''; };
   global.lucide = { createIcons(){} };
   global.VanillaTilt = { init(){} };
+  global.window.fetchAPI = async () => [];
   global.fetch = async () => ({ ok:true, status:200, json: async () => ({ runs:[], state:'enabled' }) });
   await import('../components/admin-main/admin-main.js?' + Date.now());
   events['DOMContentLoaded']();
