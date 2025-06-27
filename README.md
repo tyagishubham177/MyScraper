@@ -30,6 +30,7 @@ Stay updated on the health, hygiene, and hustle of the MyScraper project. Here�
 ## Key Features
 
 * ⏰ **Automated Stock Checks:** Leverages [GitHub Actions](https://docs.github.com/en/actions) to run a stock-check script every 2 hours (cron schedule `0 */2 * * *`). No server needed – GitHub’s runners do the heavy lifting for free.
+* 🧹 **Monthly Cleanup:** A scheduled job prunes recipients that have no subscriptions on the 26th of each month.
 * 🕵️ **Headless Browser Scraping:** Uses [Playwright](https://playwright.dev) to spin up a headless browser and navigate to the product page like a real user. This means it can handle dynamic content (and Amul’s pesky pincode modal) to reliably detect the “Add to Cart” button.
 * 📢 **Instant Notifications:** Fires off an alert as soon as the product is in stock. By default, it sends a **fancy email** with the product link and a celebratory message. (The code originally included SMS support via Fast2SMS – you can re-enable it if you’re feeling nostalgic or need text messages 🚀).
 * 👥 **Multi-Product & Multi-User Support:** Not limited to lassi – you can configure *any number of products* (as long as they’re on Amul’s shop) to watch. Multiple recipients can subscribe to different products with customizable notification windows (e.g., only get alerts during daytime).
@@ -38,7 +39,7 @@ Stay updated on the health, hygiene, and hustle of the MyScraper project. Here�
      * See a live status of purposefully the GitHub Action (is the watcher running or snoozing?).
   * View recent check runs and outcomes (including an archive of screenshots for each run).
   * Add or remove products to track, and manage recipient subscriptions without digging into code.
-    * **Admin Email Blasts:** Send custom emails (HTML or plain text) to specific user groups: all users, only the admin, or non-subscribers (users with no active product subscriptions). All recipients are placed in BCC for privacy. The modal shows who will receive the blast and lets you add or remove addresses just like an email client. This is useful for announcements or targeted communication.
+    * **Admin Email Blasts:** Send custom emails (HTML or plain text) to specific user groups: all users, only the admin, or non-subscribers (users with no saved subscriptions). All recipients are placed in BCC for privacy. The modal shows who will receive the blast and lets you add or remove addresses just like an email client. This is useful for announcements or targeted communication.
   * Toggle the monitoring on/off (requires admin login) in case you need to pause the chaos.
    
 * 📝 **Detailed Logging & Artifacts:** Every run saves a screenshot of the product page (so you know what it looked like when marked in-stock or out-of-stock). There’s also a summary email after each run listing which notifications were sent and which were skipped (and why). It’s like a report card for each cycle.
