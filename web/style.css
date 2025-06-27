@@ -263,6 +263,17 @@ button, .btn {
       transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
     }
 
+    @keyframes glow-attention {
+      0%, 100% { box-shadow: 0 0 5px #ffc107, 0 0 10px #ffc107; }
+      50% { box-shadow: 0 0 15px #ffc107, 0 0 20px #ffc107; }
+    }
+
+    .help-fab {
+      bottom: 86px;
+      background-color: #ffc107;
+      animation: glow-attention 1.5s infinite ease-in-out;
+    }
+
 /* --------------- NEW UI SECTIONS STYLING --------------- */
 
 /* General Card Styling for new sections */
@@ -493,6 +504,11 @@ button, .btn {
   .fab i, .fab svg {
     width: 20px;
     height: 20px;
+  }
+  .help-fab {
+    bottom: 75px;
+     width: 48px;
+     height: 48px;
   }
 }
 
@@ -1299,6 +1315,11 @@ button, .btn {
   .fab i, .fab svg {
     width: 20px;
     height: 20px;
+  }
+  .help-fab {
+    bottom: 75px;
+     width: 48px;
+     height: 48px;
   }
 }
 

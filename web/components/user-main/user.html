@@ -26,6 +26,9 @@
     <p id="welcome-msg" class="mb-4 fw-bold initial"></p>
     <div id="user-subscriptions-container"></div>
   </div>
+  <button type="button" id="help-fab" class="fab help-fab" aria-label="How to Use">
+    <i data-lucide="help-circle"></i>
+  </button>
   <button type="button" class="fab" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
     <i data-lucide="sliders"></i>
   </button>
@@ -41,6 +44,7 @@
         <button type="button" id="change-username-btn" class="btn btn-primary w-100 mb-2"><i data-lucide="user" class="me-1"></i>Change Display Name</button>
         <button type="button" id="switch-to-admin-btn" class="btn btn-secondary w-100 mb-2"><i data-lucide="shield" class="me-1"></i>Back to Admin</button>
         <button type="button" id="logout-btn" class="btn btn-danger w-100"><i data-lucide="log-out" class="me-1"></i>Logout</button>
+        <button type="button" id="how-to-btn" class="btn btn-warning w-100 mt-2"><i data-lucide="help-circle" class="me-1"></i>How to Use</button>
       </div>
       <hr>
       <div>
@@ -68,6 +72,19 @@
       </div>
     </div>
   </div>
+  <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="helpModalLabel">How to Use</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Under development
+        </div>
+      </div>
+    </div>
+  </div>
   <script src="../../particles.js"></script>
   <script src="../../lucide-icons.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -76,6 +93,7 @@
     import { initIcons } from "../icons/icons.js";
     import { initBackground } from "../ui/ui.js";
     import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
+    import { initHelp } from "../help/help.js";
     import { showGlobalLoader, hideGlobalLoader, escapeHTML } from "../utils/utils.js";
 
     document.addEventListener("DOMContentLoaded", async () => {
@@ -180,6 +198,7 @@
       initParticles();
       initIcons();
       initBackground();
+      initHelp();
       const container = document.getElementById('user-subscriptions-container');
       try {
         const res = await fetch('../user-subscriptions/user-subscriptions.html');
