@@ -99,7 +99,7 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
 
   sortedProducts.forEach(product => {
     const listItem = document.createElement('div');
-    listItem.className = 'list-group-item mb-3 p-3 border rounded';
+    listItem.className = 'list-group-item subscription-item mb-3 p-3 border rounded';
 
     const mainToggleDiv = document.createElement('div');
     mainToggleDiv.className = 'form-check mb-2';
@@ -120,7 +120,7 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     listItem.appendChild(mainToggleDiv);
 
     const timeDiv = document.createElement('div');
-    timeDiv.className = 'd-flex align-items-center ms-4';
+    timeDiv.className = 'time-controls d-flex align-items-center ms-4 flex-wrap';
     const startInput = document.createElement('input');
     startInput.type = 'time';
     startInput.className = 'form-control form-control-sm sub-time-start me-2';

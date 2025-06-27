@@ -81,7 +81,7 @@ test('form state helpers detect changes', async () => {
   const env = setupFormEnv();
   const helpers = await import('../components/subscription/subscription-helpers.js?' + Date.now());
   const state = helpers.storeInitialFormState();
-  assert.equal(state, '{"1":{"subscribed":true,"start":"00:00","end":"23:59"}}');
+  assert.equal(state, '{"1":{"subscribed":true,"start":"00:00","end":"23:59","paused":false}}');
   helpers.updateSaveButtonState(state);
   assert(env.saveBtn.classList.classes.includes('btn-outline-primary'));
   env.startInput.value = '01:00';

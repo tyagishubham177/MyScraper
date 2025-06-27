@@ -805,6 +805,56 @@ button, .btn {
   opacity: 0.6;
 }
 
+/* Layout improvements for items in the subscription modal */
+#subscriptionModalBody .subscription-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#subscriptionModalBody .subscription-item .time-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Toggle style for pause switch */
+#subscriptionModalBody .pause-toggle {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 2.2em;
+  height: 1.2em;
+  background-color: #adb5bd;
+  border-radius: 1.2em;
+  position: relative;
+  outline: none;
+  transition: background-color 0.2s ease;
+}
+
+#subscriptionModalBody .pause-toggle::after {
+  content: '';
+  position: absolute;
+  top: 0.1em;
+  left: 0.1em;
+  width: 1em;
+  height: 1em;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+#subscriptionModalBody .pause-toggle:checked {
+  background-color: #0d6efd;
+}
+
+#subscriptionModalBody .pause-toggle:checked::after {
+  transform: translateX(1em);
+}
+
 /* Styling for settings offcanvas so it matches the blurred card look */
 #settingsPane.offcanvas {
   background-color: rgba(255, 255, 255, 0.85);
