@@ -120,7 +120,7 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     listItem.appendChild(mainToggleDiv);
 
     const timeDiv = document.createElement('div');
-    timeDiv.className = 'time-controls d-flex align-items-center ms-4 flex-wrap';
+    timeDiv.className = 'time-controls d-flex align-items-center ms-4 flex-nowrap';
     const startInput = document.createElement('input');
     startInput.type = 'time';
     startInput.className = 'form-control form-control-sm sub-time-start me-2';

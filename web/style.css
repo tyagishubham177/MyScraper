@@ -808,7 +808,7 @@ button, .btn {
 /* Layout improvements for items in the subscription modal */
 #subscriptionModalBody .subscription-item {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
@@ -817,7 +817,8 @@ button, .btn {
 #subscriptionModalBody .subscription-item .time-controls {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
   gap: 0.5rem;
 }
 
