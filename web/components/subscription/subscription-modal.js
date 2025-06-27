@@ -102,7 +102,7 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     listItem.className = 'list-group-item subscription-item mb-3 p-3 border rounded';
 
     const mainToggleDiv = document.createElement('div');
-    mainToggleDiv.className = 'form-check mb-2';
+    mainToggleDiv.className = 'form-check mb-0';
     const mainCheckbox = document.createElement('input');
     mainCheckbox.type = 'checkbox';
     mainCheckbox.id = `sub-check-${recipientId}-${product.id}`;
