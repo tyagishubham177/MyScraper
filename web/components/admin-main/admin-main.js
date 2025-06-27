@@ -169,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
           const token = localStorage.getItem('authToken');
+          const recipients = [...new Set([...baseRecipients, ...extraRecipients])];
           const response = await fetch('/api/email-blast', {
             method: 'POST',
             headers: {
@@ -181,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
               plainBody,
               recipientType,
               adminEmail: localStorage.getItem('adminEmail'), // For "self" recipient type
-              extraRecipients
+              recipients
             })
           });
 

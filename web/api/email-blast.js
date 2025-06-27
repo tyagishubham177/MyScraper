@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 
-  const { subject, htmlBody, plainBody, recipientType, adminEmail, extraRecipients = [] } = req.body;
+  const { subject, htmlBody, plainBody, recipientType, adminEmail, recipients = [], extraRecipients = [] } = req.body;
 
   if (!subject || (!htmlBody && !plainBody)) {
     return res.status(400).json({ message: 'Subject and body (HTML or Plain) are required.' });
@@ -43,38 +43,41 @@ export default async function handler(req, res) {
   }
 
   let targetEmails = [];
+  const addUnique = (email) => {
+    if (email && !targetEmails.includes(email)) {
+      targetEmails.push(email);
+    }
+  };
 
   try {
     const allRecipients = await getRecipientsFromKV();
 
-    if (recipientType === 'self') {
-      if (adminEmail) {
-        targetEmails.push(adminEmail);
-      } else {
-        // Fallback: try to find admin among recipients if email not passed (less ideal)
-        // Or, enforce adminEmail is passed from client for 'self'
-        console.warn("Admin email not provided for 'self' recipient type.");
-        // For safety, if adminEmail is not explicitly provided for 'self', do not send.
-        // This relies on the client sending adminEmail.
-        if (!adminEmail) {
-            return res.status(400).json({ message: 'Admin email required for "self" recipient type and not provided.' });
-        }
-      }
-    } else if (recipientType === 'all') {
-      targetEmails = allRecipients.map(r => r.email);
-    } else if (recipientType === 'non-subscribers') {
-      const allSubscriptions = await getSubscriptionsFromKV();
-      const subscribedRecipientIds = new Set();
-      allSubscriptions.forEach(sub => {
-        // Treat paused subscriptions as still subscribed to exclude them
-        subscribedRecipientIds.add(sub.recipient_id);
-      });
-
-      targetEmails = allRecipients
-        .filter(r => !subscribedRecipientIds.has(r.id))
-        .map(r => r.email);
+    if (Array.isArray(recipients) && recipients.length > 0) {
+      recipients.forEach(addUnique);
     } else {
-      return res.status(400).json({ message: 'Invalid recipient type specified.' });
+      if (recipientType === 'self') {
+        if (adminEmail) {
+          addUnique(adminEmail);
+        } else {
+          console.warn("Admin email not provided for 'self' recipient type.");
+          return res.status(400).json({ message: 'Admin email required for "self" recipient type and not provided.' });
+        }
+      } else if (recipientType === 'all') {
+        allRecipients.forEach(r => addUnique(r.email));
+      } else if (recipientType === 'non-subscribers') {
+        const allSubscriptions = await getSubscriptionsFromKV();
+        const subscribedRecipientIds = new Set();
+        allSubscriptions.forEach(sub => {
+          // Treat paused subscriptions as still subscribed to exclude them
+          subscribedRecipientIds.add(sub.recipient_id);
+        });
+
+        allRecipients.forEach(r => {
+          if (!subscribedRecipientIds.has(r.id)) addUnique(r.email);
+        });
+      } else {
+        return res.status(400).json({ message: 'Invalid recipient type specified.' });
+      }
     }
 
     // Merge any extra recipients provided by the admin
