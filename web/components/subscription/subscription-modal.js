@@ -23,11 +23,13 @@ async function updateSubscription(item, recipientId, results) {
   const isSubscribed = mainCheckbox.checked;
   const startInput = item.querySelector('.sub-time-start');
   const endInput = item.querySelector('.sub-time-end');
+  const pauseToggle = item.querySelector('.pause-toggle');
   const startVal = startInput ? startInput.value : '00:00';
   const endVal = endInput ? endInput.value : '23:59';
+  const pausedVal = pauseToggle ? pauseToggle.checked : false;
   try {
     if (isSubscribed) {
-      const payload = { recipient_id: recipientId, product_id: productId, start_time: startVal, end_time: endVal };
+      const payload = { recipient_id: recipientId, product_id: productId, start_time: startVal, end_time: endVal, paused: pausedVal };
       const data = await fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,10 +99,10 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
 
   sortedProducts.forEach(product => {
     const listItem = document.createElement('div');
-    listItem.className = 'list-group-item mb-3 p-3 border rounded';
+    listItem.className = 'list-group-item subscription-item mb-3 p-3 border rounded';
 
     const mainToggleDiv = document.createElement('div');
-    mainToggleDiv.className = 'form-check mb-2';
+    mainToggleDiv.className = 'form-check mb-0';
     const mainCheckbox = document.createElement('input');
     mainCheckbox.type = 'checkbox';
     mainCheckbox.id = `sub-check-${recipientId}-${product.id}`;
@@ -118,7 +120,7 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     listItem.appendChild(mainToggleDiv);
 
     const timeDiv = document.createElement('div');
-    timeDiv.className = 'd-flex align-items-center ms-4';
+    timeDiv.className = 'time-controls d-flex align-items-center ms-4 flex-nowrap';
     const startInput = document.createElement('input');
     startInput.type = 'time';
     startInput.className = 'form-control form-control-sm sub-time-start me-2';
@@ -126,14 +128,33 @@ function renderSubscriptionProductsInModal(allProducts, recipientSubscriptions, 
     startInput.dataset.productId = product.id;
     const endInput = document.createElement('input');
     endInput.type = 'time';
-    endInput.className = 'form-control form-control-sm sub-time-end';
+    endInput.className = 'form-control form-control-sm sub-time-end me-2';
     endInput.value = (timeMap[product.id]?.end) || '23:59';
     endInput.dataset.productId = product.id;
     timeDiv.appendChild(startInput);
     timeDiv.appendChild(endInput);
+
+    const pauseGroup = document.createElement('div');
+    pauseGroup.className = 'form-check form-switch ms-2';
+    const pauseToggle = document.createElement('input');
+    pauseToggle.type = 'checkbox';
+    pauseToggle.className = 'form-check-input pause-toggle';
+    pauseToggle.id = `pause-${recipientId}-${product.id}`;
+    pauseToggle.dataset.productId = product.id;
+    const paused = recipientSubscriptions.find(s => s.product_id === product.id)?.paused;
+    pauseToggle.checked = !!paused;
+    const pauseLabel = document.createElement('label');
+    pauseLabel.className = 'form-check-label';
+    pauseLabel.setAttribute('for', pauseToggle.id);
+    pauseLabel.textContent = 'Paused';
+    pauseGroup.appendChild(pauseToggle);
+    pauseGroup.appendChild(pauseLabel);
+    timeDiv.appendChild(pauseGroup);
+
     listItem.appendChild(timeDiv);
 
-    startInput.disabled = endInput.disabled = !mainCheckbox.checked;
+    startInput.disabled = endInput.disabled = pauseToggle.disabled = !mainCheckbox.checked;
+    if (pauseToggle.checked) listItem.classList.add('paused');
 
     modalBodyElement.appendChild(listItem);
   });
@@ -181,9 +202,24 @@ function handleSubscriptionToggle(event) {
     const item = checkbox.closest('.list-group-item');
     const startInput = item.querySelector('.sub-time-start');
     const endInput = item.querySelector('.sub-time-end');
+    const pauseToggle = item.querySelector('.pause-toggle');
     if (startInput && endInput) {
       startInput.disabled = endInput.disabled = !checkbox.checked;
     }
+    if (pauseToggle) {
+      pauseToggle.disabled = !checkbox.checked;
+    }
+  }
+  updateSaveButtonStateHelper(initialSubscriptionDataForModal);
+}
+
+function handlePauseToggle(event) {
+  const toggle = event.target.closest('.pause-toggle');
+  if (!toggle) return;
+  const item = toggle.closest('.list-group-item');
+  if (item) {
+    if (toggle.checked) item.classList.add('paused');
+    else item.classList.remove('paused');
   }
   updateSaveButtonStateHelper(initialSubscriptionDataForModal);
 }
@@ -284,6 +320,11 @@ export function initSubscriptionsUI() {
         handleSubscriptionToggle(event);
       } else if (event.target.classList.contains('sub-time-start') || event.target.classList.contains('sub-time-end')) {
         updateSaveButtonStateHelper(initialSubscriptionDataForModal);
+      }
+    });
+    modalBody.addEventListener('click', event => {
+      if (event.target.classList.contains('pause-toggle')) {
+        handlePauseToggle(event);
       }
     });
   }

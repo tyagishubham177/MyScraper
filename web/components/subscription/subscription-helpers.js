@@ -40,10 +40,12 @@ export function getModalFormState() {
     if (!checkbox) return;
     const startInput = item.querySelector('.sub-time-start');
     const endInput = item.querySelector('.sub-time-end');
+    const pauseToggle = item.querySelector('.pause-toggle');
     formData[checkbox.dataset.productId] = {
       subscribed: checkbox.checked,
       start: startInput ? startInput.value : '00:00',
-      end: endInput ? endInput.value : '23:59'
+      end: endInput ? endInput.value : '23:59',
+      paused: pauseToggle ? pauseToggle.checked : false
     };
   });
   return JSON.stringify(formData);
