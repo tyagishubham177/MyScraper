@@ -801,6 +801,10 @@ button, .btn {
   margin-left: 0;
 }
 
+#subscriptionModalBody .list-group-item.paused {
+  opacity: 0.6;
+}
+
 /* Styling for settings offcanvas so it matches the blurred card look */
 #settingsPane.offcanvas {
   background-color: rgba(255, 255, 255, 0.85);
