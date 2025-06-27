@@ -26,7 +26,13 @@
     <p id="welcome-msg" class="mb-4 fw-bold initial"></p>
     <div id="user-subscriptions-container"></div>
   </div>
-  <button type="button" class="fab" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
+
+  <!-- New Help FAB -->
+  <button type="button" class="fab" id="help-fab" aria-label="Help">
+    <i data-lucide="help-circle"></i>
+  </button>
+
+  <button type="button" class="fab" id="user-settings-fab" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
     <i data-lucide="sliders"></i>
   </button>
 
@@ -36,6 +42,8 @@
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
+      <button type="button" id="user-how-to-use-btn" class="btn btn-success w-100 mb-3"><i data-lucide="help-circle" class="me-1"></i>How to use the app</button>
+      <hr class="mb-4">
       <div class="mb-4">
         <h6 class="mb-2">Account</h6>
         <button type="button" id="change-username-btn" class="btn btn-primary w-100 mb-2"><i data-lucide="user" class="me-1"></i>Change Display Name</button>
@@ -68,6 +76,25 @@
       </div>
     </div>
   </div>
+
+  <!-- Under Development Modal -->
+  <div class="modal fade" id="underDevelopmentModal" tabindex="-1" aria-labelledby="underDevelopmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="underDevelopmentModalLabel">Information</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>This feature is currently under development. Please check back later!</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="../../particles.js"></script>
   <script src="../../lucide-icons.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -188,6 +215,59 @@
         console.error('Failed to load subscription UI', e);
       }
       await initUserSubscriptionsUI();
+
+      // Help FAB and Modal Initialization
+      const helpFab = document.getElementById('help-fab');
+      const underDevelopmentModalElement = document.getElementById('underDevelopmentModal');
+      const userHowToUseBtn = document.getElementById('user-how-to-use-btn'); // Get the new button
+      let underDevelopmentModal;
+
+      if (underDevelopmentModalElement) {
+        underDevelopmentModal = new bootstrap.Modal(underDevelopmentModalElement);
+      }
+
+      // Logic for the "How to use the app" button in user settings
+      if (userHowToUseBtn && underDevelopmentModal) {
+        userHowToUseBtn.addEventListener('click', () => {
+          const settingsPaneElement = document.getElementById('settingsPane');
+          if (settingsPaneElement && settingsPaneElement.classList.contains('show')) {
+              const settingsOffcanvas = bootstrap.Offcanvas.getInstance(settingsPaneElement);
+              if (settingsOffcanvas) {
+                  settingsOffcanvas.hide();
+              }
+          }
+          // Ensure modal is shown after offcanvas starts closing
+          setTimeout(() => {
+              underDevelopmentModal.show();
+          }, 150);
+        });
+      }
+
+      if (helpFab && underDevelopmentModal) { // Ensure both elements exist
+        helpFab.classList.add('active-glow'); // Start glowing
+
+        helpFab.addEventListener('click', () => {
+          underDevelopmentModal.show();
+        });
+
+        const helpFabModalCloseListener = () => {
+          if (helpFab.style.display !== 'none') {
+              helpFab.classList.remove('active-glow');
+              helpFab.style.display = 'none';
+          }
+          underDevelopmentModalElement.removeEventListener('hidden.bs.modal', helpFabModalCloseListener);
+        };
+
+        // Add listener for when the modal is shown
+        underDevelopmentModalElement.addEventListener('shown.bs.modal', () => {
+          // Check if the FAB is visible and glowing (implying it was the trigger)
+          if (helpFab.style.display !== 'none' && helpFab.classList.contains('active-glow')) {
+            // Add the specific close listener for the FAB
+            underDevelopmentModalElement.addEventListener('hidden.bs.modal', helpFabModalCloseListener);
+          }
+        });
+      }
+
       hideGlobalLoader();
       const gmailLink = document.getElementById('feedbackGmail');
       const to = 'linktracker03@gmail.com';

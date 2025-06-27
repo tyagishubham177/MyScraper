@@ -263,6 +263,55 @@ button, .btn {
       transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
     }
 
+#settings-fab {
+  /* Standard FAB styling is already applied by .fab */
+  /* Specific adjustments if needed, but for now it's the base */
+}
+
+#help-fab {
+  position: fixed;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  z-index: 1051; /* Slightly above settings FAB if they were to overlap */
+  transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out, opacity 0.3s ease-out;
+  right: 20px;
+  bottom: 90px; /* Position above the settings FAB (56px height + 20px bottom + 14px spacing) */
+  background-color: #ffc107; /* A distinct yellow/orange color */
+  color: #212529; /* Darker text for contrast on yellow */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+#help-fab:hover {
+  background-color: #e0a800; /* Darker yellow on hover */
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+#help-fab i,
+#help-fab svg {
+  width: 28px; /* Slightly larger icon */
+  height: 28px;
+}
+
+/* Glowing/Shimmering Animation for Help FAB */
+@keyframes helpFabGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.7), 0 0 12px rgba(255, 193, 7, 0.5), 0 4px 8px rgba(0,0,0,0.2);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 193, 7, 1), 0 0 24px rgba(255, 193, 7, 0.7), 0 6px 12px rgba(0,0,0,0.3);
+  }
+}
+
+#help-fab.active-glow { /* Class to toggle animation */
+  animation: helpFabGlow 1.5s infinite ease-in-out;
+}
+
+
 /* --------------- NEW UI SECTIONS STYLING --------------- */
 
 /* General Card Styling for new sections */
