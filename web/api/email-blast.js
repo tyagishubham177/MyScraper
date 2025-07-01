@@ -1,5 +1,5 @@
 import { kv } from '@vercel/kv';
-import { requireAdmin } from './auth.js'; // Assuming auth.js is in the same directory
+import { requireAdmin } from '../utils/auth.js'; 
 import nodemailer from 'nodemailer';
 
 async function getRecipientsFromKV() {

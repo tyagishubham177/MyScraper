@@ -1,5 +1,5 @@
 import { kv } from '@vercel/kv';
-import { requireAdmin } from './auth.js';
+import { requireAdmin } from '../utils/auth.js';
 
 async function handleGet(req, res) {
   try {
