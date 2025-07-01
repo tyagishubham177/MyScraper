@@ -274,8 +274,9 @@ async def main():
 
         await browser.close()
 
-    print("\nStock check finished.")
-    await save_stock_counters(session, stock_counters)
+        print("\nStock check finished.")
+        await save_stock_counters(session, stock_counters)
+
 
     run_timestamp_utc = datetime.now(timezone.utc)
     ist_offset = timedelta(hours=5, minutes=30)
