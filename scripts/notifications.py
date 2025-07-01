@@ -88,6 +88,7 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
             <thead>
                 <tr>
                     <th>Product Name</th>
+                    <th>In-Stock Streak</th>
                     <th>Email sent to</th>
                 </tr>
             </thead>
@@ -159,10 +160,12 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
         subscriptions = product_data.get("subscriptions", [])
 
         subscribed_emails_csv, _ = summarize_subscriptions(subscriptions)
+        streak = product_data.get("consecutive_in_stock", 0)
 
         html_output += f"""
     <tr>
         <td><a href="{product_url}">{product_name}</a></td>
+        <td>{streak}</td>
         <td>{subscribed_emails_csv}</td>
     </tr>
 """
