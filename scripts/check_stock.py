@@ -86,7 +86,13 @@ async def save_stock_counters(session, counters):
         ) as resp:
             resp.raise_for_status()
     except Exception as e:
-        print(f"Failed to update stock counters: {e}")
+        message = f"Failed to update stock counters: {e}"
+        if hasattr(e, 'status') and e.status == 401:
+            message += (
+                "\nHint: ensure ADMIN_TOKEN is set and valid. "
+                "Generate a token by POSTing to /api/login on your deployed app."
+            )
+        print(message)
 
 
 def filter_active_subs(subs, current_time):

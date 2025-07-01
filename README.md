@@ -75,7 +75,7 @@ Ready to catch some Lassi? Here’s how to set up the project:
    * `EMAIL_RECIPIENTS` – *(Optional)* A comma-separated list of email addresses to notify by default. In most cases, you won’t set this because notifications are sent per user subscription. If you do set it, everyone here gets notified for every product – use with caution (or maybe just stick to the subscription system!).
    * `F2S_API_KEY` – *(Optional)* Fast2SMS API key for SMS notifications. If provided and if you un-comment the SMS code, the script can send an SMS alert as well.
    * `F2S_NUMBERS` – *(Optional)* Comma-separated phone numbers for SMS (e.g. `91xxxxxxxxxx,91yyyyyyyyyy`).
-   * `ADMIN_TOKEN` – *(Required for GitHub Action)* Token used to authorize API requests from the scheduler.
+  * `ADMIN_TOKEN` – *(Required for GitHub Action)* Token used to authorize API requests from the scheduler. Generate it by POSTing your admin email and password to `/api/login` on your deployed app and copy the returned token into this secret.
    * **For the Web Dashboard (if using Vercel):**
 
      * `GH_REPO` – GitHub repo path in the form `<username>/<repo>` (for your fork if you have one). This is used by the dashboard to query workflow status and runs via GitHub API.
