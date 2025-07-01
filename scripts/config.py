@@ -12,6 +12,7 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_RECIPIENTS = os.getenv("EMAIL_RECIPIENTS")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
 
 # Allow a flexible window for scheduled job runs
 RUN_OFFSET_MINUTES = 15

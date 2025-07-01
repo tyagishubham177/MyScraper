@@ -82,7 +82,7 @@ class MockClientSession:
         self.status_code = status_code
         self.raise_exception = raise_exception
 
-    def get(self, url):
+    def get(self, url, **kwargs):
         if self.raise_exception:
             raise self.raise_exception
         return MockClientResponse(self.response_data, self.status_code)
@@ -197,6 +197,34 @@ async def test_fetch_subscriptions_none_response(monkeypatch):
     monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch_none)
     subscriptions = await check_stock.fetch_subscriptions(None, 1)
     assert subscriptions is None # Or [] depending on desired behavior, current is None
+
+
+@pytest.mark.asyncio
+async def test_save_stock_counters_with_admin_token(monkeypatch):
+    """Ensure Authorization header is sent when ADMIN_TOKEN is set."""
+    captured = {}
+
+    class DummyResp:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+        def raise_for_status(self):
+            captured["raised"] = True
+
+    class DummySession:
+        def put(self, url, json=None, headers=None):
+            captured["url"] = url
+            captured["json"] = json
+            captured["headers"] = headers
+            return DummyResp()
+
+    monkeypatch.setattr(config, "APP_BASE_URL", "http://api")
+    monkeypatch.setattr(config, "ADMIN_TOKEN", "secret")
+    await check_stock.save_stock_counters(DummySession(), {"p": 1})
+    assert captured["headers"]["Authorization"] == "Bearer secret"
 
 
 @pytest.mark.asyncio
