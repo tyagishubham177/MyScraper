@@ -60,6 +60,23 @@ async def fetch_subscriptions(session, product_id):
     return await fetch_api_data(session, url)
 
 
+async def load_stock_counters(session):
+    url = f"{config.APP_BASE_URL}/api/stock-counters"
+    data = await fetch_api_data(session, url)
+    if isinstance(data, dict):
+        return data
+    return {}
+
+
+async def save_stock_counters(session, counters):
+    url = f"{config.APP_BASE_URL}/api/stock-counters"
+    try:
+        async with session.put(url, json={"counters": counters}) as resp:
+            resp.raise_for_status()
+    except Exception as e:
+        print(f"Failed to update stock counters: {e}")
+
+
 def filter_active_subs(subs, current_time):
     active = []
     for sub in subs:
@@ -171,21 +188,25 @@ async def process_product(session, page, product_info, recipients_map, current_t
 
     if in_stock:
         print(f"✅ Product '{effective_name}' is IN STOCK.")
-        current_summary, sent_count = await notify_users(effective_name, product_url, subs, recipients_map, current_time)
+        current_summary, sent_count = await notify_users(
+            effective_name, product_url, subs, recipients_map, current_time
+        )
     else:
         print(f"❌ Product '{effective_name}' is OUT OF STOCK.")
         current_summary = [
             {
                 'user_email': recipients_map.get(sub.get('recipient_id'), 'Email not found'),
                 'status': 'Not Sent - Out of Stock'
-            } for sub in subs
+            }
+            for sub in subs
         ]
         sent_count = 0
 
     return {
         'product_name': effective_name,
         'product_url': product_url,
-        'subscriptions': current_summary
+        'subscriptions': current_summary,
+        'in_stock': bool(in_stock)
     }, sent_count, pincode_entered
 
 async def main():
@@ -205,6 +226,10 @@ async def main():
 
         subs_map = await load_subscriptions(session)
 
+        stock_counters = await load_stock_counters(session)
+        if not isinstance(stock_counters, dict):
+            stock_counters = {}
+
         current_time = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).time()
 
         async with async_playwright() as pw:
@@ -214,9 +239,21 @@ async def main():
 
             for product_info in all_products:
                 summary, sent, pincode_entered = await process_product(
-                    session, page, product_info, recipients_map, current_time, pincode_entered, subs_map
+                    session,
+                    page,
+                    product_info,
+                    recipients_map,
+                    current_time,
+                    pincode_entered,
+                    subs_map,
                 )
                 if summary:
+                    pid = product_info.get('id')
+                    if summary.get('in_stock'):
+                        stock_counters[pid] = stock_counters.get(pid, 0) + 1
+                    else:
+                        stock_counters[pid] = 0
+                    summary['consecutive_in_stock'] = stock_counters.get(pid, 0)
                     summary_email_data.append(summary)
                 total_sent += sent
 
@@ -226,6 +263,7 @@ async def main():
         await browser.close()
 
     print("\nStock check finished.")
+    await save_stock_counters(session, stock_counters)
 
     run_timestamp_utc = datetime.now(timezone.utc)
     ist_offset = timedelta(hours=5, minutes=30)
@@ -233,11 +271,7 @@ async def main():
     month_name = run_timestamp_ist.strftime('%B')
     run_timestamp_str = run_timestamp_ist.strftime(f'%d-{month_name}-%Y / %I:%M%p') + ", IST"
     subject = f"Stock Check Summary: {run_timestamp_str} - {total_sent} User Notifications Sent"
-    sent_only_data = [
-        pd for pd in summary_email_data
-        if any(sub.get('status') == 'Sent' for sub in pd.get('subscriptions', []))
-    ]
-    summary_body = format_summary_email_body(run_timestamp_str, sent_only_data, total_sent)
+    summary_body = format_summary_email_body(run_timestamp_str, summary_email_data, total_sent)
 
     if total_sent > 0:
         if config.EMAIL_SENDER and config.EMAIL_HOST: # Also check EMAIL_HOST for sending

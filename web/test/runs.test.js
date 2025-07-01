@@ -133,7 +133,7 @@ function stubFetch(responses) {
 test('fetchScraperDecisions chooses correct log file', async () => {
   global.localStorage = { getItem: () => 'tok' };
   stubFetch([
-    ['/api/logs', { ok: true, blob: async () => 'blob1' }]
+    ['/api/github?action=logs', { ok: true, blob: async () => 'blob1' }]
   ]);
   global.JSZip = {
     async loadAsync(blob){
@@ -148,7 +148,7 @@ test('fetchScraperDecisions chooses correct log file', async () => {
 test('fetchScraperDecisions falls back to alternative names', async () => {
   global.localStorage = { getItem: () => 'tok' };
   stubFetch([
-    ['/api/logs', { ok: true, blob: async () => 'blob2' }]
+    ['/api/github?action=logs', { ok: true, blob: async () => 'blob2' }]
   ]);
   global.JSZip = {
     async loadAsync(){
@@ -164,8 +164,8 @@ test('loadOverview populates info and summary', async () => {
   const col = makeCol(3, 'http://run', 'overview', pane);
   global.localStorage = { getItem: () => 'tok' };
   stubFetch([
-    ['/api/run', { ok: true, json: async () => ({ html_url:'http://gh', status:'done', conclusion:'success', started_at:'2024-01-01T00:00:00Z', completed_at:'2024-01-01T01:00:00Z' }) }],
-    ['/api/logs', { ok: true, blob: async () => 'blob3' }]
+    ['/api/github?action=run', { ok: true, json: async () => ({ html_url:'http://gh', status:'done', conclusion:'success', started_at:'2024-01-01T00:00:00Z', completed_at:'2024-01-01T01:00:00Z' }) }],
+    ['/api/github?action=logs', { ok: true, blob: async () => 'blob3' }]
   ]);
   global.JSZip = {
     async loadAsync(){
@@ -186,7 +186,7 @@ test('loadLogs fetches and filters log text', async () => {
   const col = { dataset:{ runId:'4' }, querySelector: () => logsPane };
   global.localStorage = { getItem: () => 'tok' };
   stubFetch([
-    ['/api/logs', { ok: true, blob: async () => 'blob4' }]
+    ['/api/github?action=logs', { ok: true, blob: async () => 'blob4' }]
   ]);
   global.JSZip = { async loadAsync(){ return { files:{ 'runstockchecker.log': { async: async () => 'one\ntwo match' } } }; } };
   await loadLogs(col, 4);
@@ -210,8 +210,8 @@ test('loadArtifacts builds carousel and counter', async () => {
   const col = makeCol(5, 'u', 'artifacts', pane);
   global.localStorage = { getItem: () => 'tok' };
   stubFetch([
-    ['/api/run', { ok: true, json: async () => ({ artifacts:[{ id:1 }] }) }],
-    ['/api/artifact', { ok: true, blob: async () => 'blob5' }]
+    ['/api/github?action=run', { ok: true, json: async () => ({ artifacts:[{ id:1 }] }) }],
+    ['/api/github?action=artifact', { ok: true, blob: async () => 'blob5' }]
   ]);
   global.JSZip = { async loadAsync(){ return { files:{ 'img.png': { async: async () => 'zzz' } } }; } };
   await loadArtifacts(col, 5);
@@ -235,8 +235,8 @@ test('fetchRuns populates accordion and hooks events', async () => {
   };
   global.localStorage = { getItem: () => 'tok' };
   stubFetch([
-    ['/api/runs', { ok: true, json: async () => ({ runs:[{ id:6, url:'u', created_at:'2024-01-01T00:00:00Z', conclusion:'success' }] }) }],
-    ['/api/run', { ok: true, json: async () => ({ html_url:'x', status:'done', conclusion:'success', started_at:'2024-01-01T00:00:00Z', completed_at:'2024-01-01T01:00:00Z', artifacts:[] }) }]
+    ['/api/github?action=runs', { ok: true, json: async () => ({ runs:[{ id:6, url:'u', created_at:'2024-01-01T00:00:00Z', conclusion:'success' }] }) }],
+    ['/api/github?action=run', { ok: true, json: async () => ({ html_url:'x', status:'done', conclusion:'success', started_at:'2024-01-01T00:00:00Z', completed_at:'2024-01-01T01:00:00Z', artifacts:[] }) }]
   ]);
   global.JSZip = { async loadAsync(){ return { files:{ } }; } };
   await fetchRuns();

@@ -189,11 +189,13 @@ def test_format_summary_email_body():
         {
             "product_name": "Prod",
             "product_url": "http://x",
+            "consecutive_in_stock": 2,
             "subscriptions": [{"user_email": "u@example.com", "status": "Sent"}],
         }
     ]
     html = notifications.format_summary_email_body("run", data, 1)
     assert "<a href=\"http://x\">Prod</a>" in html
+    assert "<td>2</td>" in html
 
 
 def test_format_summary_email_body_scenarios(capsys):
@@ -210,50 +212,62 @@ def test_format_summary_email_body_scenarios(capsys):
     summary_data_various_statuses = [
         {
             "product_name": "Prod A", "product_url": "http://a",
+            "consecutive_in_stock": 1,
             "subscriptions": [{"user_email": "a@ex.com", "status": "Sent"}]
         },
         {
             "product_name": "Prod B", "product_url": "http://b",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "b@ex.com", "status": "Not Sent - Out of Stock"}]
         },
         {
             "product_name": "Prod C", "product_url": "http://c",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "c@ex.com", "status": "Skipped - Subscription Not Due"}]
         },
         {
             "product_name": "Prod D", "product_url": "http://d",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "d@ex.com", "status": "Skipped - Invalid Subscription Object"}]
         },
         {
             "product_name": "Prod E", "product_url": "http://e",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "e@ex.com", "status": "Error fetching subscriptions"}]
         },
         {
             "product_name": "Prod F", "product_url": "http://f",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "f@ex.com", "status": "Not Sent - Delayed"}]
         },
         {
             "product_name": "Prod G", "product_url": "http://g",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "g@ex.com", "status": "Not Sent - Scraping Error"}]
         },
         {
             "product_name": "Prod H", "product_url": "http://h",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "h@ex.com", "status": "Skipped - Status Unknown"}]
         },
         {
             "product_name": "Prod I", "product_url": "http://i",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "i@ex.com", "status": "Not Sent - Email Send Error"}]
         },
         {
             "product_name": "Prod J", "product_url": "http://j",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "j@ex.com", "status": "Not Sent - Recipient Email Missing"}]
         },
         {
             "product_name": "Prod K", "product_url": "http://k",
+            "consecutive_in_stock": 0,
             "subscriptions": [{"user_email": "k@ex.com", "status": "Not Sent - Email Config Missing"}]
         },
         {
             "product_name": "Prod L - Mixed", "product_url": "http://l",
+            "consecutive_in_stock": 1,
             "subscriptions": [
                 {"user_email": "l1@ex.com", "status": "Sent"},
                 {"user_email": "l2@ex.com", "status": "Not Sent - Out of Stock"} # This state isn't realistic for same product but tests summary
@@ -261,6 +275,7 @@ def test_format_summary_email_body_scenarios(capsys):
         },
     ]
     html_various = notifications.format_summary_email_body("run_various", summary_data_various_statuses, 1)
+    assert "In-Stock Streak" in html_various
     assert "<a href=\"http://a\">Prod A</a>" in html_various
     assert "<a href=\"http://b\">Prod B</a>" in html_various
     assert "<a href=\"http://c\">Prod C</a>" in html_various
@@ -292,6 +307,7 @@ def test_format_summary_email_body_scenarios(capsys):
     summary_data_failed_notify = [
         {
             "product_name": "Prod P - Partial Fail", "product_url": "http://p",
+            "consecutive_in_stock": 1,
             "subscriptions": [
                 {"user_email": "p1_sent@ex.com", "status": "Sent"},
                 {"user_email": "p2_failed@ex.com", "status": "Not Sent - Email Send Error"},
