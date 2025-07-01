@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       return res.status(429).json({ message: `Too many attempts. Try again in ${wait}s`, wait, attempt: attemptData.count });
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_MAIL;
     const passwordHash = process.env.ADMIN_PASSWORD_HASH;
     const jwtSecret = process.env.JWT_SECRET;
 

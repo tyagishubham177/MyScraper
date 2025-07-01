@@ -81,7 +81,7 @@ Ready to catch some Lassi? Here’s how to set up the project:
      * `GH_REPO` – GitHub repo path in the form `<username>/<repo>` (for your fork if you have one). This is used by the dashboard to query workflow status and runs via GitHub API.
      * `GH_TOKEN` – A GitHub Personal Access Token with `workflow` scope. This is needed to read workflow status, recent runs, and to toggle the workflow on/off from the UI.
      * `GH_WORKFLOW` – The workflow filename to control (defaults to `schedule.yml` if not set).
-     * `ADMIN_EMAIL` – The login email for admin access to the dashboard (you choose this).
+    * `ADMIN_MAIL` – The login email for admin access to the dashboard (you choose this).
      * `ADMIN_PASSWORD_HASH` – Bcrypt hash of the admin password. Generate a hash of a strong password and put it here – the dashboard uses it to authenticate you.
      * `JWT_SECRET` – A secret key to sign JWT tokens for the admin session (any random string, the longer the better).
      * *(These last variables are only needed if deploying the web UI on Vercel.)*
@@ -108,7 +108,7 @@ Ready to catch some Lassi? Here’s how to set up the project:
 
    * Have a Vercel account (free tier is fine).
    * Create a new project and select your fork of this repository. Vercel will detect the `web/` directory and deploy it as a static/frontend app with serverless functions. (It’s built to work with the Vercel platform out-of-the-box.)
-   * Set the environment variables on Vercel for your project (particularly the `GH_*` ones, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, etc. from step 2 above). Ensure the variables related to GitHub match your repo and token.
+   * Set the environment variables on Vercel for your project (particularly the `GH_*` ones, `ADMIN_MAIL`, `ADMIN_PASSWORD_HASH`, etc. from step 2 above). Ensure the variables related to GitHub match your repo and token.
    * Deploy the app. Once deployed, visit the URL. You should see a login screen. Log in with the admin credentials you configured.
    * After login, you’ll see the current status (whether the GitHub Action schedule is active), a list of recent runs with their timestamps and outcomes, and sections to add products or recipients. You can add new product URLs to watch, add recipients (email addresses to notify), and subscribe recipients to products – all through this UI. No coding or manual JSON editing required 🎉.
    * You can also toggle the scheduler on/off (for example, turn it off after you finally secure your lassi stock, and back on when you need it again). The dashboard communicates with GitHub via the token to do this.
