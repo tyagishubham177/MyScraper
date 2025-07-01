@@ -296,7 +296,7 @@ def test_format_summary_email_body_scenarios(capsys):
         {"product_name": "Prod O No Subs", "product_url": "http://o"},
     ]
     html_missing_keys = notifications.format_summary_email_body("run_missing", summary_data_missing_keys, 0)
-    assert "<a href=\"http://m_no_name\">N/A</a>" in html_missing_keys  # For Prod M
+    assert "http://m_no_name" not in html_missing_keys  # Skip products missing name
     assert "<a href=\"#\">Prod N No URL</a>" in html_missing_keys  # For Prod N
     assert "<a href=\"http://o\">Prod O No Subs</a>" in html_missing_keys
 

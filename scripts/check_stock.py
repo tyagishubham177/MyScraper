@@ -19,9 +19,9 @@ def within_time_window(start_str: str, end_str: str, now: dt_time) -> bool:
         return start <= now <= end
     return now >= start or now <= end
 
-async def fetch_api_data(session, url):
+async def fetch_api_data(session, url, headers=None):
     try:
-        async with session.get(url) as response:
+        async with session.get(url, headers=headers) as response:
             response.raise_for_status()
             return await response.json()
     except Exception as e:
@@ -62,7 +62,12 @@ async def fetch_subscriptions(session, product_id):
 
 async def load_stock_counters(session):
     url = f"{config.APP_BASE_URL}/api/stock-counters"
-    data = await fetch_api_data(session, url)
+    headers = (
+        {"Authorization": f"Bearer {config.ADMIN_TOKEN}"}
+        if config.ADMIN_TOKEN
+        else None
+    )
+    data = await fetch_api_data(session, url, headers=headers)
     if isinstance(data, dict):
         return data
     return {}
@@ -70,8 +75,15 @@ async def load_stock_counters(session):
 
 async def save_stock_counters(session, counters):
     url = f"{config.APP_BASE_URL}/api/stock-counters"
+    headers = (
+        {"Authorization": f"Bearer {config.ADMIN_TOKEN}"}
+        if config.ADMIN_TOKEN
+        else None
+    )
     try:
-        async with session.put(url, json={"counters": counters}) as resp:
+        async with session.put(
+            url, json={"counters": counters}, headers=headers
+        ) as resp:
             resp.raise_for_status()
     except Exception as e:
         print(f"Failed to update stock counters: {e}")
