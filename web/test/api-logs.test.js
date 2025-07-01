@@ -13,14 +13,14 @@ function makeRes() {
 }
 
 async function load(adminReturn) {
-  const mod = await import('../api/logs.js?' + Date.now());
+  const mod = await import('../api/github.js?' + Date.now());
   mod.__setRequireAdmin(() => adminReturn);
   return mod;
 }
 
 test('rejects non-GET', async () => {
   const res = makeRes();
-  const { default: handler } = await import('../api/logs.js?' + Date.now());
+  const { default: handler } = await import('../api/github.js?' + Date.now());
   await handler({ method: 'POST' }, res);
   assert.equal(res.code, 405);
   assert.equal(res.sent, 'Method Not Allowed');
@@ -29,14 +29,14 @@ test('rejects non-GET', async () => {
 test('requires admin', async () => {
   const { default: handler } = await load(null);
   const res = makeRes();
-  await handler({ method: 'GET', query:{} }, res);
+  await handler({ method: 'GET', query:{ action:"logs" } }, res);
   assert.equal(res.code, null);
 });
 
 test('missing id', async () => {
   const { default: handler } = await load(true);
   const res = makeRes();
-  await handler({ method: 'GET', query:{} }, res);
+  await handler({ method: 'GET', query:{ action:"logs" } }, res);
   assert.equal(res.code, 400);
   assert.equal(res.sent, 'Missing id');
 });
@@ -47,7 +47,7 @@ test('fetch error', async () => {
   process.env.GH_REPO = 'r';
   process.env.GH_TOKEN = 't';
   const res = makeRes();
-  await handler({ method: 'GET', query:{ id:'2' } }, res);
+  await handler({ method: 'GET', query:{ action:"logs", id:'2' } }, res);
   assert.equal(res.code, 500);
   assert.equal(res.sent, 'no');
 });
@@ -59,7 +59,7 @@ test('successful fetch sends zip', async () => {
   process.env.GH_REPO = 'r';
   process.env.GH_TOKEN = 't';
   const res = makeRes();
-  await handler({ method: 'GET', query:{ id:'2' } }, res);
+  await handler({ method: 'GET', query:{ action:"logs", id:'2' } }, res);
   assert.equal(res.headers['Content-Type'], 'application/zip');
   assert.deepStrictEqual(res.sent, buf);
 });
