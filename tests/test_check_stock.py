@@ -517,6 +517,8 @@ async def test_main_load_recipients_empty(monkeypatch):
     async def mock_load_recipients(session):
         return {}
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients)
+    
+    monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     # Mock other dependencies to prevent actual calls
     async def mock_load_products_generic(session): return [{"id": 1, "name": "Prod", "url": "url"}]
@@ -562,6 +564,7 @@ async def test_main_load_products_none(monkeypatch):
     async def mock_load_recipients_for_main(session): return {1: "test@example.com"}
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
+    monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     from io import StringIO
     import sys
@@ -624,6 +627,7 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
     monkeypatch.setattr(check_stock.config, "EMAIL_HOST_PASSWORD", "pass")
     # monkeypatch.setattr(check_stock.config, "SUMMARY_EMAIL_RECIPIENT", "summary@example.com") # Removed - summary sent to EMAIL_SENDER
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
+    monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     # Mock playwright context for main
     class MockBrowser:
@@ -671,6 +675,7 @@ async def test_main_summary_email_total_sent_zero(monkeypatch):
     monkeypatch.setattr(check_stock.config, "EMAIL_HOST_USER", "user")
     monkeypatch.setattr(check_stock.config, "EMAIL_HOST_PASSWORD", "pass")
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
+    monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     # Mock playwright context for main
     class MockBrowser:
@@ -721,6 +726,7 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
 
     monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", None)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
+    monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     # Mock playwright context for main
     class MockBrowser:
