@@ -60,6 +60,29 @@ async def fetch_subscriptions(session, product_id):
     return await fetch_api_data(session, url)
 
 
+async def login_admin(session):
+    """Fetch an admin token using the login API if credentials are provided."""
+    email = getattr(config, "ADMIN_EMAIL", None)
+    password = getattr(config, "ADMIN_PASSWORD", None)
+    if not email or not password:
+        return None
+
+    url = f"{config.APP_BASE_URL}/api/login"
+    try:
+        async with session.post(url, json={"email": email, "password": password}) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                token = data.get("token")
+                if token:
+                    config.ADMIN_TOKEN = token
+                    return token
+            else:
+                print(f"Admin login failed: {resp.status}")
+    except Exception as e:
+        print(f"Admin login failed: {e}")
+    return None
+
+
 async def load_stock_counters(session):
     url = f"{config.APP_BASE_URL}/api/stock-counters"
     headers = (
@@ -227,6 +250,8 @@ async def main():
     total_sent = 0
 
     async with aiohttp.ClientSession() as session:
+        if not config.ADMIN_TOKEN:
+            await login_admin(session)
         recipients_map = await load_recipients(session)
         if not recipients_map:
             print("No recipients found. Notifications may not be sent.")
