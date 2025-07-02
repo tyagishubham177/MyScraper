@@ -23,6 +23,10 @@ export async function initUserSubscriptionsUI() {
     console.error('Recipient not found');
     return;
   }
+  localStorage.setItem(`recipientId_${email}`, recipient.id);
+  if (recipient.pincode) {
+    localStorage.setItem(`pincode_${email}`, recipient.pincode);
+  }
 
   let subscriptions = await fetchAPI(`/api/subscriptions?recipient_id=${recipient.id}`).catch(() => []);
   const subscribedMap = new Map(subscriptions.map(s => [s.product_id, { ...s, paused: !!s.paused }]));
@@ -301,6 +305,7 @@ export async function initUserSubscriptionsUI() {
 
   render();
   hideGlobalLoader();
+  return recipient;
 }
 
 // Initialization is handled by the page that loads this component

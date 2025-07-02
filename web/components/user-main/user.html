@@ -41,6 +41,11 @@
         <button type="button" id="change-username-btn" class="btn btn-primary w-100 mb-2"><i data-lucide="user" class="me-1"></i>Change Display Name</button>
         <button type="button" id="switch-to-admin-btn" class="btn btn-secondary w-100 mb-2"><i data-lucide="shield" class="me-1"></i>Back to Admin</button>
         <button type="button" id="logout-btn" class="btn btn-danger w-100"><i data-lucide="log-out" class="me-1"></i>Logout</button>
+        <div class="mt-3">
+          <label for="pincode-input" class="form-label">Delivery Pincode</label>
+          <input type="text" id="pincode-input" class="form-control" placeholder="201305">
+          <button type="button" id="save-pincode-btn" class="btn btn-primary w-100 mt-2"><i data-lucide="save" class="me-1"></i>Save Pincode</button>
+        </div>
       </div>
       <hr>
       <div>
@@ -76,7 +81,7 @@
     import { initIcons } from "../icons/icons.js";
     import { initBackground } from "../ui/ui.js";
     import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
-    import { showGlobalLoader, hideGlobalLoader, escapeHTML } from "../utils/utils.js";
+    import { showGlobalLoader, hideGlobalLoader, escapeHTML, fetchAPI } from "../utils/utils.js";
 
     document.addEventListener("DOMContentLoaded", async () => {
       showGlobalLoader();
@@ -188,6 +193,33 @@
         console.error('Failed to load subscription UI', e);
       }
       await initUserSubscriptionsUI();
+      const pincodeInput = document.getElementById('pincode-input');
+      const savePinBtn = document.getElementById('save-pincode-btn');
+      if (pincodeInput) {
+        const storedPin = localStorage.getItem(`pincode_${email}`) || '201305';
+        pincodeInput.value = storedPin;
+      }
+      if (savePinBtn && pincodeInput) {
+        savePinBtn.addEventListener('click', async () => {
+          const pin = (pincodeInput.value || '').trim();
+          if (!/^\d{6}$/.test(pin)) {
+            alert('Enter valid pincode');
+            return;
+          }
+          const rid = localStorage.getItem(`recipientId_${email}`);
+          if (!rid) return;
+          try {
+            await fetchAPI(`/api/recipients?id=${rid}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pincode: pin })
+            });
+            localStorage.setItem(`pincode_${email}`, pin);
+          } catch (e) {
+            console.error('Failed to save pincode', e);
+          }
+        });
+      }
       hideGlobalLoader();
       const gmailLink = document.getElementById('feedbackGmail');
       const to = 'linktracker03@gmail.com';
