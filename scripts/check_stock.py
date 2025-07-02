@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone, timedelta, time as dt_time
+import inspect
 import aiohttp
 from playwright.async_api import async_playwright
 import config
@@ -341,7 +342,12 @@ async def main():
                         subs_map,
                     )
                 finally:
-                    await page.close()
+                    if hasattr(page, "close"):
+                        close_fn = page.close
+                        if inspect.iscoroutinefunction(close_fn):
+                            await close_fn()
+                        else:
+                            close_fn()
                 return product_info, summary, sent
 
             tasks = []
