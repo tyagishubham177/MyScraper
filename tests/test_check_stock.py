@@ -574,7 +574,7 @@ async def test_main_load_recipients_empty(monkeypatch):
     # Mock other dependencies to prevent actual calls
     async def mock_load_products_generic(session): return [{"id": 1, "name": "Prod", "url": "url"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_generic)
-    async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs):
+    async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (None, 0, False)  # Ensure this is async
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_generic)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
@@ -670,7 +670,7 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
     # Simulate process_product returning one sent notification
-    async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs):
+    async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):
         return {"product_name": "Test Product", "status": "In Stock", "subscriptions": [{"user_email": "test@example.com", "status":"Sent"}]}, 1, False
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_summary)
 
@@ -720,7 +720,7 @@ async def test_main_summary_email_total_sent_zero(monkeypatch):
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}] # Ensure async mock
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
-    async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs):  # Ensure async mock
+    async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):  # Ensure async mock
         return {"product_name": "Test Product", "status": "Out of Stock", "subscriptions": [{"user_email": "test@example.com", "status":"Not Sent"}]}, 0, False
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_summary)
 
@@ -776,7 +776,7 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
     # Ensure total_sent > 0 so summary sending is attempted
-    async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs):
+    async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return ({"product_name": "Test Product", "status": "In Stock"}, 1, False)
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_generic)
 
@@ -825,7 +825,7 @@ async def test_main_summary_email_exception(monkeypatch):
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
     # Ensure total_sent > 0 for exception path to be tested
-    async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs):
+    async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return ({"product_name": "Test Product", "status": "In Stock"}, 1, False)
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_generic)
 
