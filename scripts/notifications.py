@@ -163,6 +163,8 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
         subscriptions = product_data.get("subscriptions", [])
 
         subscribed_emails_csv, _ = summarize_subscriptions(subscriptions)
+        if subscribed_emails_csv == "N/A":
+            continue  # Skip rows without any subscriber emails
         streak = product_data.get("consecutive_in_stock", 0)
 
         html_output += f"""

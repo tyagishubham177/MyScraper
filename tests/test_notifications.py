@@ -276,18 +276,12 @@ def test_format_summary_email_body_scenarios(capsys):
     ]
     html_various = notifications.format_summary_email_body("run_various", summary_data_various_statuses, 1)
     assert "In-Stock Streak" in html_various
+    # Only products with at least one successful notification should appear
     assert "<a href=\"http://a\">Prod A</a>" in html_various
-    assert "<a href=\"http://b\">Prod B</a>" in html_various
-    assert "<a href=\"http://c\">Prod C</a>" in html_various
-    assert "<a href=\"http://d\">Prod D</a>" in html_various
-    assert "<a href=\"http://e\">Prod E</a>" in html_various
-    assert "<a href=\"http://f\">Prod F</a>" in html_various
-    assert "<a href=\"http://g\">Prod G</a>" in html_various
-    assert "<a href=\"http://h\">Prod H</a>" in html_various
-    assert "<a href=\"http://i\">Prod I</a>" in html_various
-    assert "<a href=\"http://j\">Prod J</a>" in html_various
-    assert "<a href=\"http://k\">Prod K</a>" in html_various
     assert "<a href=\"http://l\">Prod L - Mixed</a>" in html_various
+    # Products without sent notifications should be omitted
+    for prod_letter in ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]:
+        assert f"http://{prod_letter}" not in html_various
 
     # 3. Missing keys in product items
     summary_data_missing_keys = [
@@ -297,8 +291,9 @@ def test_format_summary_email_body_scenarios(capsys):
     ]
     html_missing_keys = notifications.format_summary_email_body("run_missing", summary_data_missing_keys, 0)
     assert "http://m_no_name" not in html_missing_keys  # Skip products missing name
-    assert "<a href=\"#\">Prod N No URL</a>" in html_missing_keys  # For Prod N
-    assert "<a href=\"http://o\">Prod O No Subs</a>" in html_missing_keys
+    # Products with no valid subscriptions should be omitted
+    assert "Prod N No URL" not in html_missing_keys
+    assert "Prod O No Subs" not in html_missing_keys
 
     # 4. Product with no subscriptions (already covered by Prod O in missing keys)
     # and product with subscriptions, but all are in ignorable statuses (Prod C-H, F already cover this)
