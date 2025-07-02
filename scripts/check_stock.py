@@ -65,6 +65,7 @@ async def login_admin(session):
     email = getattr(config, "ADMIN_EMAIL", None)
     password = getattr(config, "ADMIN_PASSWORD", None)
     if not email or not password:
+        print("Admin credentials not provided; skipping login.")
         return None
 
     url = f"{config.APP_BASE_URL}/api/login"
@@ -75,9 +76,12 @@ async def login_admin(session):
                 token = data.get("token")
                 if token:
                     config.ADMIN_TOKEN = token
+                    print("Admin login successful.")
                     return token
+                print("Admin login returned no token")
             else:
-                print(f"Admin login failed: {resp.status}")
+                text = await resp.text()
+                print(f"Admin login failed: {resp.status} {text}")
     except Exception as e:
         print(f"Admin login failed: {e}")
     return None
@@ -107,7 +111,23 @@ async def save_stock_counters(session, counters):
         async with session.put(
             url, json={"counters": counters}, headers=headers
         ) as resp:
-            resp.raise_for_status()
+            if resp.status == 401:
+                print("Stock counter update unauthorized. Retrying after login.")
+                await login_admin(session)
+                headers = (
+                    {"Authorization": f"Bearer {config.ADMIN_TOKEN}"}
+                    if config.ADMIN_TOKEN
+                    else None
+                )
+                async with session.put(
+                    url, json={"counters": counters}, headers=headers
+                ) as resp_retry:
+                    if resp_retry.status >= 400:
+                        text = await resp_retry.text()
+                        raise Exception(f"{resp_retry.status}: {text}")
+            elif resp.status >= 400:
+                text = await resp.text()
+                raise Exception(f"{resp.status}: {text}")
     except Exception as e:
         print(f"Failed to update stock counters: {e}")
 
