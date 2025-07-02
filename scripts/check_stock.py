@@ -291,19 +291,35 @@ async def main():
 
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
-            page = await browser.new_page()
-            pincode_entered = False
 
+            async def process_single_product(product_info):
+                page = await browser.new_page()
+                try:
+                    summary, sent, _ = await process_product(
+                        session,
+                        page,
+                        product_info,
+                        recipients_map,
+                        current_time,
+                        False,
+                        subs_map,
+                    )
+                finally:
+                    await page.close()
+                return product_info, summary, sent
+
+            tasks = []
             for product_info in all_products:
-                summary, sent, pincode_entered = await process_product(
-                    session,
-                    page,
-                    product_info,
-                    recipients_map,
-                    current_time,
-                    pincode_entered,
-                    subs_map,
-                )
+                pid = product_info.get("id")
+                subs = subs_map.get(pid)
+                if not subs:
+                    continue
+                if not filter_active_subs(subs, current_time):
+                    continue
+                tasks.append(process_single_product(product_info))
+
+            results = await asyncio.gather(*tasks)
+            for product_info, summary, sent in results:
                 if summary:
                     pid = product_info.get('id')
                     if summary.get('in_stock'):
@@ -313,9 +329,6 @@ async def main():
                     summary['consecutive_in_stock'] = stock_counters.get(pid, 0)
                     summary_email_data.append(summary)
                 total_sent += sent
-
-                delay = getattr(config, 'DELAY_BETWEEN_REQUESTS', 1)
-                await asyncio.sleep(delay)
 
         await browser.close()
 
