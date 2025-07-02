@@ -65,7 +65,7 @@ test('renders products and empty state', async () => {
     },
     createElement: () => makeEl(),
   };
-  global.localStorage = { getItem: key => key === 'userEmail' ? 'test@example.com' : null };
+  global.localStorage = { getItem: key => key === 'userEmail' ? 'test@example.com' : null, setItem(){}, removeItem(){} };
   global.window = { location: { href: '' } };
   global.lucide = { createIcons() {} };
 
@@ -106,7 +106,7 @@ test('renders existing subscription', async () => {
     },
     createElement: () => makeEl(),
   };
-  global.localStorage = { getItem: key => key === 'userEmail' ? 'user@test.com' : null };
+  global.localStorage = { getItem: key => key === 'userEmail' ? 'user@test.com' : null, setItem(){}, removeItem(){} };
   global.window = { location: { href: '' } };
   global.lucide = { createIcons() {} };
 
@@ -151,7 +151,7 @@ function setupEnv() {
     createElement: tag => Object.assign(makeEl(), { tagName: tag, closest(sel){ return sel === 'li[data-product-id]' ? this : null; } })
   };
   global.window = { location: { href: '' }, lucide: { createIcons(){} } };
-  global.localStorage = { getItem: key => key === 'userEmail' ? 'test@example.com' : null };
+  global.localStorage = { getItem: key => key === 'userEmail' ? 'test@example.com' : null, setItem(){}, removeItem(){} };
   return { subsList, allList, searchInput };
 }
 

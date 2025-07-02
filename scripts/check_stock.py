@@ -35,7 +35,10 @@ async def load_recipients(session):
     recipients_url = f"{config.APP_BASE_URL}/api/recipients"
     data = await fetch_api_data(session, recipients_url)
     return {
-        r.get("id"): r.get("email")
+        r.get("id"): {
+            "email": r.get("email"),
+            "pincode": r.get("pincode", config.PINCODE),
+        }
         for r in data or []
         if r.get("id") and r.get("email")
     }
@@ -157,7 +160,8 @@ async def notify_users(effective_name, product_url, subs, recipients_map, curren
     valid_emails = []
     for sub in subs:
         rid = sub.get("recipient_id")
-        email = recipients_map.get(rid)
+        info = recipients_map.get(rid)
+        email = info.get("email") if info else None
         start_t = sub.get("start_time", "00:00")
         end_t = sub.get("end_time", "23:59")
 
@@ -203,7 +207,14 @@ async def notify_users(effective_name, product_url, subs, recipients_map, curren
 
 
 async def process_product(
-    session, page, product_info, recipients_map, current_time, pincode_entered, subs_map
+    session,
+    page,
+    product_info,
+    recipients_map,
+    current_time,
+    pincode_entered,
+    subs_map,
+    pincode,
 ):
     product_id = product_info.get("id")
     product_url = product_info.get("url")
@@ -247,7 +258,7 @@ async def process_product(
     try:
         in_stock, scraped_name = await scraper.check_product_availability(
             product_url,
-            config.PINCODE,
+            pincode,
             page=page,
             skip_pincode=pincode_entered,
         )
@@ -276,15 +287,12 @@ async def process_product(
         )
     else:
         print(f"❌ Product '{effective_name}' is OUT OF STOCK.")
-        current_summary = [
-            {
-                "user_email": recipients_map.get(
-                    sub.get("recipient_id"), "Email not found"
-                ),
-                "status": "Not Sent - Out of Stock",
-            }
-            for sub in subs
-        ]
+        current_summary = []
+        for sub in subs:
+            rid = sub.get("recipient_id")
+            info = recipients_map.get(rid)
+            email = info.get("email") if info else "Email not found"
+            current_summary.append({"user_email": email, "status": "Not Sent - Out of Stock"})
         sent_count = 0
 
     return (
@@ -326,51 +334,60 @@ async def main():
             datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)
         ).time()
 
+        pincode_groups = {}
+        for rid, info in recipients_map.items():
+            pin = info.get("pincode", config.PINCODE)
+            pincode_groups.setdefault(pin, {})[rid] = info
+
         async with async_playwright() as pw:
-            browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
+            for pincode, recips_subset in pincode_groups.items():
+                browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
 
-            async def process_single_product(product_info):
-                page = await browser.new_page()
-                try:
-                    summary, sent, _ = await process_product(
-                        session,
-                        page,
-                        product_info,
-                        recipients_map,
-                        current_time,
-                        False,
-                        subs_map,
-                    )
-                finally:
-                    if hasattr(page, "close"):
-                        close_fn = page.close
-                        if inspect.iscoroutinefunction(close_fn):
-                            await close_fn()
-                        else:
-                            close_fn()
-                return product_info, summary, sent
+                async def process_single_product(product_info):
+                    page = await browser.new_page()
+                    try:
+                        summary, sent, _ = await process_product(
+                            session,
+                            page,
+                            product_info,
+                            recips_subset,
+                            current_time,
+                            False,
+                            {pid: [s for s in subs if s.get("recipient_id") in recips_subset] for pid, subs in subs_map.items()},
+                            pincode,
+                        )
+                    finally:
+                        if hasattr(page, "close"):
+                            close_fn = page.close
+                            if inspect.iscoroutinefunction(close_fn):
+                                await close_fn()
+                            else:
+                                close_fn()
+                    return product_info, summary, sent
 
-            tasks = []
-            for product_info in all_products:
-                pid = product_info.get("id")
-                subs = subs_map.get(pid)
-                if subs is not None and not filter_active_subs(subs, current_time):
-                    continue
-                tasks.append(process_single_product(product_info))
-
-            results = await asyncio.gather(*tasks)
-            for product_info, summary, sent in results:
-                if summary:
+                tasks = []
+                for product_info in all_products:
                     pid = product_info.get("id")
-                    if summary.get("in_stock"):
-                        stock_counters[pid] = stock_counters.get(pid, 0) + 1
-                    else:
-                        stock_counters[pid] = 0
-                    summary["consecutive_in_stock"] = stock_counters.get(pid, 0)
-                    summary_email_data.append(summary)
-                total_sent += sent
+                    subs = subs_map.get(pid)
+                    if subs is not None:
+                        filtered = [s for s in subs if s.get("recipient_id") in recips_subset]
+                        if not filter_active_subs(filtered, current_time):
+                            continue
+                    tasks.append(process_single_product(product_info))
 
-        await browser.close()
+                results = await asyncio.gather(*tasks)
+                for product_info, summary, sent in results:
+                    if summary:
+                        pid = product_info.get("id")
+                        if summary.get("in_stock"):
+                            stock_counters[pid] = stock_counters.get(pid, 0) + 1
+                        else:
+                            stock_counters[pid] = 0
+                        summary["consecutive_in_stock"] = stock_counters.get(pid, 0)
+                        summary_email_data.append(summary)
+                    total_sent += sent
+
+                await browser.close()
 
         print("\nStock check finished.")
         await save_stock_counters(session, stock_counters)

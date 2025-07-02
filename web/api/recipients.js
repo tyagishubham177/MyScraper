@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     case 'POST':
       if (!requireAdmin(req, res)) return;
       try {
-        const { email } = req.body;
+        const { email, pincode } = req.body || {};
 
         if (!email || !/\S+@\S+\.\S+/.test(email)) {
           return res.status(400).json({ message: 'Invalid email address' });
@@ -74,7 +74,8 @@ export default async function handler(req, res) {
 
         const newRecipient = {
           id: String(Date.now()), // Simple ID generation
-          email: email,
+          email,
+          pincode: typeof pincode === 'string' && pincode.trim() ? pincode.trim() : '201305'
         };
 
         currentRecipients.push(newRecipient);
@@ -83,6 +84,31 @@ export default async function handler(req, res) {
       } catch (error) {
         console.error("Error in POST /api/recipients:", error);
         res.status(500).json({ message: 'Error saving recipient to KV', error: error.message });
+      }
+      break;
+
+    case 'PUT':
+      if (!requireAdmin(req, res)) return;
+      try {
+        const { id } = req.query;
+        const { pincode } = req.body || {};
+        if (!id) {
+          return res.status(400).json({ message: 'Recipient ID is required' });
+        }
+        if (!pincode || typeof pincode !== 'string') {
+          return res.status(400).json({ message: 'Invalid pincode' });
+        }
+        const recips = await getRecipientsFromKV();
+        const idx = recips.findIndex(r => r.id === id);
+        if (idx === -1) {
+          return res.status(404).json({ message: 'Recipient not found' });
+        }
+        recips[idx] = { ...recips[idx], pincode: pincode.trim() };
+        await saveRecipientsToKV(recips);
+        res.status(200).json(recips[idx]);
+      } catch (error) {
+        console.error('Error in PUT /api/recipients:', error);
+        res.status(500).json({ message: 'Error updating recipient in KV', error: error.message });
       }
       break;
 
@@ -123,7 +149,7 @@ export default async function handler(req, res) {
       break;
 
     default:
-      res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
       res.status(405).json({ message: `Method ${method} Not Allowed` });
   }
 }
