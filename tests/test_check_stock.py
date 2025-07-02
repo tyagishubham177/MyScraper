@@ -156,7 +156,8 @@ async def test_load_recipients_missing_data(monkeypatch):
     monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch)
     recipients = await check_stock.load_recipients(None)
     assert len(recipients) == 1
-    assert recipients[1] == "valid@example.com"
+    assert recipients[1]["email"] == "valid@example.com"
+    assert recipients[1]["pincode"] == "201305"
 
 
 @pytest.mark.asyncio
@@ -231,12 +232,19 @@ async def test_save_stock_counters_with_admin_token(monkeypatch):
 async def test_process_product_fetch_subscriptions_none(monkeypatch):
     """Test process_product when fetch_subscriptions returns None."""
     product_info = {"id": 1, "name": "Test Product", "url": "http://example.com"}
-    recipients_map = {1: "test@example.com"}
+    recipients_map = {1: {"email": "test@example.com", "pincode": "201305"}}
     current_time = dt_time(12, 0)
     subs_map = {1: None}
 
     summary, sent_count, needs_pin_reset = await check_stock.process_product(
-        None, None, product_info, recipients_map, current_time, False, subs_map
+        None,
+        None,
+        product_info,
+        recipients_map,
+        current_time,
+        False,
+        subs_map,
+        "201305",
     )
     # The function now returns a summary even if fetch_subscriptions is None
     assert summary is not None
@@ -252,12 +260,19 @@ async def test_process_product_fetch_subscriptions_none(monkeypatch):
 async def test_process_product_fetch_subscriptions_empty_list(monkeypatch):
     """Test process_product when fetch_subscriptions returns an empty list."""
     product_info = {"id": 1, "name": "Test Product", "url": "http://example.com"}
-    recipients_map = {1: "test@example.com"}
+    recipients_map = {1: {"email": "test@example.com", "pincode": "201305"}}
     current_time = dt_time(12, 0)
     subs_map = {1: []}
 
     summary, sent_count, needs_pin_reset = await check_stock.process_product(
-        None, None, product_info, recipients_map, current_time, False, subs_map
+        None,
+        None,
+        product_info,
+        recipients_map,
+        current_time,
+        False,
+        subs_map,
+        "201305",
     )
     assert summary is not None
     assert summary["product_name"] == product_info["name"]
@@ -274,12 +289,19 @@ async def test_process_product_fetch_subscriptions_empty_list(monkeypatch):
 async def test_process_product_fetch_subscriptions_invalid_data(monkeypatch):
     """Test process_product when fetch_subscriptions returns non-list data."""
     product_info = {"id": 1, "name": "Test Product", "url": "http://example.com"}
-    recipients_map = {} # No recipients needed as it should fail before that
+    recipients_map = {}  # No recipients needed as it should fail before that
     current_time = dt_time(12, 0)
     subs_map = {1: "not a list"}
 
     summary, sent_count, needs_pin_reset = await check_stock.process_product(
-        None, None, product_info, recipients_map, current_time, False, subs_map
+        None,
+        None,
+        product_info,
+        recipients_map,
+        current_time,
+        False,
+        subs_map,
+        "201305",
     )
     assert summary is not None
     assert summary["product_name"] == product_info["name"]
@@ -298,13 +320,20 @@ async def test_process_product_scraper_exception(monkeypatch):
     monkeypatch.setattr(scraper_module, "check_product_availability", mock_scraper_raises_exception)
 
     product_info = {"id": 1, "name": "Test Product", "url": "http://example.com"}
-    recipients_map = {1: "test@example.com"}
+    recipients_map = {1: {"email": "test@example.com", "pincode": "201305"}}
     current_time = dt_time(12, 0)
 
     subs_map = {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
 
     summary, sent_count, needs_pin_reset = await check_stock.process_product(
-        None, None, product_info, recipients_map, current_time, False, subs_map
+        None,
+        None,
+        product_info,
+        recipients_map,
+        current_time,
+        False,
+        subs_map,
+        "201305",
     )
     assert summary is not None
     assert summary["product_name"] == product_info["name"]
@@ -324,7 +353,14 @@ async def test_process_product_missing_id(monkeypatch):
     current_time = dt_time(12, 0)
 
     summary, sent_count, needs_pin_reset = await check_stock.process_product(
-        None, None, product_info, recipients_map, current_time, False, {}
+        None,
+        None,
+        product_info,
+        recipients_map,
+        current_time,
+        False,
+        {},
+        "201305",
     )
     assert summary is None
     assert sent_count == 0
@@ -340,7 +376,14 @@ async def test_process_product_missing_url(monkeypatch):
     current_time = dt_time(12, 0)
 
     summary, sent_count, needs_pin_reset = await check_stock.process_product(
-        None, None, product_info, recipients_map, current_time, False, {}
+        None,
+        None,
+        product_info,
+        recipients_map,
+        current_time,
+        False,
+        {},
+        "201305",
     )
     # If URL is missing, the function logs and returns None early.
     assert summary is None
@@ -355,11 +398,15 @@ async def test_notify_users_email_host_not_set(monkeypatch):
     monkeypatch.setattr(config, "EMAIL_SENDER", "sender@example.com") # Must be set for this test
 
     subscriptions = [{"recipient_id": 1, "start_time": "08:00", "end_time": "17:00"}]
-    recipients_map = {1: "test@example.com"}
+    recipients_map = {1: {"email": "test@example.com", "pincode": "201305"}}
     current_time = dt_time(12, 0)
 
     results, count = await check_stock.notify_users(
-        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time
+        "Test Product",
+        "http://example.com/product",
+        subscriptions,
+        recipients_map,
+        current_time,
     )
     assert count == 0
     assert len(results) == 1
@@ -374,7 +421,7 @@ async def test_notify_users_email_sender_not_set(monkeypatch):
     monkeypatch.setattr(config, "EMAIL_SENDER", None)
 
     subscriptions = [{"recipient_id": 1, "start_time": "08:00", "end_time": "17:00", "paused": False}]
-    recipients_map = {1: "test@example.com"}
+    recipients_map = {1: {"email": "test@example.com", "pincode": "201305"}}
     current_time = dt_time(12, 0)
 
     results, count = await check_stock.notify_users(
@@ -400,7 +447,7 @@ async def test_notify_users_send_email_exception(monkeypatch):
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_email_raises_exception)
 
     subscriptions = [{"recipient_id": 1, "start_time": "08:00", "end_time": "17:00", "paused": False}]
-    recipients_map = {1: "test@example.com"}
+    recipients_map = {1: {"email": "test@example.com", "pincode": "201305"}}
     current_time = dt_time(12, 0)
 
     results, count = await check_stock.notify_users(
@@ -441,11 +488,15 @@ async def test_notify_users_recipient_not_found(monkeypatch):
     monkeypatch.setattr(config, "EMAIL_HOST_PASSWORD", "pass")
 
     subscriptions = [{"recipient_id": 2, "start_time": "08:00", "end_time": "17:00", "paused": False}] # Sub for recipient 2
-    recipients_map = {1: "test@example.com"} # Recipient 1 exists, but not 2
+    recipients_map = {1: {"email": "test@example.com", "pincode": "201305"}}  # Recipient 1 exists, but not 2
     current_time = dt_time(12, 0)
 
     results, count = await check_stock.notify_users(
-        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time
+        "Test Product",
+        "http://example.com/product",
+        subscriptions,
+        recipients_map,
+        current_time,
     )
     assert count == 0
     assert len(results) == 1
@@ -479,11 +530,11 @@ async def test_notify_users_mixed_subscriptions(monkeypatch):
         {"recipient_id": 5, "paused": False}, # Active (default time window)
     ]
     recipients_map = {
-        1: "paused@example.com",
-        2: "out_of_window@example.com",
-        3: "active1@example.com",
-        4: "active2@example.com",
-        5: "active_default@example.com",
+        1: {"email": "paused@example.com", "pincode": "201305"},
+        2: {"email": "out_of_window@example.com", "pincode": "201305"},
+        3: {"email": "active1@example.com", "pincode": "201305"},
+        4: {"email": "active2@example.com", "pincode": "201305"},
+        5: {"email": "active_default@example.com", "pincode": "201305"},
     }
     current_time = dt_time(12, 0) # For 12:00 PM
 
@@ -561,7 +612,8 @@ async def test_main_load_products_none(monkeypatch):
     async def mock_load_products(session):
         return None
     monkeypatch.setattr(check_stock, "load_products", mock_load_products)
-    async def mock_load_recipients_for_main(session): return {1: "test@example.com"}
+    async def mock_load_recipients_for_main(session):
+        return {1: {"email": "test@example.com", "pincode": "201305"}}
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
     monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
@@ -584,7 +636,8 @@ async def test_main_load_products_empty_list(monkeypatch):
     async def mock_load_products(session):
         return []
     monkeypatch.setattr(check_stock, "load_products", mock_load_products)
-    async def mock_load_recipients_for_main(session): return {1: "test@example.com"}
+    async def mock_load_recipients_for_main(session):
+        return {1: {"email": "test@example.com", "pincode": "201305"}}
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
 
@@ -611,7 +664,8 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
         sent_summary_args["recipients_val"] = recipients # Store actual recipients
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary)
 
-    async def mock_load_recipients_for_main(session): return {1: "test@example.com"}
+    async def mock_load_recipients_for_main(session):
+        return {1: {"email": "test@example.com", "pincode": "201305"}}
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
@@ -661,7 +715,8 @@ async def test_main_summary_email_total_sent_zero(monkeypatch):
         mock_send_email_called = True
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary)
 
-    async def mock_load_recipients_for_main(session): return {1: "test@example.com"}
+    async def mock_load_recipients_for_main(session):
+        return {1: {"email": "test@example.com", "pincode": "201305"}}
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}] # Ensure async mock
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
@@ -715,7 +770,8 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
         mock_send_email_called = True
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary)
 
-    async def mock_load_recipients_for_main(session): return {1: "test@example.com"}
+    async def mock_load_recipients_for_main(session):
+        return {1: {"email": "test@example.com", "pincode": "201305"}}
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
@@ -763,7 +819,8 @@ async def test_main_summary_email_exception(monkeypatch):
         raise Exception("SMTP Summary Error")
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary_raises_exception)
 
-    async def mock_load_recipients_for_main(session): return {1: "test@example.com"}
+    async def mock_load_recipients_for_main(session):
+        return {1: {"email": "test@example.com", "pincode": "201305"}}
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
@@ -837,7 +894,7 @@ async def _run_notify_users(monkeypatch):
     monkeypatch.setattr(config, "EMAIL_HOST_USER", "")
     monkeypatch.setattr(config, "EMAIL_HOST_PASSWORD", "")
     subs = [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]
-    recipients = {1: "user@example.com"}
+    recipients = {1: {"email": "user@example.com", "pincode": "201305"}}
     result, count = await check_stock.notify_users(
         "Prod", "url", subs, recipients, dt_time(12, 0)
     )
@@ -860,7 +917,14 @@ def test_within_time_window_invalid():
 def test_process_product_missing_data():
     summary, sent, pin = asyncio.run(
         check_stock.process_product(
-            None, None, {"name": "NoID"}, {}, dt_time(12, 0), False, {}
+            None,
+            None,
+            {"name": "NoID"},
+            {},
+            dt_time(12, 0),
+            False,
+            {},
+            "201305",
         )
     )
     assert summary is None
@@ -875,7 +939,7 @@ def test_process_product_out_of_stock(monkeypatch):
         return False, "Scraped"
 
     monkeypatch.setattr(scraper_module, "check_product_availability", fake_check)
-    recipients = {1: "u@example.com"}
+    recipients = {1: {"email": "u@example.com", "pincode": "201305"}}
     subs_map = {1: [{"recipient_id": 1}]}
     summary, sent, pin = asyncio.run(
         check_stock.process_product(
@@ -886,6 +950,7 @@ def test_process_product_out_of_stock(monkeypatch):
             dt_time(12, 0),
             False,
             subs_map,
+            "201305",
         )
     )
     assert sent == 0
@@ -906,7 +971,7 @@ def test_process_product_in_stock(monkeypatch):
         return True, "New"
 
     monkeypatch.setattr(scraper_module, "check_product_availability", fake_check)
-    recipients = {1: "u@example.com"}
+    recipients = {1: {"email": "u@example.com", "pincode": "201305"}}
     subs_map = {1: [{"recipient_id": 1}]}
     summary, sent, pin = asyncio.run(
         check_stock.process_product(
@@ -917,6 +982,7 @@ def test_process_product_in_stock(monkeypatch):
             dt_time(12, 0),
             False,
             subs_map,
+            "201305",
         )
     )
     assert sent == 1
