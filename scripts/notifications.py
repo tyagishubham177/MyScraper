@@ -10,26 +10,26 @@ from email.mime.text import MIMEText
 
 
 def format_long_message(product_name: str, url: str) -> str:
-    # Basic HTML structure for the email body
     html_body = f"""
     <html>
         <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-            body {{ 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-                margin: 0; 
-                padding: 10px; 
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                margin: 0;
+                padding: 20px;
                 background: #f0f2f5;
                 line-height: 1.4;
             }}
-            .container {{ 
-                max-width: 100%;
+            .container {{
+                max-width: 500px;
                 width: 100%;
                 margin: 0 auto;
                 background: white;
-                border-radius: 12px; 
+                border-radius: 12px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                border: 2px solid #e9ecef;
                 overflow: hidden;
             }}
             .header {{
@@ -68,7 +68,7 @@ def format_long_message(product_name: str, url: str) -> str:
                 max-width: 280px;
                 margin: 12px auto;
                 padding: 14px 20px;
-                background: linear-gradient(135deg, #28a745, #20c997);
+                background: linear-gradient(135deg, #007bff, #0056b3);
                 color: white !important;
                 text-decoration: none;
                 border-radius: 8px;
@@ -79,32 +79,46 @@ def format_long_message(product_name: str, url: str) -> str:
             }}
             .button:hover {{
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-            }}
-            .button-secondary {{
-                background: linear-gradient(135deg, #007bff, #0056b3);
-                margin: 4px;
-                width: calc(50% - 8px);
-                display: inline-block;
-            }}
-            .button-secondary:hover {{
                 box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
             }}
             .settings-note {{
                 background: #f8f9fa;
-                padding: 12px;
-                border-radius: 6px;
-                margin: 16px 0;
-                font-size: 0.9em;
-                color: #6c757d;
+                padding: 20px;
+                border-radius: 10px;
+                margin: 20px 0;
+                font-size: 1em;
+                color: #333;
                 text-align: left;
+                border: 2px solid #e9ecef;
             }}
-            .button-group {{
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 0;
-                margin-top: 16px;
+            .settings-note strong {{
+                font-size: 1.1em;
+                color: #2c3e50;
+                display: block;
+                margin-bottom: 12px;
+            }}
+            .feature-list {{
+                margin-top: 12px;
+            }}
+            .feature-item {{
+                padding: 8px 0;
+                font-size: 1em;
+                font-weight: 500;
+                color: #495057;
+                border-bottom: 1px solid #e9ecef;
+            }}
+            .feature-item:last-child {{
+                border-bottom: none;
+            }}
+            .webapp-note {{
+                background: #e3f2fd;
+                padding: 12px;
+                border-radius: 8px;
+                margin: 16px 0;
+                font-size: 0.95em;
+                color: #1976d2;
+                font-weight: 500;
+                border: 1px solid #bbdefb;
             }}
             .footer {{
                 background: #f8f9fa;
@@ -112,27 +126,33 @@ def format_long_message(product_name: str, url: str) -> str:
                 text-align: center;
                 color: #6c757d;
                 font-size: 0.8em;
+                border-top: 1px solid #e9ecef;
             }}
-            
+
             /* Mobile optimizations */
             @media (max-width: 480px) {{
-                body {{ padding: 5px; }}
-                .container {{ border-radius: 8px; }}
+                body {{ padding: 10px; }}
+                .container {{
+                    border-radius: 8px;
+                    max-width: 100%;
+                }}
                 .header {{ padding: 12px; }}
                 .header h1 {{ font-size: 1.3em; }}
                 .content {{ padding: 16px 12px; }}
                 .product-name {{ padding: 10px; font-size: 1em; }}
                 .button {{ padding: 12px 16px; font-size: 0.95em; }}
-                .settings-note {{ padding: 10px; font-size: 0.85em; }}
+                .settings-note {{ padding: 16px; font-size: 0.9em; }}
             }}
-            
+
             /* Dark mode support */
             @media (prefers-color-scheme: dark) {{
                 body {{ background: #1a1a1a; }}
-                .container {{ background: #2d2d2d; color: #e0e0e0; }}
+                .container {{ background: #2d2d2d; color: #e0e0e0; border-color: #444; }}
                 .product-name {{ background: #3a3a3a; color: #e0e0e0; }}
-                .settings-note {{ background: #3a3a3a; color: #b0b0b0; }}
-                .footer {{ background: #3a3a3a; color: #888; }}
+                .settings-note {{ background: #3a3a3a; color: #e0e0e0; border-color: #555; }}
+                .webapp-note {{ background: #1e3a5f; color: #81c784; border-color: #2196f3; }}
+                .footer {{ background: #3a3a3a; color: #888; border-color: #555; }}
+                .feature-item {{ color: #ccc; border-color: #555; }}
             }}
             </style>
         </head>
@@ -160,7 +180,7 @@ def format_long_message(product_name: str, url: str) -> str:
                     <div class="webapp-note">
                         Go to our webapp to adjust all your settings
                     </div>
-                    <a href="https://my-scraper-nine.vercel.app/" class="button button-secondary">⚙️ Open tracker app</a>
+                    <a href="https://my-scraper-nine.vercel.app/" class="button">⚙️ Open tracker app</a>
                 </div>
                 <div class="footer">
                     🤖 Automated stock alert
