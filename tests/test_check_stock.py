@@ -229,6 +229,18 @@ async def test_save_stock_counters_with_admin_token(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_load_stock_counters_key_conversion(monkeypatch):
+    """Keys returned from API should be converted to integers if possible."""
+    async def mock_fetch(session, url, headers=None):
+        return {"1": 5, "2": 3}
+
+    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch)
+    counters = await check_stock.load_stock_counters(None)
+    assert counters == {1: 5, 2: 3}
+    assert all(isinstance(k, int) for k in counters.keys())
+
+
+@pytest.mark.asyncio
 async def test_process_product_fetch_subscriptions_none(monkeypatch):
     """Test process_product when fetch_subscriptions returns None."""
     product_info = {"id": 1, "name": "Test Product", "url": "http://example.com"}

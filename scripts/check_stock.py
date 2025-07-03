@@ -107,7 +107,13 @@ async def load_stock_counters(session):
     )
     data = await fetch_api_data(session, url, headers=headers)
     if isinstance(data, dict):
-        return data
+        converted = {}
+        for key, val in data.items():
+            if isinstance(key, str) and key.isdigit():
+                converted[int(key)] = val
+            else:
+                converted[key] = val
+        return converted
     return {}
 
 
