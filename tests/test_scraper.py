@@ -484,8 +484,8 @@ async def dummy_checker(page, url, pincode, skip): # Keep this?
 def test_check_product_availability_with_page(monkeypatch):
     called = {}
 
-    async def fake(page, url, pincode, skip):
-        called["args"] = (page, url, pincode, skip)
+    async def fake(page, url, pincode, skip, log_prefix=""):
+        called["args"] = (page, url, pincode, skip, log_prefix)
         return True, "Dummy"
 
     monkeypatch.setattr(scraper, "_check_availability_on_page", fake)
@@ -496,14 +496,14 @@ def test_check_product_availability_with_page(monkeypatch):
         )
     )
     assert result == (True, "Dummy")
-    assert called["args"] == (page, "http://x", "123", True)
+    assert called["args"] == (page, "http://x", "123", True, "")
 
 
 def test_check_product_availability_without_page(monkeypatch):
     called = {}
 
-    async def fake_check(page, url, pincode, skip):
-        called["args"] = (page, url, pincode, skip)
+    async def fake_check(page, url, pincode, skip, log_prefix=""):
+        called["args"] = (page, url, pincode, skip, log_prefix)
         return False, "Dummy"
 
     class DummyBrowser:
@@ -535,6 +535,6 @@ def test_check_product_availability_without_page(monkeypatch):
 
     result = asyncio.run(scraper.check_product_availability("http://x", "111"))
     assert result == (False, "Dummy")
-    assert called["args"][0] == "page"
+    assert called["args"] == ("page", "http://x", "111", False, "")
     assert called["closed"]
     assert called["enter"] and called["exit"]

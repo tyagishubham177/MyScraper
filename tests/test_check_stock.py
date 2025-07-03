@@ -327,7 +327,9 @@ async def test_process_product_fetch_subscriptions_invalid_data(monkeypatch):
 @pytest.mark.asyncio
 async def test_process_product_scraper_exception(monkeypatch):
     """Test process_product when scraper.check_product_availability raises an exception."""
-    async def mock_scraper_raises_exception(url, pincode, page=None, skip_pincode=False):
+    async def mock_scraper_raises_exception(
+        url, pincode, page=None, skip_pincode=False, log_prefix=""
+    ):
         raise Exception("Scraper failed")
     monkeypatch.setattr(scraper_module, "check_product_availability", mock_scraper_raises_exception)
 
@@ -947,7 +949,7 @@ def test_process_product_missing_data():
 def test_process_product_out_of_stock(monkeypatch):
     monkeypatch.setattr(check_stock, "filter_active_subs", lambda subs, ct: subs)
 
-    async def fake_check(url, pin, page=None, skip_pincode=False):
+    async def fake_check(url, pin, page=None, skip_pincode=False, log_prefix=""):
         return False, "Scraped"
 
     monkeypatch.setattr(scraper_module, "check_product_availability", fake_check)
@@ -979,7 +981,7 @@ def test_process_product_in_stock(monkeypatch):
 
     monkeypatch.setattr(check_stock, "notify_users", fake_notify)
 
-    async def fake_check(url, pin, page=None, skip_pincode=False):
+    async def fake_check(url, pin, page=None, skip_pincode=False, log_prefix=""):
         return True, "New"
 
     monkeypatch.setattr(scraper_module, "check_product_availability", fake_check)
