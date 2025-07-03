@@ -196,11 +196,10 @@
       }
       await initUserSubscriptionsUI();
       const infoBtn = document.getElementById('subscriptions-info-toggle');
-      if (infoBtn) {
-        infoBtn.addEventListener('click', () => {
-          const modalEl = document.getElementById('subscriptionsInfoModal');
-          if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
-        });
+      const infoModalEl = document.getElementById('subscriptionsInfoModal');
+      if (infoBtn && infoModalEl) {
+        const infoModal = bootstrap.Modal.getOrCreateInstance(infoModalEl);
+        infoBtn.addEventListener('click', () => infoModal.show());
       }
       const pincodeInput = document.getElementById('pincode-input');
       const savePinBtn = document.getElementById('save-pincode-btn');
