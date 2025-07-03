@@ -402,17 +402,26 @@ async def main():
 
             async def process_pincode(pincode, recips_subset):
                 browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
-
-                async def process_single_product(product_info):
-                    page = await browser.new_page()
-                    try:
-                        summary, sent, _ = await process_product(
+                page = await browser.new_page()
+                entered = False
+                results = []
+                try:
+                    for product_info in all_products:
+                        pid = product_info.get("id")
+                        subs = subs_map.get(pid)
+                        if subs is not None:
+                            filtered = [
+                                s for s in subs if s.get("recipient_id") in recips_subset
+                            ]
+                            if not filter_active_subs(filtered, current_time):
+                                continue
+                        summary, sent, entered = await process_product(
                             session,
                             page,
                             product_info,
                             recips_subset,
                             current_time,
-                            False,
+                            entered,
                             {
                                 pid: [
                                     s
@@ -423,29 +432,15 @@ async def main():
                             },
                             pincode,
                         )
-                    finally:
-                        if hasattr(page, "close"):
-                            close_fn = page.close
-                            if inspect.iscoroutinefunction(close_fn):
-                                await close_fn()
-                            else:
-                                close_fn()
-                    return product_info, summary, sent
-
-                tasks = []
-                for product_info in all_products:
-                    pid = product_info.get("id")
-                    subs = subs_map.get(pid)
-                    if subs is not None:
-                        filtered = [
-                            s for s in subs if s.get("recipient_id") in recips_subset
-                        ]
-                        if not filter_active_subs(filtered, current_time):
-                            continue
-                    tasks.append(process_single_product(product_info))
-
-                results = await asyncio.gather(*tasks)
-                await browser.close()
+                        results.append((product_info, summary, sent))
+                finally:
+                    if hasattr(page, "close"):
+                        close_fn = page.close
+                        if inspect.iscoroutinefunction(close_fn):
+                            await close_fn()
+                        else:
+                            close_fn()
+                    await browser.close()
                 return results
 
             pincode_tasks = [
