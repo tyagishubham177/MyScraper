@@ -83,7 +83,11 @@ def TestOneInput(data: bytes) -> None:
 
     scraper.async_playwright = lambda: DummyPlaywright(fdp)
     try:
-        asyncio.run(scraper.check_product_availability(url, pincode, page=None, skip_pincode=skip))
+        asyncio.run(
+            scraper.check_product_availability(
+                url, pincode, page=None, skip_pincode=skip, verbose=False
+            )
+        )
     except Exception:
         pass
 

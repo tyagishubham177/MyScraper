@@ -10,10 +10,13 @@ async def _check_availability_on_page(
     pincode: str,
     skip_pincode: bool,
     log_prefix: str = "",
+    verbose: bool = True,
 ) -> tuple[bool, str]:
     os.makedirs("artifacts", exist_ok=True)
 
     async def log(*msgs: object) -> None:
+        if not verbose:
+            return
         text = " ".join(str(m) for m in msgs)
         if log_prefix:
             text = f"[{log_prefix}] {text}"
@@ -146,6 +149,8 @@ async def check_product_availability(
     page: Page | None = None,
     skip_pincode: bool = False,
     log_prefix: str = "",
+    *,
+    verbose: bool = True,
 ) -> tuple[bool, str]:
     """Checks product availability using Playwright."""
     if page is None:
@@ -155,11 +160,11 @@ async def check_product_availability(
             browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
             page = await browser.new_page()
             result = await _check_availability_on_page(
-                page, url, pincode, skip_pincode, log_prefix
+                page, url, pincode, skip_pincode, log_prefix, verbose
             )
             await browser.close()
             return result
     else:
         return await _check_availability_on_page(
-            page, url, pincode, skip_pincode, log_prefix
+            page, url, pincode, skip_pincode, log_prefix, verbose
         )

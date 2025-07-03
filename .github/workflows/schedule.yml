@@ -10,6 +10,9 @@ permissions:
 
 jobs:
   check:
+    concurrency:
+      group: amul-stock-check
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_BROWSERS_PATH: pw-browsers
