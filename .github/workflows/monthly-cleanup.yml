@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd web
-          npm ci
+          npm install
 
       - name: Run cleanup script
         env:
