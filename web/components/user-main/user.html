@@ -82,6 +82,7 @@
     import { initBackground } from "../ui/ui.js";
     import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
     import { showGlobalLoader, hideGlobalLoader, escapeHTML, fetchAPI } from "../utils/utils.js";
+    import { showToastNotification } from "../subscription/subscription-helpers.js";
 
     document.addEventListener("DOMContentLoaded", async () => {
       showGlobalLoader();
@@ -208,6 +209,7 @@
           }
           const rid = localStorage.getItem(`recipientId_${email}`);
           if (!rid) return;
+          showGlobalLoader();
           try {
             await fetchAPI(`/api/recipients?id=${rid}`, {
               method: 'PUT',
@@ -215,8 +217,15 @@
               body: JSON.stringify({ pincode: pin })
             });
             localStorage.setItem(`pincode_${email}`, pin);
+            const offcanvasEl = document.getElementById('settingsPane');
+            const off = offcanvasEl ? bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl) : null;
+            if (off) off.hide();
+            showToastNotification('Pincode saved successfully.', 'success');
           } catch (e) {
             console.error('Failed to save pincode', e);
+            showToastNotification('Failed to save pincode.', 'error');
+          } finally {
+            hideGlobalLoader();
           }
         });
       }
