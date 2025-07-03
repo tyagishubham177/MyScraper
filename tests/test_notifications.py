@@ -190,12 +190,15 @@ def test_format_summary_email_body():
             "product_name": "Prod",
             "product_url": "http://x",
             "consecutive_in_stock": 2,
-            "subscriptions": [{"user_email": "u@example.com", "status": "Sent"}],
+            "subscriptions": [
+                {"user_email": "u@example.com", "status": "Sent", "pincode": "111111"}
+            ],
         }
     ]
     html = notifications.format_summary_email_body("run", data, 1)
     assert "<a href=\"http://x\">Prod</a>" in html
     assert "<td>2</td>" in html
+    assert "u@example.com (111111)" in html
 
 
 def test_format_summary_email_body_scenarios(capsys):
@@ -211,66 +214,89 @@ def test_format_summary_email_body_scenarios(capsys):
     # 2. Various subscription statuses
     summary_data_various_statuses = [
         {
-            "product_name": "Prod A", "product_url": "http://a",
+            "product_name": "Prod A",
+            "product_url": "http://a",
             "consecutive_in_stock": 1,
-            "subscriptions": [{"user_email": "a@ex.com", "status": "Sent"}]
+            "subscriptions": [
+                {"user_email": "a@ex.com", "status": "Sent", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod B", "product_url": "http://b",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "b@ex.com", "status": "Not Sent - Out of Stock"}]
+            "subscriptions": [
+                {"user_email": "b@ex.com", "status": "Not Sent - Out of Stock", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod C", "product_url": "http://c",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "c@ex.com", "status": "Skipped - Subscription Not Due"}]
+            "subscriptions": [
+                {"user_email": "c@ex.com", "status": "Skipped - Subscription Not Due", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod D", "product_url": "http://d",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "d@ex.com", "status": "Skipped - Invalid Subscription Object"}]
+            "subscriptions": [
+                {"user_email": "d@ex.com", "status": "Skipped - Invalid Subscription Object", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod E", "product_url": "http://e",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "e@ex.com", "status": "Error fetching subscriptions"}]
+            "subscriptions": [
+                {"user_email": "e@ex.com", "status": "Error fetching subscriptions", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod F", "product_url": "http://f",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "f@ex.com", "status": "Not Sent - Delayed"}]
+            "subscriptions": [
+                {"user_email": "f@ex.com", "status": "Not Sent - Delayed", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod G", "product_url": "http://g",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "g@ex.com", "status": "Not Sent - Scraping Error"}]
+            "subscriptions": [
+                {"user_email": "g@ex.com", "status": "Not Sent - Scraping Error", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod H", "product_url": "http://h",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "h@ex.com", "status": "Skipped - Status Unknown"}]
+            "subscriptions": [
+                {"user_email": "h@ex.com", "status": "Skipped - Status Unknown", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod I", "product_url": "http://i",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "i@ex.com", "status": "Not Sent - Email Send Error"}]
+            "subscriptions": [
+                {"user_email": "i@ex.com", "status": "Not Sent - Email Send Error", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod J", "product_url": "http://j",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "j@ex.com", "status": "Not Sent - Recipient Email Missing"}]
+            "subscriptions": [
+                {"user_email": "j@ex.com", "status": "Not Sent - Recipient Email Missing", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod K", "product_url": "http://k",
             "consecutive_in_stock": 0,
-            "subscriptions": [{"user_email": "k@ex.com", "status": "Not Sent - Email Config Missing"}]
+            "subscriptions": [
+                {"user_email": "k@ex.com", "status": "Not Sent - Email Config Missing", "pincode": "111"}
+            ],
         },
         {
             "product_name": "Prod L - Mixed", "product_url": "http://l",
             "consecutive_in_stock": 1,
             "subscriptions": [
-                {"user_email": "l1@ex.com", "status": "Sent"},
-                {"user_email": "l2@ex.com", "status": "Not Sent - Out of Stock"} # This state isn't realistic for same product but tests summary
+                {"user_email": "l1@ex.com", "status": "Sent", "pincode": "111"},
+                {"user_email": "l2@ex.com", "status": "Not Sent - Out of Stock", "pincode": "111"}  # This state isn't realistic for same product but tests summary
             ]
         },
     ]
@@ -301,16 +327,17 @@ def test_format_summary_email_body_scenarios(capsys):
     # 5. Product in stock, but notification failed for some users
     summary_data_failed_notify = [
         {
-            "product_name": "Prod P - Partial Fail", "product_url": "http://p",
+            "product_name": "Prod P - Partial Fail",
+            "product_url": "http://p",
             "consecutive_in_stock": 1,
             "subscriptions": [
-                {"user_email": "p1_sent@ex.com", "status": "Sent"},
-                {"user_email": "p2_failed@ex.com", "status": "Not Sent - Email Send Error"},
-                {"user_email": "p3_nomail@ex.com", "status": "Not Sent - Recipient Email Missing"},
-            ]
+                {"user_email": "p1_sent@ex.com", "status": "Sent", "pincode": "111"},
+                {"user_email": "p2_failed@ex.com", "status": "Not Sent - Email Send Error", "pincode": "111"},
+                {"user_email": "p3_nomail@ex.com", "status": "Not Sent - Recipient Email Missing", "pincode": "111"},
+            ],
         }
     ]
     html_failed_notify = notifications.format_summary_email_body("run_partial_fail", summary_data_failed_notify, 1)
     assert "<a href=\"http://p\">Prod P - Partial Fail</a>" in html_failed_notify
     assert "p1_sent@ex.com" in html_failed_notify
-    assert "<td>p1_sent@ex.com</td>" in html_failed_notify  # Check if sent email is listed
+    assert "<td>p1_sent@ex.com (111)</td>" in html_failed_notify  # Check if sent email with pincode is listed

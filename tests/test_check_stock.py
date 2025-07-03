@@ -685,7 +685,12 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
     # Simulate process_product returning one sent notification
     async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):
-        return {"product_name": "Test Product", "status": "In Stock", "subscriptions": [{"user_email": "test@example.com", "status":"Sent"}]}, 1, False
+        return {
+            "product_id": product_info["id"],
+            "product_name": "Test Product",
+            "status": "In Stock",
+            "subscriptions": [{"user_email": "test@example.com", "status": "Sent", "pincode": "201305"}],
+        }, 1, False
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_summary)
 
     monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", "sender@example.com")
@@ -735,7 +740,12 @@ async def test_main_summary_email_total_sent_zero(monkeypatch):
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}] # Ensure async mock
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
     async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):  # Ensure async mock
-        return {"product_name": "Test Product", "status": "Out of Stock", "subscriptions": [{"user_email": "test@example.com", "status":"Not Sent"}]}, 0, False
+        return {
+            "product_id": product_info["id"],
+            "product_name": "Test Product",
+            "status": "Out of Stock",
+            "subscriptions": [{"user_email": "test@example.com", "status": "Not Sent", "pincode": "201305"}],
+        }, 0, False
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_summary)
 
     monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", "sender@example.com")
@@ -791,7 +801,16 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
     # Ensure total_sent > 0 so summary sending is attempted
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
-        return ({"product_name": "Test Product", "status": "In Stock"}, 1, False)
+        return (
+            {
+                "product_id": pi["id"],
+                "product_name": "Test Product",
+                "status": "In Stock",
+                "subscriptions": [{"user_email": "x@x.com", "status": "Sent", "pincode": "201305"}],
+            },
+            1,
+            False,
+        )
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_generic)
 
     monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", None)
@@ -840,7 +859,16 @@ async def test_main_summary_email_exception(monkeypatch):
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
     # Ensure total_sent > 0 for exception path to be tested
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
-        return ({"product_name": "Test Product", "status": "In Stock"}, 1, False)
+        return (
+            {
+                "product_id": pi["id"],
+                "product_name": "Test Product",
+                "status": "In Stock",
+                "subscriptions": [{"user_email": "x@x.com", "status": "Sent", "pincode": "201305"}],
+            },
+            1,
+            False,
+        )
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_generic)
 
     monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", "sender@example.com")
@@ -893,6 +921,37 @@ def test_filter_active_subs():
     ]
     active = check_stock.filter_active_subs(subs, now)
     assert len(active) == 1
+
+
+def test_aggregate_product_summaries():
+    summaries = [
+        {
+            "product_id": 1,
+            "product_name": "ProdA",
+            "product_url": "http://a",
+            "consecutive_in_stock": 1,
+            "subscriptions": [{"user_email": "a@x", "status": "Sent", "pincode": "111"}],
+        },
+        {
+            "product_id": 1,
+            "product_name": "ProdA",
+            "product_url": "http://a",
+            "consecutive_in_stock": 1,
+            "subscriptions": [{"user_email": "b@x", "status": "Sent", "pincode": "222"}],
+        },
+        {
+            "product_id": 2,
+            "product_name": "ProdB",
+            "product_url": "http://b",
+            "consecutive_in_stock": 1,
+            "subscriptions": [{"user_email": "c@x", "status": "Sent", "pincode": "333"}],
+        },
+    ]
+    result = check_stock.aggregate_product_summaries(summaries)
+    assert len(result) == 2
+    for item in result:
+        if item["product_id"] == 1:
+            assert len(item["subscriptions"]) == 2
 
 
 async def _run_notify_users(monkeypatch):
