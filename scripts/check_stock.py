@@ -166,22 +166,42 @@ def aggregate_product_summaries(summary_items):
     aggregated = {}
     for item in summary_items:
         pid = item.get("product_id")
-        pin = item.get("pincode")
-        if pid is None or pin is None:
+        if pid is None:
             continue
-        key = (pid, pin)
-        entry = aggregated.setdefault(
-            key,
-            {
-                "product_id": pid,
-                "pincode": pin,
-                "product_name": item.get("product_name"),
-                "product_url": item.get("product_url"),
-                "consecutive_in_stock": item.get("consecutive_in_stock", 0),
-                "subscriptions": [],
-            },
-        )
-        entry["subscriptions"].extend(item.get("subscriptions", []))
+        item_pin = item.get("pincode")
+        subs = item.get("subscriptions", [])
+        if item_pin:
+            key = (pid, item_pin)
+            entry = aggregated.setdefault(
+                key,
+                {
+                    "product_id": pid,
+                    "pincode": item_pin,
+                    "product_name": item.get("product_name"),
+                    "product_url": item.get("product_url"),
+                    "consecutive_in_stock": item.get("consecutive_in_stock", 0),
+                    "subscriptions": [],
+                },
+            )
+            entry["subscriptions"].extend(subs)
+        else:
+            for sub in subs:
+                pin = sub.get("pincode")
+                key = (pid, pin)
+                entry = aggregated.setdefault(
+                    key,
+                    {
+                        "product_id": pid,
+                        "pincode": pin,
+                        "product_name": item.get("product_name"),
+                        "product_url": item.get("product_url"),
+                        "consecutive_in_stock": item.get(
+                            "consecutive_in_stock", 0
+                        ),
+                        "subscriptions": [],
+                    },
+                )
+                entry["subscriptions"].append(sub)
     return list(aggregated.values())
 
 
