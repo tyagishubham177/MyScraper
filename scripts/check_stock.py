@@ -346,7 +346,7 @@ async def main():
             pincode_groups.setdefault(pin, {})[rid] = info
 
         async with async_playwright() as pw:
-            for pincode, recips_subset in pincode_groups.items():
+            async def process_pincode(pincode, recips_subset):
                 browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
 
                 async def process_single_product(product_info):
@@ -382,6 +382,14 @@ async def main():
                     tasks.append(process_single_product(product_info))
 
                 results = await asyncio.gather(*tasks)
+                await browser.close()
+                return results
+
+            pincode_tasks = [process_pincode(pin, subset) for pin, subset in pincode_groups.items()]
+
+            pincode_results = await asyncio.gather(*pincode_tasks)
+
+            for results in pincode_results:
                 for product_info, summary, sent in results:
                     if summary:
                         pid = product_info.get("id")
@@ -392,8 +400,6 @@ async def main():
                         summary["consecutive_in_stock"] = stock_counters.get(pid, 0)
                         summary_email_data.append(summary)
                     total_sent += sent
-
-                await browser.close()
 
         print("\nStock check finished.")
         await save_stock_counters(session, stock_counters)
