@@ -161,6 +161,27 @@ def filter_active_subs(subs, current_time):
     return active
 
 
+def aggregate_product_summaries(summary_items):
+    """Combine summary entries for the same product_id."""
+    aggregated = {}
+    for item in summary_items:
+        pid = item.get("product_id")
+        if pid is None:
+            continue
+        entry = aggregated.setdefault(
+            pid,
+            {
+                "product_id": pid,
+                "product_name": item.get("product_name"),
+                "product_url": item.get("product_url"),
+                "consecutive_in_stock": item.get("consecutive_in_stock", 0),
+                "subscriptions": [],
+            },
+        )
+        entry["subscriptions"].extend(item.get("subscriptions", []))
+    return list(aggregated.values())
+
+
 async def notify_users(effective_name, product_url, subs, recipients_map, current_time):
     current_summary = []
     valid_emails = []
@@ -168,6 +189,7 @@ async def notify_users(effective_name, product_url, subs, recipients_map, curren
         rid = sub.get("recipient_id")
         info = recipients_map.get(rid)
         email = info.get("email") if info else None
+        pincode = info.get("pincode") if info else None
         start_t = sub.get("start_time", "00:00")
         end_t = sub.get("end_time", "23:59")
 
@@ -181,7 +203,9 @@ async def notify_users(effective_name, product_url, subs, recipients_map, curren
         else:
             status = "Not Sent - Recipient Email Missing"
 
-        current_summary.append({"user_email": email or "Unknown", "status": status})
+        current_summary.append(
+            {"user_email": email or "Unknown", "status": status, "pincode": pincode}
+        )
 
     sent_count = 0
     if valid_emails and config.EMAIL_HOST and config.EMAIL_SENDER:
@@ -236,10 +260,11 @@ async def process_product(
         print(f"Could not fetch subscriptions for product ID {product_id}.")
         return (
             {
+                "product_id": product_id,
                 "product_name": effective_name,
                 "product_url": product_url,
                 "subscriptions": [
-                    {"user_email": "N/A", "status": "Error fetching subscriptions"}
+                    {"user_email": "N/A", "status": "Error fetching subscriptions", "pincode": None}
                 ],
             },
             0,
@@ -251,10 +276,11 @@ async def process_product(
         print(f"Skipping product '{effective_name}' - no active subscribers.")
         return (
             {
+                "product_id": product_id,
                 "product_name": effective_name,
                 "product_url": product_url,
                 "subscriptions": [
-                    {"user_email": "N/A", "status": "Skipped - No Active Subscribers"}
+                    {"user_email": "N/A", "status": "Skipped - No Active Subscribers", "pincode": None}
                 ],
             },
             0,
@@ -278,10 +304,15 @@ async def process_product(
         print(f"Error checking {product_url}: {e}")
         return (
             {
+                "product_id": product_id,
                 "product_name": effective_name,
                 "product_url": product_url,
                 "subscriptions": [
-                    {"user_email": "N/A", "status": f"Error checking product: {e}"}
+                    {
+                        "user_email": "N/A",
+                        "status": f"Error checking product: {e}",
+                        "pincode": None,
+                    }
                 ],
             },
             0,
@@ -300,13 +331,15 @@ async def process_product(
             rid = sub.get("recipient_id")
             info = recipients_map.get(rid)
             email = info.get("email") if info else "Email not found"
+            pin = info.get("pincode") if info else None
             current_summary.append(
-                {"user_email": email, "status": "Not Sent - Out of Stock"}
+                {"user_email": email, "status": "Not Sent - Out of Stock", "pincode": pin}
             )
         sent_count = 0
 
     return (
         {
+            "product_id": product_id,
             "product_name": effective_name,
             "product_url": product_url,
             "subscriptions": current_summary,
@@ -427,9 +460,10 @@ async def main():
     run_timestamp_str = (
         run_timestamp_ist.strftime(f"%d-{month_name}-%Y / %I:%M%p") + ", IST"
     )
+    aggregated_summary = aggregate_product_summaries(summary_email_data)
     subject = f"Stock Check Summary: {run_timestamp_str} - {total_sent} User Notifications Sent"
     summary_body = format_summary_email_body(
-        run_timestamp_str, summary_email_data, total_sent
+        run_timestamp_str, aggregated_summary, total_sent
     )
 
     if total_sent > 0:
