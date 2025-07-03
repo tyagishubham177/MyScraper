@@ -252,10 +252,11 @@ async function _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, mod
   renderSubscriptionProductsInModal(allProducts, recipientSubscriptions || [], recipientId, modalBodyElement);
 }
 
-export async function openSubscriptionModal(recipientId, recipientName) {
+export async function openSubscriptionModal(recipientId, recipientName, recipientPincode) {
   currentModalRecipientId = recipientId;
   const modal = document.getElementById('subscriptionModal');
   const modalTitle = document.getElementById('subscriptionModalHeaderTitle');
+  const pincodeEl = document.getElementById('subscriptionModalPincode');
   const modalBody = document.getElementById('subscriptionModalBody');
   if (!modal || !modalTitle || !modalBody) {
     console.error('Subscription modal elements not found in DOM.');
@@ -263,6 +264,9 @@ export async function openSubscriptionModal(recipientId, recipientName) {
     return;
   }
   modalTitle.textContent = `Manage Subscriptions for ${recipientName}`;
+  if (pincodeEl) {
+    pincodeEl.textContent = recipientPincode ? `Pincode: ${recipientPincode}` : '';
+  }
   await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBody);
   modal.style.display = 'block';
   initialSubscriptionDataForModal = storeInitialFormStateHelper();
@@ -283,9 +287,10 @@ export function initSubscriptionsUI() {
     modal.innerHTML = `
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
-          <div class="modal-header">
+          <div class="modal-header flex-column align-items-start">
             <h5 class="modal-title" id="subscriptionModalHeaderTitle">Manage Subscriptions</h5>
-            <button type="button" class="btn-close" id="subscriptionModalCloseButton" aria-label="Close"></button>
+            <p id="subscriptionModalPincode" class="mb-0 text-muted small"></p>
+            <button type="button" class="btn-close position-absolute top-0 end-0 mt-2 me-2" id="subscriptionModalCloseButton" aria-label="Close"></button>
           </div>
           <div class="modal-body" id="subscriptionModalBody"></div>
           <div class="modal-footer">

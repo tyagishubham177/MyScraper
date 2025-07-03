@@ -155,6 +155,7 @@ test('manage button opens modal when available', async () => {
   const li = makeEl();
   li.setAttribute('data-recipient-id', '2');
   li.setAttribute('data-recipient-email', 'c@d.com');
+  li.setAttribute('data-recipient-pincode', '111222');
   env.elements['recipients-list'].appendChild(li);
   const btn = {
     classList: { contains(c){ return c === 'manage-subscriptions-btn'; } },
@@ -162,8 +163,8 @@ test('manage button opens modal when available', async () => {
                    if(sel === 'li[data-recipient-id]') return li; return null; }
   };
   await trigger(env.elements['recipients-list'], 'click', { target: btn });
-  assert.deepStrictEqual(global.window.selectedRecipient, { id: '2', email: 'c@d.com' });
-  assert(args && args[0] === '2');
+  assert.deepStrictEqual(global.window.selectedRecipient, { id: '2', email: 'c@d.com', pincode: '111222' });
+  assert(args && args[0] === '2' && args[2] === '111222');
 });
 
 test('manage button alerts when modal missing', async () => {
@@ -176,6 +177,7 @@ test('manage button alerts when modal missing', async () => {
   const li = makeEl();
   li.setAttribute('data-recipient-id', '3');
   li.setAttribute('data-recipient-email', 'e@f.com');
+  li.setAttribute('data-recipient-pincode', '444555');
   env.elements['recipients-list'].appendChild(li);
   const btn = {
     classList: { contains(c){ return c === 'manage-subscriptions-btn'; } },
@@ -183,7 +185,7 @@ test('manage button alerts when modal missing', async () => {
                    if(sel === 'li[data-recipient-id]') return li; return null; }
   };
   await trigger(env.elements['recipients-list'], 'click', { target: btn });
-  assert.deepStrictEqual(global.window.selectedRecipient, { id: '3', email: 'e@f.com' });
+  assert.deepStrictEqual(global.window.selectedRecipient, { id: '3', email: 'e@f.com', pincode: '444555' });
   assert(alerted);
 });
 

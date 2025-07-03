@@ -64,9 +64,10 @@ function makeEl(tag='div') {
 test('openSubscriptionModal fetches data and renders', async () => {
   const modal = makeEl('div');
   const title = makeEl('h5');
+  const pinEl = makeEl('p');
   const body = makeEl('div');
   const saveBtn = Object.assign(makeEl('button'), { disabled: true, innerHTML: '' });
-  const map = { subscriptionModal: modal, subscriptionModalHeaderTitle: title, subscriptionModalBody: body, saveAllSubscriptionsBtn: saveBtn };
+  const map = { subscriptionModal: modal, subscriptionModalHeaderTitle: title, subscriptionModalPincode: pinEl, subscriptionModalBody: body, saveAllSubscriptionsBtn: saveBtn };
   global.document = { getElementById: id => map[id] || null, createElement: tag => makeEl(tag), body: makeEl('body') };
   global.window = {};
   global.localStorage = { getItem: () => null };
@@ -76,8 +77,9 @@ test('openSubscriptionModal fetches data and renders', async () => {
     throw new Error('unexpected url ' + url);
   };
   const mod = await import('../components/subscription/subscription-modal.js?' + Date.now());
-  await mod.openSubscriptionModal(1, 'Bob');
+  await mod.openSubscriptionModal(1, 'Bob', '999999');
   assert.equal(title.textContent, 'Manage Subscriptions for Bob');
+  assert.equal(pinEl.textContent, 'Pincode: 999999');
   assert.equal(modal.style.display, 'block');
   assert.equal(body.children.length, 2);
   assert.equal(saveBtn.disabled, false);
@@ -153,12 +155,14 @@ test('saving subscription changes triggers API calls', async () => {
   map['subscriptionModal'] = modal;
   const header = makeEl('h5');
   header.id = 'subscriptionModalHeaderTitle';
+  const pinEl2 = makeEl('p');
   map['subscriptionModalHeaderTitle'] = header;
+  map['subscriptionModalPincode'] = pinEl2;
   const bodyEl = modalBody;
   body.appendChild(bodyEl);
   const saveBtn = map['saveAllSubscriptionsBtn'];
 
-  await mod.openSubscriptionModal(1, 'Bob');
+  await mod.openSubscriptionModal(1, 'Bob', '999999');
 
   const items = bodyEl.children;
   const first = items[0];
