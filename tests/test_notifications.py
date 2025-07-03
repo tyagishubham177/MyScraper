@@ -198,7 +198,8 @@ def test_format_summary_email_body():
     html = notifications.format_summary_email_body("run", data, 1)
     assert "<a href=\"http://x\">Prod</a>" in html
     assert "<td>2</td>" in html
-    assert "u@example.com (111111)" in html
+    assert "u@example.com" in html
+    assert "<td>111111</td>" in html
 
 
 def test_format_summary_email_body_scenarios(capsys):
@@ -340,4 +341,4 @@ def test_format_summary_email_body_scenarios(capsys):
     html_failed_notify = notifications.format_summary_email_body("run_partial_fail", summary_data_failed_notify, 1)
     assert "<a href=\"http://p\">Prod P - Partial Fail</a>" in html_failed_notify
     assert "p1_sent@ex.com" in html_failed_notify
-    assert "<td>p1_sent@ex.com (111)</td>" in html_failed_notify  # Check if sent email with pincode is listed
+    assert "<td>111</td>" in html_failed_notify

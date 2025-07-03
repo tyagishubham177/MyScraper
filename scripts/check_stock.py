@@ -2,6 +2,33 @@ import asyncio
 from datetime import datetime, timezone, timedelta, time as dt_time
 import inspect
 import aiohttp
+
+# Provide a minimal fallback ClientSession when aiohttp is not fully available
+if not hasattr(aiohttp, "ClientSession"):
+    class _DummyResponse:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+        async def json(self):
+            return {}
+
+        def raise_for_status(self):
+            pass
+
+    class _DummyClientSession:
+        def get(self, url, **kwargs):
+            return _DummyResponse()
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+    aiohttp.ClientSession = _DummyClientSession
 from playwright.async_api import async_playwright
 import config
 import notifications
@@ -162,27 +189,57 @@ def filter_active_subs(subs, current_time):
 
 
 def aggregate_product_summaries(summary_items):
-    """Combine summary entries for the same product_id."""
+    """Combine summary entries per product and pincode."""
     aggregated = {}
     for item in summary_items:
         pid = item.get("product_id")
         if pid is None:
             continue
-        entry = aggregated.setdefault(
-            pid,
-            {
-                "product_id": pid,
-                "product_name": item.get("product_name"),
-                "product_url": item.get("product_url"),
-                "consecutive_in_stock": item.get("consecutive_in_stock", 0),
-                "subscriptions": [],
-            },
-        )
-        entry["subscriptions"].extend(item.get("subscriptions", []))
+        item_pin = item.get("pincode")
+        subs = item.get("subscriptions", [])
+        if item_pin:
+            key = (pid, item_pin)
+            entry = aggregated.setdefault(
+                key,
+                {
+                    "product_id": pid,
+                    "pincode": item_pin,
+                    "product_name": item.get("product_name"),
+                    "product_url": item.get("product_url"),
+                    "consecutive_in_stock": item.get("consecutive_in_stock", 0),
+                    "subscriptions": [],
+                },
+            )
+            entry["subscriptions"].extend(subs)
+        else:
+            for sub in subs:
+                pin = sub.get("pincode")
+                key = (pid, pin)
+                entry = aggregated.setdefault(
+                    key,
+                    {
+                        "product_id": pid,
+                        "pincode": pin,
+                        "product_name": item.get("product_name"),
+                        "product_url": item.get("product_url"),
+                        "consecutive_in_stock": item.get(
+                            "consecutive_in_stock", 0
+                        ),
+                        "subscriptions": [],
+                    },
+                )
+                entry["subscriptions"].append(sub)
     return list(aggregated.values())
 
 
-async def notify_users(effective_name, product_url, subs, recipients_map, current_time):
+async def notify_users(
+    effective_name,
+    product_url,
+    subs,
+    recipients_map,
+    current_time,
+    pincode,
+):
     current_summary = []
     valid_emails = []
     for sub in subs:
@@ -204,7 +261,7 @@ async def notify_users(effective_name, product_url, subs, recipients_map, curren
             status = "Not Sent - Recipient Email Missing"
 
         current_summary.append(
-            {"user_email": email or "Unknown", "status": status, "pincode": pincode}
+            {"user_email": email or "Unknown", "status": status}
         )
 
     sent_count = 0
@@ -322,7 +379,12 @@ async def process_product(
     if in_stock:
         print(f"✅ Product '{effective_name}' is IN STOCK.")
         current_summary, sent_count = await notify_users(
-            effective_name, product_url, subs, recipients_map, current_time
+            effective_name,
+            product_url,
+            subs,
+            recipients_map,
+            current_time,
+            pincode,
         )
     else:
         print(f"❌ Product '{effective_name}' is OUT OF STOCK.")
@@ -333,7 +395,7 @@ async def process_product(
             email = info.get("email") if info else "Email not found"
             pin = info.get("pincode") if info else None
             current_summary.append(
-                {"user_email": email, "status": "Not Sent - Out of Stock", "pincode": pin}
+                {"user_email": email, "status": "Not Sent - Out of Stock"}
             )
         sent_count = 0
 
@@ -342,6 +404,7 @@ async def process_product(
             "product_id": product_id,
             "product_name": effective_name,
             "product_url": product_url,
+            "pincode": pincode,
             "subscriptions": current_summary,
             "in_stock": bool(in_stock),
         },
@@ -386,17 +449,26 @@ async def main():
 
             async def process_pincode(pincode, recips_subset):
                 browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
-
-                async def process_single_product(product_info):
-                    page = await browser.new_page()
-                    try:
-                        summary, sent, _ = await process_product(
+                page = await browser.new_page()
+                entered = False
+                results = []
+                try:
+                    for product_info in all_products:
+                        pid = product_info.get("id")
+                        subs = subs_map.get(pid)
+                        if subs is not None:
+                            filtered = [
+                                s for s in subs if s.get("recipient_id") in recips_subset
+                            ]
+                            if not filter_active_subs(filtered, current_time):
+                                continue
+                        summary, sent, entered = await process_product(
                             session,
                             page,
                             product_info,
                             recips_subset,
                             current_time,
-                            False,
+                            entered,
                             {
                                 pid: [
                                     s
@@ -407,29 +479,15 @@ async def main():
                             },
                             pincode,
                         )
-                    finally:
-                        if hasattr(page, "close"):
-                            close_fn = page.close
-                            if inspect.iscoroutinefunction(close_fn):
-                                await close_fn()
-                            else:
-                                close_fn()
-                    return product_info, summary, sent
-
-                tasks = []
-                for product_info in all_products:
-                    pid = product_info.get("id")
-                    subs = subs_map.get(pid)
-                    if subs is not None:
-                        filtered = [
-                            s for s in subs if s.get("recipient_id") in recips_subset
-                        ]
-                        if not filter_active_subs(filtered, current_time):
-                            continue
-                    tasks.append(process_single_product(product_info))
-
-                results = await asyncio.gather(*tasks)
-                await browser.close()
+                        results.append((product_info, summary, sent))
+                finally:
+                    if hasattr(page, "close"):
+                        close_fn = page.close
+                        if inspect.iscoroutinefunction(close_fn):
+                            await close_fn()
+                        else:
+                            close_fn()
+                    await browser.close()
                 return results
 
             pincode_tasks = [

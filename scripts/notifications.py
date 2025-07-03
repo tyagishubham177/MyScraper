@@ -197,7 +197,8 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
                 <tr>
                     <th>Product Name</th>
                     <th>In-Stock Streak</th>
-                    <th>Email (Pincode)</th>
+                    <th>Emails</th>
+                    <th>Pincode</th>
                 </tr>
             </thead>
             <tbody>
@@ -229,8 +230,7 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
 
         for sub_info in subscriptions:
             user_email = sub_info.get('user_email', 'N/A')
-            pin = sub_info.get('pincode')
-            email_display = f"{user_email} ({pin})" if pin else user_email
+            email_display = user_email
             status = sub_info.get('status', 'N/A')
 
             if status == "Sent":
@@ -276,12 +276,16 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
         if subscribed_emails_csv == "N/A":
             continue  # Skip rows without any subscriber emails
         streak = product_data.get("consecutive_in_stock", 0)
+        pin = product_data.get("pincode")
+        if not pin and subscriptions:
+            pin = subscriptions[0].get("pincode")
 
         html_output += f"""
     <tr>
         <td><a href="{product_url}">{product_name}</a></td>
         <td>{streak}</td>
         <td>{subscribed_emails_csv}</td>
+        <td>{pin or 'N/A'}</td>
     </tr>
 """
 
