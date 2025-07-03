@@ -245,3 +245,4 @@ urllib3==2.5.0 \
 yarl==1.20.1 \
     --hash=sha256:a97d67108e79cfe22e2b430d80d7571ae57d19f17cda8bb967057ca8a7bf5bfd
 pytest-asyncio==0.23.6
+    --hash=sha256:68516fdd1018ac57b846c9846b954f0393b26f094764a28c955eabb0536a4e8a
