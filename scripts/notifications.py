@@ -13,52 +13,160 @@ def format_long_message(product_name: str, url: str) -> str:
     # Basic HTML structure for the email body
     html_body = f"""
     <html>
-    <head>
-        <style>
-        body {{ font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }}
-        .container {{ background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
-        h1 {{ color: #333333; }}
-        p {{ color: #555555; line-height: 1.6; }}
-        .button {{
-            display: inline-block;
-            padding: 10px 20px;
-            margin-top: 15px;
-            background-color: #28a745; /* Green */
-            color: white !important; /* Ensure text is white */
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-        }}
-        .button:hover {{ background-color: #218838; }}
-        .button-manage {{
-            display: inline-block;
-            padding: 10px 20px;
-            margin-top: 10px; /* Adjusted margin for spacing */
-            background-color: #007bff; /* Blue */
-            color: white !important; /* Ensure text is white */
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-        }}
-        .button-manage:hover {{ background-color: #0056b3; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-        <h1>🚀 Stock Alert! 🚀</h1>
-        <p>Good news! The product you're watching is back in stock:</p>
-        <p><strong>{product_name.strip()}</strong></p>
-        <p>Don't miss out! Check it out here:</p>
-        <a href="{url}" class="button">View Product Now</a>
-        <p style="margin-top: 20px; color: #555555;">
-            ⏸️ You can pause notifications for this product in the app, or adjust the window in which the notifications are sent to you. ⚙️
-        </p>
-        <a href="https://my-scraper-nine.vercel.app/" class="button-manage">Manage Notifications</a>
-        <p style="margin-top: 20px; font-size: 0.9em; color: #777;">
-            This is an automated notification.
-        </p>
-        </div>
-    </body>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+            body {{ 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                margin: 0; 
+                padding: 10px; 
+                background: #f0f2f5;
+                line-height: 1.4;
+            }}
+            .container {{ 
+                max-width: 100%;
+                width: 100%;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px; 
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }}
+            .header {{
+                background: linear-gradient(135deg, #28a745, #20c997);
+                padding: 16px;
+                text-align: center;
+                color: white;
+            }}
+            .header h1 {{
+                margin: 0;
+                font-size: 1.5em;
+                font-weight: 600;
+            }}
+            .content {{
+                padding: 20px 16px;
+                text-align: center;
+            }}
+            .message {{
+                color: #333;
+                font-size: 1em;
+                margin-bottom: 16px;
+            }}
+            .product-name {{
+                background: #f8f9ff;
+                padding: 12px;
+                border-radius: 8px;
+                margin: 16px 0;
+                border-left: 3px solid #667eea;
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 1.1em;
+            }}
+            .button {{
+                display: block;
+                width: calc(100% - 32px);
+                max-width: 280px;
+                margin: 12px auto;
+                padding: 14px 20px;
+                background: linear-gradient(135deg, #28a745, #20c997);
+                color: white !important;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 1em;
+                transition: all 0.2s ease;
+                box-sizing: border-box;
+            }}
+            .button:hover {{
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            }}
+            .button-secondary {{
+                background: linear-gradient(135deg, #007bff, #0056b3);
+                margin: 4px;
+                width: calc(50% - 8px);
+                display: inline-block;
+            }}
+            .button-secondary:hover {{
+                box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            }}
+            .settings-note {{
+                background: #f8f9fa;
+                padding: 12px;
+                border-radius: 6px;
+                margin: 16px 0;
+                font-size: 0.9em;
+                color: #6c757d;
+                text-align: left;
+            }}
+            .button-group {{
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0;
+                margin-top: 16px;
+            }}
+            .footer {{
+                background: #f8f9fa;
+                padding: 12px;
+                text-align: center;
+                color: #6c757d;
+                font-size: 0.8em;
+            }}
+            
+            /* Mobile optimizations */
+            @media (max-width: 480px) {{
+                body {{ padding: 5px; }}
+                .container {{ border-radius: 8px; }}
+                .header {{ padding: 12px; }}
+                .header h1 {{ font-size: 1.3em; }}
+                .content {{ padding: 16px 12px; }}
+                .product-name {{ padding: 10px; font-size: 1em; }}
+                .button {{ padding: 12px 16px; font-size: 0.95em; }}
+                .settings-note {{ padding: 10px; font-size: 0.85em; }}
+            }}
+            
+            /* Dark mode support */
+            @media (prefers-color-scheme: dark) {{
+                body {{ background: #1a1a1a; }}
+                .container {{ background: #2d2d2d; color: #e0e0e0; }}
+                .product-name {{ background: #3a3a3a; color: #e0e0e0; }}
+                .settings-note {{ background: #3a3a3a; color: #b0b0b0; }}
+                .footer {{ background: #3a3a3a; color: #888; }}
+            }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🚀🚀 Stock Alert!</h1>
+                </div>
+                <div class="content">
+                    <div class="message">
+                        Your watched product is now available:
+                    </div>
+                    <div class="product-name">
+                        {product_name.strip()}
+                    </div>
+                    <a href="{url}" class="button">🛍️ View Product</a>
+                    <div class="settings-note">
+                        <strong>💡 Manage your alerts:</strong>
+                        <div class="feature-list">
+                            <div class="feature-item">⏸️ Pause notifications temporarily</div>
+                            <div class="feature-item">🕐 Adjust timing for your notification window</div>
+                            <div class="feature-item">📍 Add your pincode for accurate stock checks</div>
+                        </div>
+                    </div>
+                    <div class="webapp-note">
+                        Go to our webapp to adjust all your settings
+                    </div>
+                    <a href="https://my-scraper-nine.vercel.app/" class="button button-secondary">⚙️ Open tracker app</a>
+                </div>
+                <div class="footer">
+                    🤖 Automated stock alert
+                </div>
+            </div>
+        </body>
     </html>
     """
     return html_body
