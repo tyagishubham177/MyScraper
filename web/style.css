@@ -953,6 +953,10 @@ button, .btn {
   color: #333; /* Ensure good contrast on the light header bg */
 }
 
+#subscriptionModalPincode {
+  margin-top: -0.25rem;
+}
+
 #subscriptionModal .modal-body {
   /* Existing: max-height: 450px; overflow-y: auto; */
   padding: 1rem 1.25rem; /* Standard Bootstrap modal body padding or adjust as needed */

@@ -86,6 +86,9 @@ function renderRecipientsList(recipients) {
     listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
     listItem.setAttribute('data-recipient-id', recipient.id);
     listItem.setAttribute('data-recipient-email', recipient.email);
+    if (recipient.pincode) {
+      listItem.setAttribute('data-recipient-pincode', recipient.pincode);
+    }
 
     const emailSpan = document.createElement('span');
     emailSpan.textContent = recipient.email;
@@ -101,6 +104,9 @@ function renderRecipientsList(recipients) {
     manageBtn.title = 'Manage Subscriptions'; // Add title for accessibility
     manageBtn.setAttribute('data-recipient-id', recipient.id);
     manageBtn.setAttribute('data-recipient-email', recipient.email);
+    if (recipient.pincode) {
+      manageBtn.setAttribute('data-recipient-pincode', recipient.pincode);
+    }
 
 
     const deleteBtn = document.createElement('button');
@@ -195,17 +201,17 @@ async function handleDeleteRecipient(recipientId) {
 }
 
 // Handles showing the manage subscriptions section for a recipient
-function handleManageSubscriptions(recipientId, recipientEmail) {
+function handleManageSubscriptions(recipientId, recipientEmail, recipientPincode) {
   if (!recipientId || !recipientEmail) {
     console.error('Recipient ID or email not provided for managing subscriptions.');
     return;
   }
 
-  window.selectedRecipient = { id: recipientId, email: recipientEmail };
+  window.selectedRecipient = { id: recipientId, email: recipientEmail, pincode: recipientPincode };
 
   // Notify subscriptions-ui.js to open its modal
   if (window.openSubscriptionModal) {
-    window.openSubscriptionModal(recipientId, recipientEmail);
+    window.openSubscriptionModal(recipientId, recipientEmail, recipientPincode);
   } else {
     console.warn('openSubscriptionModal function not found on window. Subscriptions UI cannot be opened.');
     alert('Subscription management UI is currently unavailable.');
@@ -241,14 +247,16 @@ export function initRecipientsUI() {
 
       if (!target) return;
 
-      const recipientId = target.closest('li[data-recipient-id]')?.dataset.recipientId;
-      const recipientEmail = target.closest('li[data-recipient-id]')?.dataset.recipientEmail;
+      const recipientLi = target.closest('li[data-recipient-id]');
+      const recipientId = recipientLi?.dataset.recipientId;
+      const recipientEmail = recipientLi?.dataset.recipientEmail;
+      const recipientPincode = recipientLi?.dataset.recipientPincode;
 
 
       if (target.classList.contains('delete-recipient-btn')) {
         if (recipientId) handleDeleteRecipient(recipientId);
       } else if (target.classList.contains('manage-subscriptions-btn')) { // Only button triggers
-         if (recipientId && recipientEmail) handleManageSubscriptions(recipientId, recipientEmail);
+         if (recipientId && recipientEmail) handleManageSubscriptions(recipientId, recipientEmail, recipientPincode);
       }
     });
   }
