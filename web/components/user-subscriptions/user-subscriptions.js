@@ -85,8 +85,8 @@ export async function initUserSubscriptionsUI() {
       <div class="time-slot-group me-2">
         <input type="time" class="form-control form-control-sm sub-end" value="${sub.end_time || '23:59'}">
       </div>
-      <button class="btn btn-sm btn-outline-secondary pause-btn me-1 p-1 btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}" class="lucide-small"></i></button>
-      <button class="btn btn-sm btn-outline-danger unsub-btn p-1 btn-icon"><i data-lucide="x" class="lucide-small"></i></button>`;
+      <button class="btn btn-sm btn-outline-secondary pause-btn me-1 btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}"></i></button>
+      <button class="btn btn-sm btn-outline-danger unsub-btn btn-icon"><i data-lucide="x"></i></button>`;
 
     li.appendChild(details);
     li.appendChild(controls);
@@ -254,6 +254,7 @@ export async function initUserSubscriptionsUI() {
   subscribedList.addEventListener('click', e => {
     const li = e.target.closest('li[data-product-id]');
     if (!li) return;
+    if (e.target.closest('button')) e.preventDefault();
     if (e.target.closest('.unsub-btn')) {
       const id = li.dataset.productId;
       unsubscribe(id);
@@ -279,6 +280,9 @@ export async function initUserSubscriptionsUI() {
   allList.addEventListener('click', e => {
     const btn = e.target.closest('.sub-btn');
     if (!btn) return;
+    if (typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     const li = btn.closest('li[data-product-id]');
     subscribe(li.dataset.productId);
   });
