@@ -76,6 +76,13 @@ function renderProductsList(products) {
     const buttonsDiv = document.createElement('div'); // Create a div for buttons for consistent spacing
     buttonsDiv.className = 'buttons-div';
 
+    const manageBtn = document.createElement('button');
+    manageBtn.className = 'btn btn-sm btn-outline-primary me-2 manage-product-subs-btn btn-manage-icon';
+    manageBtn.innerHTML = '<i data-lucide="user"></i>';
+    manageBtn.title = 'View Subscribers';
+    manageBtn.setAttribute('data-product-id', product.id);
+    manageBtn.setAttribute('data-product-name', product.name);
+
     const editBtn = document.createElement('button');
     editBtn.className = 'btn btn-sm btn-outline-secondary me-2 btn-edit-icon'; // Added me-2 for spacing from delete
     editBtn.innerHTML = '<i data-lucide="edit"></i>';
@@ -92,6 +99,7 @@ function renderProductsList(products) {
     deleteBtn.title = 'Delete Product'; // Add title for accessibility
     deleteBtn.setAttribute('data-product-id', product.id);
 
+    buttonsDiv.appendChild(manageBtn); // Add manage button
     buttonsDiv.appendChild(editBtn); // Add edit button
     buttonsDiv.appendChild(deleteBtn); // Add delete button
 
@@ -183,6 +191,44 @@ async function handleDeleteProduct(productId) {
   }
 }
 
+// Handles showing subscribers for a product
+async function handleManageSubscribers(productId, productName) {
+  const modalEl = document.getElementById('productSubscribersModal');
+  const modalTitle = document.getElementById('productSubscribersModalLabel');
+  const listEl = document.getElementById('product-subscribers-list');
+  if (!modalEl || !modalTitle || !listEl) return;
+
+  modalTitle.textContent = `Subscribers for ${productName}`;
+  listEl.innerHTML = '<li class="list-group-item">Loading...</li>';
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+
+  try {
+    const [recipients, subs] = await Promise.all([
+      window.fetchAPI('/api/recipients'),
+      window.fetchAPI(`/api/subscriptions?product_id=${productId}`)
+    ]);
+    const recipientMap = new Map(recipients.map(r => [r.id, r.email]));
+    const subscriberData = subs
+      .map(s => ({ email: recipientMap.get(s.recipient_id), paused: !!s.paused }))
+      .filter(item => item.email);
+    listEl.innerHTML = '';
+    if (subscriberData.length === 0) {
+      listEl.innerHTML = '<li class="list-group-item">No subscribers found.</li>';
+    } else {
+      subscriberData.forEach(sub => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item' + (sub.paused ? ' paused' : '');
+        li.textContent = `${sub.email} - ${sub.paused ? 'Paused' : 'Active'}`;
+        listEl.appendChild(li);
+      });
+    }
+    if (window.lucide) window.lucide.createIcons();
+  } catch (err) {
+    listEl.innerHTML = `<li class="list-group-item list-group-item-danger">Error loading subscribers: ${err.message}</li>`;
+  }
+}
+
 // Initializes the product UI components
 export function initProductsUI() {
   const addProductBtn = document.getElementById('add-product-btn');
@@ -192,7 +238,7 @@ export function initProductsUI() {
     addProductBtn.addEventListener('click', handleAddProduct);
   }
 
-  // Event delegation for delete buttons
+  // Event delegation for buttons
   if (productsListEl) {
     productsListEl.addEventListener('click', (event) => {
       const deleteButton = event.target.closest('button.delete-product-btn');
@@ -200,6 +246,16 @@ export function initProductsUI() {
         const productId = deleteButton.dataset.productId;
         if (productId) {
           handleDeleteProduct(productId);
+        }
+        return;
+      }
+
+      const manageButton = event.target.closest('button.manage-product-subs-btn');
+      if (manageButton) {
+        const productId = manageButton.dataset.productId;
+        const productName = manageButton.dataset.productName || '';
+        if (productId) {
+          handleManageSubscribers(productId, productName);
         }
       }
     });
