@@ -202,6 +202,32 @@ def test_format_summary_email_body():
     assert "<td>111111</td>" in html
 
 
+def test_format_summary_email_body_multiple_pincodes():
+    data = [
+        {
+            "product_name": "Prod",
+            "product_url": "http://x",
+            "consecutive_in_stock": 2,
+            "pincode": "111",
+            "subscriptions": [
+                {"user_email": "a@example.com", "status": "Sent", "pincode": "111"}
+            ],
+        },
+        {
+            "product_name": "Prod",
+            "product_url": "http://x",
+            "consecutive_in_stock": 1,
+            "pincode": "222",
+            "subscriptions": [
+                {"user_email": "b@example.com", "status": "Sent", "pincode": "222"}
+            ],
+        },
+    ]
+    html = notifications.format_summary_email_body("run", data, 2)
+    assert "<td>111</td>" in html and "<td>222</td>" in html
+    assert "<td>2</td>" in html and "<td>1</td>" in html
+
+
 def test_format_summary_email_body_scenarios(capsys):
     """Test format_summary_email_body with various scenarios."""
 

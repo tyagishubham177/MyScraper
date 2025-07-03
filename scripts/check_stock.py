@@ -136,10 +136,7 @@ async def load_stock_counters(session):
     if isinstance(data, dict):
         converted = {}
         for key, val in data.items():
-            if isinstance(key, str) and key.isdigit():
-                converted[int(key)] = val
-            else:
-                converted[key] = val
+            converted[str(key)] = val
         return converted
     return {}
 
@@ -152,8 +149,9 @@ async def save_stock_counters(session, counters):
         else None
     )
     try:
+        payload = {"counters": {str(k): v for k, v in counters.items()}}
         async with session.put(
-            url, json={"counters": counters}, headers=headers
+            url, json=payload, headers=headers
         ) as resp:
             if resp.status == 401:
                 print("Stock counter update unauthorized. Retrying after login.")
@@ -164,7 +162,7 @@ async def save_stock_counters(session, counters):
                     else None
                 )
                 async with session.put(
-                    url, json={"counters": counters}, headers=headers
+                    url, json=payload, headers=headers
                 ) as resp_retry:
                     if resp_retry.status >= 400:
                         text = await resp_retry.text()
@@ -211,6 +209,9 @@ def aggregate_product_summaries(summary_items):
                 },
             )
             entry["subscriptions"].extend(subs)
+            entry["consecutive_in_stock"] = item.get(
+                "consecutive_in_stock", entry.get("consecutive_in_stock", 0)
+            )
         else:
             for sub in subs:
                 pin = sub.get("pincode")
@@ -229,6 +230,9 @@ def aggregate_product_summaries(summary_items):
                     },
                 )
                 entry["subscriptions"].append(sub)
+                entry["consecutive_in_stock"] = item.get(
+                    "consecutive_in_stock", entry.get("consecutive_in_stock", 0)
+                )
     return list(aggregated.values())
 
 
@@ -500,11 +504,13 @@ async def main():
                 for product_info, summary, sent in results:
                     if summary:
                         pid = product_info.get("id")
+                        pin = summary.get("pincode")
+                        key = f"{pid}|{pin}"
                         if summary.get("in_stock"):
-                            stock_counters[pid] = stock_counters.get(pid, 0) + 1
+                            stock_counters[key] = stock_counters.get(key, 0) + 1
                         else:
-                            stock_counters[pid] = 0
-                        summary["consecutive_in_stock"] = stock_counters.get(pid, 0)
+                            stock_counters[key] = 0
+                        summary["consecutive_in_stock"] = stock_counters.get(key, 0)
                         summary_email_data.append(summary)
                     total_sent += sent
 
