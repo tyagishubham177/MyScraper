@@ -1,5 +1,13 @@
-import { kv } from '@vercel/kv';
 import nodemailer from 'nodemailer';
+
+// Safely import @vercel/kv only when required variables are present
+let kv;
+if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+  ({ kv } = await import('@vercel/kv'));
+} else {
+  console.error('KV_REST_API_URL and KV_REST_API_TOKEN environment variables are required.');
+  process.exit(1);
+}
 
 const removalEmailHtml = `<!DOCTYPE html>
 <html lang="en">

@@ -27,6 +27,7 @@ jobs:
           npm install
 
       - name: Run cleanup script
+        if: ${{ secrets.KV_REST_API_URL && secrets.KV_REST_API_TOKEN }}
         env:
           KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
           KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
