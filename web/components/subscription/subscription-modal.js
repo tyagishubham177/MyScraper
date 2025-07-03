@@ -166,34 +166,70 @@ async function handleSaveAllSubscriptionSettings() {
 
   const recipientId = currentModalRecipientId;
   const modalBodyElement = document.getElementById('subscriptionModalBody');
-  if (!recipientId || !modalBodyElement) {
-    showToastNotification('Error: Cannot save settings. Recipient or modal body not found.', 'error');
-    toggleSaveButton(false, originalBtnText);
-    return;
-  }
 
-  const productItems = modalBodyElement.querySelectorAll('.list-group-item');
-  const results = [];
+  try {
+    if (!recipientId || !modalBodyElement) {
+      showToastNotification('Error: Cannot save settings. Recipient or modal body not found.', 'error');
+      // No return here, finally will still execute
+      throw new Error('Recipient or modal body not found for saving settings.');
+    }
 
-  for (const item of productItems) {
-    await updateSubscription(item, recipientId, results);
-  }
+    const productItems = modalBodyElement.querySelectorAll('.list-group-item');
+    const results = [];
 
-  if (results.length === 0) {
-    showToastNotification('No changes to save.', 'info');
-    toggleSaveButton(false, originalBtnText);
+    for (const item of productItems) {
+      // Assuming updateSubscription has its own error handling and pushes to results
+      try {
+        await updateSubscription(item, recipientId, results);
+      } catch (error) {
+        console.error(`Error during updateSubscription for product ${item.dataset.productId || 'unknown'}:`, error);
+        // results should be populated by updateSubscription itself if it handles its errors by pushing to results
+      }
+    }
+
+    if (results.length === 0) {
+      // This case implies no changes were detected or attempted.
+      // If updateSubscription was called, it should have populated results.
+      // If no productItems or no changes, results might be empty.
+      const initialFormState = storeInitialFormStateHelper();
+      const currentFormState = JSON.stringify(Array.from(modalBodyElement.querySelectorAll('input, select')).map(el => ({ id: el.id, checked: el.checked, value: el.value })));
+
+      if (initialFormState === currentFormState && initialSubscribedProductIds.size === new Set(Array.from(modalBodyElement.querySelectorAll('.subscription-toggle:checked')).map(cb => cb.dataset.productId)).size ) {
+         showToastNotification('No changes to save.', 'info');
+      } else if (results.length === 0 && productItems.length > 0) {
+        // This means updates were attempted but nothing was added to results, which is unusual.
+        // This might indicate an issue in updateSubscription if it's not populating results correctly on success/failure.
+        // For now, let's assume it's covered by summarizeResults or means no actual save operations were needed.
+        console.log("No results from update operations, but changes might have been detected. Proceeding to summarize.");
+      }
+    }
+
+    summarizeResults(results); // This will show success/error toasts based on 'results'
+
+    // Only proceed to reload if there were some successful operations or if it's deemed necessary
+    // For example, if results show at least one success or if there were changes.
+    // The original logic reloaded regardless, which might be desired.
+    await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement);
+
     initialSubscriptionDataForModal = storeInitialFormStateHelper();
     updateSaveButtonStateHelper(initialSubscriptionDataForModal);
-    return;
+
+  } catch (error) {
+    console.error('Error in handleSaveAllSubscriptionSettings:', error);
+    // Show a generic error toast if not already handled by summarizeResults
+    // summarizeResults only processes the 'results' array, not top-level errors.
+    if (!error.message.includes('Recipient or modal body not found')) { // Avoid double toast
+        showToastNotification(`An unexpected error occurred: ${error.message}`, 'error');
+    }
+  } finally {
+    toggleSaveButton(false, originalBtnText);
+    // Ensure form state is updated even after errors, to reflect current UI state for save button logic
+    // This might be redundant if _loadSubscriptions... always runs and updates it
+    if (document.getElementById('subscriptionModalBody')) { // Check if modal body still exists
+        initialSubscriptionDataForModal = storeInitialFormStateHelper();
+        updateSaveButtonStateHelper(initialSubscriptionDataForModal);
+    }
   }
-
-  summarizeResults(results);
-
-  await _loadSubscriptionsForRecipientAndRenderIntoModal(recipientId, modalBodyElement);
-
-  toggleSaveButton(false, originalBtnText);
-  initialSubscriptionDataForModal = storeInitialFormStateHelper();
-  updateSaveButtonStateHelper(initialSubscriptionDataForModal);
 }
 
 function handleSubscriptionToggle(event) {
@@ -303,9 +339,28 @@ export function initSubscriptionsUI() {
 
   const modalCloseButton = document.getElementById('subscriptionModalCloseButton');
   const modalFooterCloseButton = document.getElementById('subscriptionModalFooterCloseButton');
-  const closeModal = () => { modal.style.display = 'none'; };
-  if (modalCloseButton) modalCloseButton.addEventListener('click', closeModal);
-  if (modalFooterCloseButton) modalFooterCloseButton.addEventListener('click', closeModal);
+
+  const closeModal = (event) => {
+    if (event) {
+      event.stopPropagation(); // Prevent event bubbling
+    }
+    modal.style.display = 'none';
+    console.log('Subscription modal closed via button click.');
+  };
+
+  if (modalCloseButton) {
+    console.log('Adding click listener to modalCloseButton (header X).');
+    modalCloseButton.addEventListener('click', closeModal);
+  } else {
+    console.error('Could not find modalCloseButton (header X).');
+  }
+
+  if (modalFooterCloseButton) {
+    console.log('Adding click listener to modalFooterCloseButton (footer Close).');
+    modalFooterCloseButton.addEventListener('click', closeModal);
+  } else {
+    console.error('Could not find modalFooterCloseButton (footer Close).');
+  }
 
   const modalFooter = modal.querySelector('.modal-footer');
   if (modalFooter) {
