@@ -162,16 +162,19 @@ def filter_active_subs(subs, current_time):
 
 
 def aggregate_product_summaries(summary_items):
-    """Combine summary entries for the same product_id."""
+    """Combine summary entries per product and pincode."""
     aggregated = {}
     for item in summary_items:
         pid = item.get("product_id")
-        if pid is None:
+        pin = item.get("pincode")
+        if pid is None or pin is None:
             continue
+        key = (pid, pin)
         entry = aggregated.setdefault(
-            pid,
+            key,
             {
                 "product_id": pid,
+                "pincode": pin,
                 "product_name": item.get("product_name"),
                 "product_url": item.get("product_url"),
                 "consecutive_in_stock": item.get("consecutive_in_stock", 0),
@@ -182,7 +185,14 @@ def aggregate_product_summaries(summary_items):
     return list(aggregated.values())
 
 
-async def notify_users(effective_name, product_url, subs, recipients_map, current_time):
+async def notify_users(
+    effective_name,
+    product_url,
+    subs,
+    recipients_map,
+    current_time,
+    pincode,
+):
     current_summary = []
     valid_emails = []
     for sub in subs:
@@ -204,7 +214,7 @@ async def notify_users(effective_name, product_url, subs, recipients_map, curren
             status = "Not Sent - Recipient Email Missing"
 
         current_summary.append(
-            {"user_email": email or "Unknown", "status": status, "pincode": pincode}
+            {"user_email": email or "Unknown", "status": status}
         )
 
     sent_count = 0
@@ -322,7 +332,12 @@ async def process_product(
     if in_stock:
         print(f"✅ Product '{effective_name}' is IN STOCK.")
         current_summary, sent_count = await notify_users(
-            effective_name, product_url, subs, recipients_map, current_time
+            effective_name,
+            product_url,
+            subs,
+            recipients_map,
+            current_time,
+            pincode,
         )
     else:
         print(f"❌ Product '{effective_name}' is OUT OF STOCK.")
@@ -333,7 +348,7 @@ async def process_product(
             email = info.get("email") if info else "Email not found"
             pin = info.get("pincode") if info else None
             current_summary.append(
-                {"user_email": email, "status": "Not Sent - Out of Stock", "pincode": pin}
+                {"user_email": email, "status": "Not Sent - Out of Stock"}
             )
         sent_count = 0
 
@@ -342,6 +357,7 @@ async def process_product(
             "product_id": product_id,
             "product_name": effective_name,
             "product_url": product_url,
+            "pincode": pincode,
             "subscriptions": current_summary,
             "in_stock": bool(in_stock),
         },

@@ -421,6 +421,7 @@ async def test_notify_users_email_host_not_set(monkeypatch):
         subscriptions,
         recipients_map,
         current_time,
+        "201305",
     )
     assert count == 0
     assert len(results) == 1
@@ -439,7 +440,7 @@ async def test_notify_users_email_sender_not_set(monkeypatch):
     current_time = dt_time(12, 0)
 
     results, count = await check_stock.notify_users(
-        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time
+        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time, "201305"
     )
     assert count == 0
     assert len(results) == 1
@@ -465,7 +466,7 @@ async def test_notify_users_send_email_exception(monkeypatch):
     current_time = dt_time(12, 0)
 
     results, count = await check_stock.notify_users(
-        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time
+        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time, "201305"
     )
     assert count == 0
     assert len(results) == 1
@@ -485,7 +486,7 @@ async def test_notify_users_empty_recipients_map(monkeypatch):
     current_time = dt_time(12, 0)
 
     results, count = await check_stock.notify_users(
-        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time
+        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time, "201305"
     )
     assert count == 0
     assert len(results) == 1
@@ -511,6 +512,7 @@ async def test_notify_users_recipient_not_found(monkeypatch):
         subscriptions,
         recipients_map,
         current_time,
+        "201305",
     )
     assert count == 0
     assert len(results) == 1
@@ -553,7 +555,7 @@ async def test_notify_users_mixed_subscriptions(monkeypatch):
     current_time = dt_time(12, 0) # For 12:00 PM
 
     results, count = await check_stock.notify_users(
-        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time
+        "Test Product", "http://example.com/product", subscriptions, recipients_map, current_time, "201305"
     )
 
     assert count == 3 # active1, active2, active_default
@@ -948,10 +950,9 @@ def test_aggregate_product_summaries():
         },
     ]
     result = check_stock.aggregate_product_summaries(summaries)
-    assert len(result) == 2
-    for item in result:
-        if item["product_id"] == 1:
-            assert len(item["subscriptions"]) == 2
+    assert len(result) == 3
+    combo_keys = {(r["product_id"], r["pincode"]) for r in result}
+    assert combo_keys == {(1, "111"), (1, "222"), (2, "333")}
 
 
 async def _run_notify_users(monkeypatch):
@@ -969,7 +970,7 @@ async def _run_notify_users(monkeypatch):
     subs = [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]
     recipients = {1: {"email": "user@example.com", "pincode": "201305"}}
     result, count = await check_stock.notify_users(
-        "Prod", "url", subs, recipients, dt_time(12, 0)
+        "Prod", "url", subs, recipients, dt_time(12, 0), "201305"
     )
     return result, count, sent_args
 
