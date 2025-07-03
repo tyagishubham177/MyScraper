@@ -425,7 +425,7 @@ button, .btn {
 @media (max-width: 576px) {
   /* Page Header Adjustments for Small Screens */
   .page-header {
-    padding: 0.75rem 0;
+    padding: 0.5rem 0;
     position: fixed;
     top: 0;
     left: 0;
@@ -433,11 +433,15 @@ button, .btn {
     z-index: 1020;
   }
   body {
-    padding-top: 4.5rem;
+    padding-top: 4rem;
   }
   .page-header h1 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     margin-left: 1rem;
+  }
+  .page-header img {
+    width: 100px;
+    height: 32px;
   }
 
   /* Welcome Message Adjustments for Small Screens */
@@ -490,12 +494,21 @@ button, .btn {
   .fab {
     width: 48px;
     height: 48px;
-    bottom: 15px;
-    right: 15px;
+    bottom: 1rem;
+    right: 1rem;
   }
   .fab i, .fab svg {
     width: 20px;
     height: 20px;
+  }
+
+  #all-products-list .list-group-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  #all-products-list .sub-btn {
+    align-self: flex-end;
+    margin-top: 0.25rem;
   }
 }
 
