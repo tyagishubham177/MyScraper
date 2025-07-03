@@ -78,7 +78,7 @@ function renderProductsList(products) {
 
     const manageBtn = document.createElement('button');
     manageBtn.className = 'btn btn-sm btn-outline-primary me-2 manage-product-subs-btn btn-manage-icon';
-    manageBtn.innerHTML = '<i data-lucide="users"></i>';
+    manageBtn.innerHTML = '<i data-lucide="user"></i>';
     manageBtn.title = 'View Subscribers';
     manageBtn.setAttribute('data-product-id', product.id);
     manageBtn.setAttribute('data-product-name', product.name);
