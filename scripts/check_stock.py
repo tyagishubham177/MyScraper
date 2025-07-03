@@ -262,11 +262,13 @@ async def process_product(
         )
 
     try:
+        log_prefix = f"{pincode}|{product_id}"
         in_stock, scraped_name = await scraper.check_product_availability(
             product_url,
             pincode,
             page=page,
             skip_pincode=pincode_entered,
+            log_prefix=log_prefix,
         )
         if not pincode_entered:
             pincode_entered = True
@@ -298,7 +300,9 @@ async def process_product(
             rid = sub.get("recipient_id")
             info = recipients_map.get(rid)
             email = info.get("email") if info else "Email not found"
-            current_summary.append({"user_email": email, "status": "Not Sent - Out of Stock"})
+            current_summary.append(
+                {"user_email": email, "status": "Not Sent - Out of Stock"}
+            )
         sent_count = 0
 
     return (
@@ -346,6 +350,7 @@ async def main():
             pincode_groups.setdefault(pin, {})[rid] = info
 
         async with async_playwright() as pw:
+
             async def process_pincode(pincode, recips_subset):
                 browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
 
@@ -359,7 +364,14 @@ async def main():
                             recips_subset,
                             current_time,
                             False,
-                            {pid: [s for s in subs if s.get("recipient_id") in recips_subset] for pid, subs in subs_map.items()},
+                            {
+                                pid: [
+                                    s
+                                    for s in subs
+                                    if s.get("recipient_id") in recips_subset
+                                ]
+                                for pid, subs in subs_map.items()
+                            },
                             pincode,
                         )
                     finally:
@@ -376,7 +388,9 @@ async def main():
                     pid = product_info.get("id")
                     subs = subs_map.get(pid)
                     if subs is not None:
-                        filtered = [s for s in subs if s.get("recipient_id") in recips_subset]
+                        filtered = [
+                            s for s in subs if s.get("recipient_id") in recips_subset
+                        ]
                         if not filter_active_subs(filtered, current_time):
                             continue
                     tasks.append(process_single_product(product_info))
@@ -385,7 +399,9 @@ async def main():
                 await browser.close()
                 return results
 
-            pincode_tasks = [process_pincode(pin, subset) for pin, subset in pincode_groups.items()]
+            pincode_tasks = [
+                process_pincode(pin, subset) for pin, subset in pincode_groups.items()
+            ]
 
             pincode_results = await asyncio.gather(*pincode_tasks)
 

@@ -947,7 +947,7 @@ def test_process_product_missing_data():
 def test_process_product_out_of_stock(monkeypatch):
     monkeypatch.setattr(check_stock, "filter_active_subs", lambda subs, ct: subs)
 
-    async def fake_check(url, pin, page=None, skip_pincode=False):
+    async def fake_check(url, pin, page=None, skip_pincode=False, log_prefix=""):
         return False, "Scraped"
 
     monkeypatch.setattr(scraper_module, "check_product_availability", fake_check)
@@ -979,7 +979,7 @@ def test_process_product_in_stock(monkeypatch):
 
     monkeypatch.setattr(check_stock, "notify_users", fake_notify)
 
-    async def fake_check(url, pin, page=None, skip_pincode=False):
+    async def fake_check(url, pin, page=None, skip_pincode=False, log_prefix=""):
         return True, "New"
 
     monkeypatch.setattr(scraper_module, "check_product_availability", fake_check)
