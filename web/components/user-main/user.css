@@ -52,6 +52,11 @@
       animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
     }
 
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     @keyframes pulse {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.1); }
@@ -174,6 +179,11 @@
       transform: scale(0.95);
     }
 
+    .fab i,
+    .fab svg {
+      display: block;
+    }
+
     .offcanvas {
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(20px);
@@ -212,10 +222,17 @@
     }
 
 .btn-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   line-height: 1;
+}
+
+.btn-icon i,
+.btn-icon svg {
+  display: block;
+  margin: 0;
 }
 
     .btn::before {
