@@ -209,15 +209,17 @@ async function handleManageSubscribers(productId, productName) {
       window.fetchAPI(`/api/subscriptions?product_id=${productId}`)
     ]);
     const recipientMap = new Map(recipients.map(r => [r.id, r.email]));
-    const emails = subs.map(s => recipientMap.get(s.recipient_id)).filter(Boolean);
+    const subscriberData = subs
+      .map(s => ({ email: recipientMap.get(s.recipient_id), paused: !!s.paused }))
+      .filter(item => item.email);
     listEl.innerHTML = '';
-    if (emails.length === 0) {
+    if (subscriberData.length === 0) {
       listEl.innerHTML = '<li class="list-group-item">No subscribers found.</li>';
     } else {
-      emails.forEach(email => {
+      subscriberData.forEach(sub => {
         const li = document.createElement('li');
-        li.className = 'list-group-item';
-        li.textContent = email;
+        li.className = 'list-group-item' + (sub.paused ? ' paused' : '');
+        li.textContent = `${sub.email} - ${sub.paused ? 'Paused' : 'Active'}`;
         listEl.appendChild(li);
       });
     }

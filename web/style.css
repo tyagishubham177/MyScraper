@@ -805,6 +805,10 @@ button, .btn {
   opacity: 0.6;
 }
 
+#product-subscribers-list .list-group-item.paused {
+  opacity: 0.6;
+}
+
 /* Layout improvements for items in the subscription modal */
 #subscriptionModalBody .subscription-item {
   display: flex;
