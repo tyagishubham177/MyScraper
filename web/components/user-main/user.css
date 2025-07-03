@@ -49,12 +49,7 @@
       border-width: 0.4rem;
       border-color: white;
       border-right-color: transparent;
-      animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      animation: spinner-border 0.75s linear infinite, pulse 2s ease-in-out infinite;
     }
 
     @keyframes pulse {
