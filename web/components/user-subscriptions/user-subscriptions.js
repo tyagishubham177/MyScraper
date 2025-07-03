@@ -254,6 +254,7 @@ export async function initUserSubscriptionsUI() {
   subscribedList.addEventListener('click', e => {
     const li = e.target.closest('li[data-product-id]');
     if (!li) return;
+    if (e.target.closest('button')) e.preventDefault();
     if (e.target.closest('.unsub-btn')) {
       const id = li.dataset.productId;
       unsubscribe(id);
@@ -279,6 +280,7 @@ export async function initUserSubscriptionsUI() {
   allList.addEventListener('click', e => {
     const btn = e.target.closest('.sub-btn');
     if (!btn) return;
+    e.preventDefault();
     const li = btn.closest('li[data-product-id]');
     subscribe(li.dataset.productId);
   });
