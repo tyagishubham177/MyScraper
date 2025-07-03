@@ -230,14 +230,14 @@ async def test_save_stock_counters_with_admin_token(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_load_stock_counters_key_conversion(monkeypatch):
-    """Keys returned from API should be converted to integers if possible."""
+    """Keys with product_id|pincode format should be preserved as strings."""
     async def mock_fetch(session, url, headers=None):
-        return {"1": 5, "2": 3}
+        return {"1|111": 5, "2|222": 3}
 
     monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch)
     counters = await check_stock.load_stock_counters(None)
-    assert counters == {1: 5, 2: 3}
-    assert all(isinstance(k, int) for k in counters.keys())
+    assert counters == {"1|111": 5, "2|222": 3}
+    assert all(isinstance(k, str) for k in counters.keys())
 
 
 @pytest.mark.asyncio
@@ -953,6 +953,33 @@ def test_aggregate_product_summaries():
     assert len(result) == 3
     combo_keys = {(r["product_id"], r["pincode"]) for r in result}
     assert combo_keys == {(1, "111"), (1, "222"), (2, "333")}
+
+
+def test_aggregate_product_summaries_streaks_per_pin():
+    summaries = [
+        {
+            "product_id": 1,
+            "product_name": "ProdA",
+            "product_url": "http://a",
+            "pincode": "111",
+            "consecutive_in_stock": 2,
+            "subscriptions": [],
+        },
+        {
+            "product_id": 1,
+            "product_name": "ProdA",
+            "product_url": "http://a",
+            "pincode": "222",
+            "consecutive_in_stock": 5,
+            "subscriptions": [],
+        },
+    ]
+    result = check_stock.aggregate_product_summaries(summaries)
+    streak_map = {
+        (r["product_id"], r["pincode"]): r["consecutive_in_stock"] for r in result
+    }
+    assert streak_map[(1, "111")] == 2
+    assert streak_map[(1, "222")] == 5
 
 
 async def _run_notify_users(monkeypatch):
