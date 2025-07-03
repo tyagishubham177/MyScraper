@@ -280,7 +280,9 @@ export async function initUserSubscriptionsUI() {
   allList.addEventListener('click', e => {
     const btn = e.target.closest('.sub-btn');
     if (!btn) return;
-    e.preventDefault();
+    if (typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     const li = btn.closest('li[data-product-id]');
     subscribe(li.dataset.productId);
   });
