@@ -88,7 +88,6 @@ export default async function handler(req, res) {
       break;
 
     case 'PUT':
-      if (!requireAdmin(req, res)) return;
       try {
         const { id } = req.query;
         const { pincode } = req.body || {};
