@@ -503,12 +503,10 @@ button, .btn {
   }
 
   #all-products-list .list-group-item {
-    flex-direction: column;
     align-items: flex-start;
   }
   #all-products-list .sub-btn {
-    align-self: flex-end;
-    margin-top: 0.25rem;
+    margin-left: auto;
   }
 }
 
