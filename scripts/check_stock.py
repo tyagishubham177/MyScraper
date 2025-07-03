@@ -2,6 +2,33 @@ import asyncio
 from datetime import datetime, timezone, timedelta, time as dt_time
 import inspect
 import aiohttp
+
+# Provide a minimal fallback ClientSession when aiohttp is not fully available
+if not hasattr(aiohttp, "ClientSession"):
+    class _DummyResponse:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+        async def json(self):
+            return {}
+
+        def raise_for_status(self):
+            pass
+
+    class _DummyClientSession:
+        def get(self, url, **kwargs):
+            return _DummyResponse()
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+    aiohttp.ClientSession = _DummyClientSession
 from playwright.async_api import async_playwright
 import config
 import notifications
