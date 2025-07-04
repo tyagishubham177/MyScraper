@@ -56,6 +56,8 @@ body {
   backdrop-filter: blur(20px);
   box-shadow: var(--shadow-secondary);
   transition: var(--transition);
+  animation: cardFadeIn 0.8s ease-out forwards;
+  opacity: 1;
 }
 
 .card:hover {
