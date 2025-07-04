@@ -18,6 +18,7 @@ body {
   position: relative; /* Needed for z-indexing of particles-js */
   overflow-x: hidden; /* Prevent horizontal scrollbars */
   overflow-y: auto;   /* Allow vertical scrolling for the body */
+  scrollbar-gutter: stable; /* Prevent layout shift when scrollbar appears */
   padding-top: 0; /* Changed from 2rem to 0 */
   padding-bottom: 2rem; /* Add some padding if card is very tall */
 }
