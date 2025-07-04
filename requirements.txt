@@ -24,4 +24,4 @@ soupsieve==2.7
 typing-extensions==4.14.0
 urllib3==2.5.0
 yarl==1.20.1
-pytest-asyncio==0.23.6
+pytest-asyncio==1.0.0
