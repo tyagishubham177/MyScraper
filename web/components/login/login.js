@@ -23,7 +23,10 @@ export async function initLogin() {
   const adminRoleBtn = document.getElementById('admin-role-btn');
   const userRoleBtn = document.getElementById('user-role-btn');
 
-  const loginIcon = loginPopup ? loginPopup.querySelector('.login-icon i') : null;
+  const loginIcon =
+    loginPopup && typeof loginPopup.querySelector === 'function'
+      ? loginPopup.querySelector('.login-icon i')
+      : null;
 
   const adminSection = document.getElementById('admin-section');
   const userSection = document.getElementById('user-section');
