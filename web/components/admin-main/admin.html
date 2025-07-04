@@ -177,29 +177,39 @@
             </div>
 
             <h6 class="mt-4">Recipients</h6>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="recipientType" id="recipient-self" value="self" checked>
-              <label class="form-check-label" for="recipient-self">To self (admin)</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="recipientType" id="recipient-all" value="all">
-              <label class="form-check-label" for="recipient-all">To all users</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="recipientType" id="recipient-all-subscribers" value="all-subscribers">
-              <label class="form-check-label" for="recipient-all-subscribers">To all subscribers</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="recipientType" id="recipient-active-subscribers" value="active-subscribers">
-              <label class="form-check-label" for="recipient-active-subscribers">To active subscribers</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="recipientType" id="recipient-paused-subscribers" value="paused-subscribers">
-              <label class="form-check-label" for="recipient-paused-subscribers">To paused subscribers</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="recipientType" id="recipient-non-subscribers" value="non-subscribers">
-              <label class="form-check-label" for="recipient-non-subscribers">To non-subscribers</label>
+            <div id="recipient-type-options" class="d-flex flex-wrap">
+              <div class="form-check me-3 mb-2">
+                <input class="form-check-input" type="radio" name="recipientType" id="recipient-self" value="self" checked>
+                <label class="form-check-label" for="recipient-self">To self (admin)</label>
+              </div>
+              <div class="form-check me-3 mb-2">
+                <input class="form-check-input" type="radio" name="recipientType" id="recipient-all" value="all">
+                <label class="form-check-label" for="recipient-all">To all users</label>
+              </div>
+              <div class="form-check me-3 mb-2">
+                <input class="form-check-input" type="radio" name="recipientType" id="recipient-all-subscribers" value="all-subscribers">
+                <label class="form-check-label" for="recipient-all-subscribers">To all subscribers</label>
+              </div>
+              <div class="form-check me-3 mb-2">
+                <input class="form-check-input" type="radio" name="recipientType" id="recipient-active-subscribers" value="active-subscribers">
+                <label class="form-check-label" for="recipient-active-subscribers">To active subscribers</label>
+              </div>
+              <div class="form-check me-3 mb-2">
+                <input class="form-check-input" type="radio" name="recipientType" id="recipient-paused-subscribers" value="paused-subscribers">
+                <label class="form-check-label" for="recipient-paused-subscribers">To paused subscribers</label>
+              </div>
+              <div class="form-check me-3 mb-2">
+                <input class="form-check-input" type="radio" name="recipientType" id="recipient-default-pincode" value="default-pincode">
+                <label class="form-check-label" for="recipient-default-pincode">With default pincode</label>
+              </div>
+              <div class="form-check me-3 mb-2">
+                <input class="form-check-input" type="radio" name="recipientType" id="recipient-no-pincode" value="no-pincode">
+                <label class="form-check-label" for="recipient-no-pincode">Without pincode</label>
+              </div>
+              <div class="form-check me-3 mb-2">
+                <input class="form-check-input" type="radio" name="recipientType" id="recipient-non-subscribers" value="non-subscribers">
+                <label class="form-check-label" for="recipient-non-subscribers">To non-subscribers</label>
+              </div>
             </div>
             <div id="recipient-section" class="mt-3">
               <label for="recipient-input" class="form-label">Recipients</label>
