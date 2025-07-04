@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Amul Watchdog Control</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="./admin.css">
 </head>
 <body>
   <script>
@@ -22,22 +23,29 @@
     <div class="container py-4">
       <div class="row"> <!-- Single row for the two main columns -->
         <div class="col-lg-5 mb-4"> <!-- Left Column for Amul Watchdog Control -->
-          <div class="card shadow-lg">
+          <div class="card shadow-lg glass-card float-element">
           <div class="card-body text-center">
-            <h1 class="text-primary mb-4">Amul Watchdog Control</h1>
-        <p>
-          Workflow status:
-          <span id="status" class="fw-bold">Loading…</span><i data-lucide="info" class="ms-1"></i>
+            <h1 class="text-primary mb-4">🍼 Amul Watchdog Control</h1>
+        <p class="mb-4">
+          <span class="fw-bold text-white">Workflow status:</span>
+          <span id="status" class="status-indicator status-loading">
+            <span class="fw-bold">Loading…</span>
+            <i data-lucide="activity" class="ms-1"></i>
+          </span>
           <div id="loader" class="spinner-border text-info ms-2" role="status" style="display:none;width:1.5rem;height:1.5rem;"><span class="visually-hidden">Loading...</span></div>
         </p>
-        <div class="row g-2 mb-3">
-          <div class="col-6">
-            <button id="refresh" class="btn btn-secondary w-100 btn-neumorphic"><i data-lucide="refresh-cw" class="me-1"></i>Check status</button>
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <button id="refresh" class="btn btn-secondary btn-enhanced w-100 interactive-hover">
+              <i data-lucide="refresh-cw" class="me-2"></i>Check Status
+            </button>
           </div>
         </div>
-        <div class="d-flex justify-content-between align-items-center mt-4">
-          <h2 class="mb-0">Recent runs</h2>
-          <button id="refresh-runs" class="btn btn-sm btn-secondary btn-neumorphic"><i data-lucide="refresh-cw" class="me-1"></i>Refresh runs</button>
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+          <h2 class="mb-0">📊 Recent Runs</h2>
+          <button id="refresh-runs" class="btn btn-sm btn-secondary btn-enhanced interactive-hover">
+            <i data-lucide="refresh-cw" class="me-1"></i>Refresh
+          </button>
         </div>
         <div id="runsAccordion" class="accordion mt-2"></div>
           </div>
@@ -46,40 +54,43 @@
 
       <div class="col-lg-7 mb-4" id="managementAccordion"> <!-- Right Column for Management Sections -->
         <!-- Recipient Management Trigger -->
-        <button class="btn btn-primary w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#recipientManagementCollapse" aria-expanded="false" aria-controls="recipientManagementCollapse">
-            Recipient Management <i data-lucide="chevron-down" class="ms-1"></i>
+        <button class="collapse-trigger w-100 mb-3 interactive-hover" type="button" data-bs-toggle="collapse" data-bs-target="#recipientManagementCollapse" aria-expanded="false" aria-controls="recipientManagementCollapse">
+            <i data-lucide="users" class="me-2"></i>
+            Recipient Management 
+            <i data-lucide="chevron-down" class="ms-auto"></i>
         </button>
         <!-- Recipient Management Collapsible Card -->
         <div class="collapse" id="recipientManagementCollapse" data-bs-parent="#managementAccordion">
-            <div class="card shadow-lg mb-3">
+            <div class="card shadow-lg glass-card mb-3">
                 <div class="card-body">
-                    <h2 class="text-primary mb-3 text-center">Recipient Management</h2>
-                    <form id="recipient-form" class="mb-3">
+                    <h2 class="text-primary mb-4 text-center">👥 Recipient Management</h2>
+                    <form id="recipient-form" class="mb-4">
                       <div class="input-group">
-                        <input type="email" class="form-control" id="recipient-email" placeholder="Enter recipient email" required>
-                        <button class="btn btn-primary btn-neumorphic" type="button" id="add-recipient-btn">
-                          <i data-lucide="user-plus" class="me-1"></i>Add Recipient
+                        <input type="email" class="form-control" id="recipient-email" placeholder="Enter recipient email address" required>
+                        <button class="btn btn-primary btn-enhanced" type="button" id="add-recipient-btn">
+                          <i data-lucide="user-plus" class="me-1"></i>Add
                         </button>
                       </div>
-                      <div id="add-recipient-error-message" class="mt-2"></div>
+                      <div id="add-recipient-error-message" class="mt-3"></div>
                     </form>
                     <div id="recipients-list-container">
-                      <h5 class="mt-3">Current Recipients:</h5>
+                      <h5 class="mt-4 mb-3">📋 Current Recipients:</h5>
                       <ul id="recipients-list" class="list-group">
                         <!-- Recipients will be listed here -->
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            No recipients yet.
+                            <span class="text-white">No recipients yet.</span>
+                            <span class="badge">0</span>
                         </li>
                       </ul>
                     </div>
                     <div id="recipient-subscriptions-section" class="mt-4" style="display: none;">
                       <h4 id="recipient-subscriptions-title" class="d-flex justify-content-between align-items-center">
-                        <span>Manage Subscriptions for <span id="selected-recipient-email"></span></span>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="close-subscriptions-btn" title="Close">
+                        <span>🔧 Manage Subscriptions for <span id="selected-recipient-email" class="text-primary"></span></span>
+                        <button type="button" class="btn btn-sm btn-outline-light interactive-hover" id="close-subscriptions-btn" title="Close">
                           <i data-lucide="x"></i>
                         </button>
                       </h4>
-                      <div id="subscription-product-list" class="list-group">
+                      <div id="subscription-product-list" class="list-group mt-3">
                         <!-- Available products with checkboxes will be listed here -->
                       </div>
                     </div>
@@ -88,34 +99,37 @@
         </div>
 
         <!-- Product Management Trigger -->
-        <button class="btn btn-primary w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#productManagementCollapse" aria-expanded="false" aria-controls="productManagementCollapse">
-            Product Management <i data-lucide="chevron-down" class="ms-1"></i>
+        <button class="collapse-trigger w-100 mb-3 interactive-hover" type="button" data-bs-toggle="collapse" data-bs-target="#productManagementCollapse" aria-expanded="false" aria-controls="productManagementCollapse">
+            <i data-lucide="package" class="me-2"></i>
+            Product Management 
+            <i data-lucide="chevron-down" class="ms-auto"></i>
         </button>
         <!-- Product Management Collapsible Card -->
         <div class="collapse" id="productManagementCollapse" data-bs-parent="#managementAccordion">
-            <div class="card shadow-lg mb-3">
+            <div class="card shadow-lg glass-card mb-3">
                 <div class="card-body">
-                    <h2 class="text-primary mb-3 text-center">Product Management</h2>
-                    <form id="product-form" class="mb-3">
-                      <div class="mb-2">
-                        <label for="product-name" class="form-label">Product Name</label>
+                    <h2 class="text-primary mb-4 text-center">📦 Product Management</h2>
+                    <form id="product-form" class="mb-4">
+                      <div class="mb-3">
+                        <label for="product-name" class="form-label text-white fw-bold">Product Name</label>
                         <input type="text" class="form-control" id="product-name" placeholder="Enter product name" required>
                       </div>
-                      <div class="mb-2">
-                        <label for="product-url" class="form-label">Product URL</label>
+                      <div class="mb-3">
+                        <label for="product-url" class="form-label text-white fw-bold">Product URL</label>
                         <input type="url" class="form-control" id="product-url" placeholder="Enter product URL" required>
                       </div>
-                      <button class="btn btn-primary btn-neumorphic w-100" type="button" id="add-product-btn">
-                        <i data-lucide="package-plus" class="me-1"></i>Add Product
+                      <button class="btn btn-primary btn-enhanced w-100" type="button" id="add-product-btn">
+                        <i data-lucide="package-plus" class="me-2"></i>Add Product
                       </button>
-                      <div id="add-product-error-message" class="mt-2"></div>
+                      <div id="add-product-error-message" class="mt-3"></div>
                     </form>
                     <div id="products-list-container">
-                      <h5 class="mt-3">Current Products:</h5>
+                      <h5 class="mt-4 mb-3">📋 Current Products:</h5>
                       <ul id="products-list" class="list-group">
                         <!-- Products will be listed here -->
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            No products yet.
+                            <span class="text-white">No products yet.</span>
+                            <span class="badge">0</span>
                         </li>
                       </ul>
                     </div>
@@ -126,21 +140,29 @@
     </div> <!-- End of main row -->
   </div> <!-- End of container -->
   </div> <!-- End of main-app-content -->
-  <button type="button" class="fab" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
-    <i data-lucide="sliders"></i>
+  <button type="button" class="fab interactive-hover" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
+    <i data-lucide="settings"></i>
   </button>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="settingsPane" aria-labelledby="settingsPaneLabel">
     <div class="offcanvas-header">
-      <h5 id="settingsPaneLabel" class="offcanvas-title">Settings</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      <h5 id="settingsPaneLabel" class="offcanvas-title">⚙️ Settings</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-      <h6 class="mb-3">SMS Provider</h6>
-      <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="btn btn-primary w-100 mb-2">Transactional History</a>
-      <button type="button" id="switch-user-btn" class="btn btn-secondary w-100 mb-2"><i data-lucide="user" class="me-1"></i>Switch to User Mode</button>
-      <button type="button" id="email-blast-btn" class="btn btn-info w-100 mb-2"><i data-lucide="mail" class="me-1"></i>Email Blast</button>
-      <button type="button" id="logout-btn" class="btn btn-danger w-100"><i data-lucide="log-out" class="me-1"></i>Logout</button>
+      <h6 class="mb-3 text-white">📱 SMS Provider</h6>
+      <a href="https://www.fast2sms.com/dashboard/transactional-history" target="_blank" class="btn btn-primary btn-enhanced w-100 mb-3">
+        <i data-lucide="history" class="me-2"></i>Transactional History
+      </a>
+      <button type="button" id="switch-user-btn" class="btn btn-secondary btn-enhanced w-100 mb-3">
+        <i data-lucide="user" class="me-2"></i>Switch to User Mode
+      </button>
+      <button type="button" id="email-blast-btn" class="btn btn-info btn-enhanced w-100 mb-3">
+        <i data-lucide="mail" class="me-2"></i>Email Blast
+      </button>
+      <button type="button" id="logout-btn" class="btn btn-danger btn-enhanced w-100">
+        <i data-lucide="log-out" class="me-2"></i>Logout
+      </button>
     </div>
   </div>
 
@@ -149,70 +171,76 @@
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="emailBlastModalLabel">Create Email Blast</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="emailBlastModalLabel">📧 Create Email Blast</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="email-blast-form">
             <div class="mb-3">
-              <label for="email-blast-subject" class="form-label">Subject</label>
-              <input type="text" class="form-control" id="email-blast-subject" required>
+              <label for="email-blast-subject" class="form-label text-white fw-bold">Subject</label>
+              <input type="text" class="form-control" id="email-blast-subject" placeholder="Enter email subject" required>
             </div>
 
             <ul class="nav nav-tabs mb-3" id="emailEditorTabs" role="tablist">
               <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="html-editor-tab" data-bs-toggle="tab" data-bs-target="#html-editor-pane" type="button" role="tab" aria-controls="html-editor-pane" aria-selected="true">Edit</button>
+                <button class="nav-link active" id="html-editor-tab" data-bs-toggle="tab" data-bs-target="#html-editor-pane" type="button" role="tab" aria-controls="html-editor-pane" aria-selected="true">
+                  <i data-lucide="edit" class="me-1"></i>Edit
+                </button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link" id="preview-tab" data-bs-toggle="tab" data-bs-target="#preview-pane" type="button" role="tab" aria-controls="preview-pane" aria-selected="false">Preview</button>
+                <button class="nav-link" id="preview-tab" data-bs-toggle="tab" data-bs-target="#preview-pane" type="button" role="tab" aria-controls="preview-pane" aria-selected="false">
+                  <i data-lucide="eye" class="me-1"></i>Preview
+                </button>
               </li>
             </ul>
             <div class="tab-content" id="emailEditorTabContent">
               <div class="tab-pane fade show active" id="html-editor-pane" role="tabpanel" aria-labelledby="html-editor-tab">
-                <textarea class="form-control" id="html-editor" rows="10"></textarea>
+                <textarea class="form-control" id="html-editor" rows="10" placeholder="Enter your email content here..."></textarea>
               </div>
               <div class="tab-pane fade" id="preview-pane" role="tabpanel" aria-labelledby="preview-tab">
-                <div id="html-preview" class="border p-2" style="min-height: 250px;"></div>
+                <div id="html-preview" class="border rounded p-3" style="min-height: 250px; background: white; color: black;">
+                  Preview will appear here...
+                </div>
               </div>
             </div>
 
-            <h6 class="mt-4">Recipients</h6>
+            <h6 class="mt-4 mb-3 text-white">🎯 Recipients</h6>
             <div id="recipient-type-options" class="d-flex flex-wrap">
               <div class="form-check me-3 mb-2">
                 <input class="form-check-input" type="radio" name="recipientType" id="recipient-self" value="self" checked>
-                <label class="form-check-label" for="recipient-self">To self (admin)</label>
+                <label class="form-check-label text-white" for="recipient-self">To self (admin)</label>
               </div>
               <div class="form-check me-3 mb-2">
                 <input class="form-check-input" type="radio" name="recipientType" id="recipient-all" value="all">
-                <label class="form-check-label" for="recipient-all">To all users</label>
+                <label class="form-check-label text-white" for="recipient-all">To all users</label>
               </div>
               <div class="form-check me-3 mb-2">
                 <input class="form-check-input" type="radio" name="recipientType" id="recipient-all-subscribers" value="all-subscribers">
-                <label class="form-check-label" for="recipient-all-subscribers">To all subscribers</label>
+                <label class="form-check-label text-white" for="recipient-all-subscribers">To all subscribers</label>
               </div>
               <div class="form-check me-3 mb-2">
                 <input class="form-check-input" type="radio" name="recipientType" id="recipient-active-subscribers" value="active-subscribers">
-                <label class="form-check-label" for="recipient-active-subscribers">To active subscribers</label>
+                <label class="form-check-label text-white" for="recipient-active-subscribers">To active subscribers</label>
               </div>
               <div class="form-check me-3 mb-2">
                 <input class="form-check-input" type="radio" name="recipientType" id="recipient-paused-subscribers" value="paused-subscribers">
-                <label class="form-check-label" for="recipient-paused-subscribers">To paused subscribers</label>
+                <label class="form-check-label text-white" for="recipient-paused-subscribers">To paused subscribers</label>
               </div>
               <div class="form-check me-3 mb-2">
                 <input class="form-check-input" type="radio" name="recipientType" id="recipient-default-pincode" value="default-pincode">
-                <label class="form-check-label" for="recipient-default-pincode">With default pincode</label>
+                <label class="form-check-label text-white" for="recipient-default-pincode">With default pincode</label>
               </div>
               <div class="form-check me-3 mb-2">
                 <input class="form-check-input" type="radio" name="recipientType" id="recipient-no-pincode" value="no-pincode">
-                <label class="form-check-label" for="recipient-no-pincode">Without pincode</label>
+                <label class="form-check-label text-white" for="recipient-no-pincode">Without pincode</label>
               </div>
               <div class="form-check me-3 mb-2">
                 <input class="form-check-input" type="radio" name="recipientType" id="recipient-non-subscribers" value="non-subscribers">
-                <label class="form-check-label" for="recipient-non-subscribers">To non-subscribers</label>
+                <label class="form-check-label text-white" for="recipient-non-subscribers">To non-subscribers</label>
               </div>
             </div>
             <div id="recipient-section" class="mt-3">
-              <label for="recipient-input" class="form-label">Recipients</label>
+              <label for="recipient-input" class="form-label text-white fw-bold">Recipients</label>
               <input type="email" class="form-control" id="recipient-input" placeholder="Enter email and press Enter">
               <div id="recipient-list" class="d-flex flex-wrap mt-2"></div>
             </div>
@@ -220,8 +248,10 @@
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" id="send-email-blast-btn">Send Email</button>
+          <button type="button" class="btn btn-secondary btn-enhanced" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary btn-enhanced" id="send-email-blast-btn">
+            <i data-lucide="send" class="me-2"></i>Send Email
+          </button>
         </div>
       </div>
     </div>
@@ -232,26 +262,28 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="editProductModalLabel">✏️ Edit Product</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="edit-product-form">
             <input type="hidden" id="edit-product-id">
             <div class="mb-3">
-              <label for="edit-product-name" class="form-label">Product Name</label>
-              <input type="text" class="form-control" id="edit-product-name" required>
+              <label for="edit-product-name" class="form-label text-white fw-bold">Product Name</label>
+              <input type="text" class="form-control" id="edit-product-name" placeholder="Enter product name" required>
             </div>
             <div class="mb-3">
-              <label for="edit-product-url" class="form-label">Product URL</label>
-              <input type="url" class="form-control" id="edit-product-url" required>
+              <label for="edit-product-url" class="form-label text-white fw-bold">Product URL</label>
+              <input type="url" class="form-control" id="edit-product-url" placeholder="Enter product URL" required>
             </div>
-            <div id="edit-product-error-message" class="mt-2"></div>
+            <div id="edit-product-error-message" class="mt-3"></div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" id="save-product-changes-btn">Save Changes</button>
+          <button type="button" class="btn btn-secondary btn-enhanced" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary btn-enhanced" id="save-product-changes-btn">
+            <i data-lucide="save" class="me-2"></i>Save Changes
+          </button>
         </div>
       </div>
     </div>
@@ -262,14 +294,14 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="productSubscribersModalLabel">Subscribers</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="productSubscribersModalLabel">👥 Subscribers</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <ul id="product-subscribers-list" class="list-group"></ul>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-secondary btn-enhanced" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
