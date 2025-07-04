@@ -38,16 +38,21 @@ export async function initUserSubscriptionsUI() {
   const productsCollapse = document.getElementById('allProductsListCollapse');
 
   if (productsCollapse && searchInput) {
-    const updateSearchVisibility = () => {
-      if (productsCollapse.classList.contains('show')) {
-        searchInput.classList.remove('d-none');
-      } else {
-        searchInput.classList.add('d-none');
-      }
+    const showSearch = () => {
+      searchInput.classList.remove('d-none');
+      searchInput.classList.add('fade-in-content');
+      setTimeout(() => searchInput.classList.remove('fade-in-content'), 500);
     };
-    productsCollapse.addEventListener('shown.bs.collapse', updateSearchVisibility);
-    productsCollapse.addEventListener('hidden.bs.collapse', updateSearchVisibility);
-    updateSearchVisibility();
+    const hideSearch = () => {
+      searchInput.classList.add('d-none');
+    };
+    productsCollapse.addEventListener('show.bs.collapse', showSearch);
+    productsCollapse.addEventListener('hide.bs.collapse', hideSearch);
+    if (productsCollapse.classList.contains('show')) {
+      showSearch();
+    } else {
+      hideSearch();
+    }
   }
 
   function createSubscribedItem(product, sub, paused = false) {
