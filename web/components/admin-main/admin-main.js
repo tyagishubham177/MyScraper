@@ -125,6 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
             baseRecipients = recips.filter(r => pausedSubs.has(r.id)).map(r => r.email);
           } else if (type === 'default-pincode') {
             baseRecipients = recips.filter(r => r.pincode === '201305').map(r => r.email);
+          } else if (type === 'custom-pincode') {
+            baseRecipients = recips.filter(r => r.pincode && r.pincode !== '201305').map(r => r.email);
           } else if (type === 'no-pincode') {
             baseRecipients = recips.filter(r => !r.pincode).map(r => r.email);
           } else {
