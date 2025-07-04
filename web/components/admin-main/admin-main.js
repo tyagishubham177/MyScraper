@@ -123,6 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
             baseRecipients = recips.filter(r => activeSubs.has(r.id)).map(r => r.email);
           } else if (type === 'paused-subscribers') {
             baseRecipients = recips.filter(r => pausedSubs.has(r.id)).map(r => r.email);
+          } else if (type === 'default-pincode') {
+            baseRecipients = recips.filter(r => r.pincode === '201305').map(r => r.email);
           } else {
             baseRecipients = [];
           }
