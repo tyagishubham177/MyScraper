@@ -1,7 +1,23 @@
-import { kv } from '@vercel/kv';
 import nodemailer from 'nodemailer';
 
 const BASE_URL = process.env.APP_BASE_URL || 'http://localhost:3000';
+
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+async function getRecipients() {
+  return fetchJson(`${BASE_URL}/api/recipients`);
+}
+
+async function getSubscriptions() {
+  return fetchJson(`${BASE_URL}/api/subscriptions`);
+}
 
 const removalEmailHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -94,11 +110,10 @@ async function loginAdmin() {
 
 async function cleanupNonSubscribers() {
   try {
-    const recipients = (await kv.get('recipients')) || [];
-    const subscriptions = (await kv.get('subscriptions')) || [];
+    const recipients = await getRecipients();
+    const subscriptions = await getSubscriptions();
 
     const subscribed = new Set(subscriptions.map(s => s.recipient_id));
-    const keepRecipients = recipients.filter(r => subscribed.has(r.id));
     const removedRecipients = recipients.filter(r => !subscribed.has(r.id));
     const removedCount = removedRecipients.length;
 
@@ -124,7 +139,7 @@ async function cleanupNonSubscribers() {
         }
       }
     } else {
-      await kv.set('recipients', keepRecipients);
+      console.error('Admin credentials not provided. Cannot delete recipients.');
     }
 
     try {
