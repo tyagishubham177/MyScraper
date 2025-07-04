@@ -1,32 +1,61 @@
 <div id="login-popup" style="display: none;">
+  <div class="particles"></div>
   <div class="login-container">
-    <div class="login-role-selector">
-      <button id="user-role-btn"><i data-lucide="user" class="me-1"></i>User</button>
-      <button id="admin-role-btn"><i data-lucide="shield" class="me-1"></i>Admin</button>
+    <div class="login-header">
+      <div class="login-icon">
+        <i class="fas fa-shield-alt"></i>
+      </div>
+      <h2 class="login-title">Welcome Back</h2>
+      <p class="login-subtitle">Sign in to your account</p>
     </div>
-    <div id="admin-section" style="display: none;">
+
+    <div class="login-role-selector">
+      <button id="user-role-btn" class="active">
+        <i data-lucide="user"></i>
+        <span>User</span>
+      </button>
+      <button id="admin-role-btn">
+        <i data-lucide="shield"></i>
+        <span>Admin</span>
+      </button>
+    </div>
+
+    <div id="admin-section" class="hidden">
       <div class="input-icon-wrapper">
         <i data-lucide="mail" class="input-icon"></i>
-        <input type="email" id="admin-email" placeholder="Email">
+        <input type="email" id="admin-email" placeholder="Enter your email" class="enhanced-input">
       </div>
       <div class="input-icon-wrapper">
         <i data-lucide="lock" class="input-icon"></i>
-        <input type="password" id="admin-password" placeholder="Password">
+        <input type="password" id="admin-password" placeholder="Enter your password" class="enhanced-input">
       </div>
-      <p id="admin-error-message" class="error-message" style="display: none;"></p>
-      <button id="admin-login-btn"><i data-lucide="log-in" class="me-1"></i>Login</button>
+      <p id="admin-error-message" class="error-message hidden"></p>
+      <button id="admin-login-btn" class="enhanced-btn btn-success">
+        <i data-lucide="log-in"></i>
+        <span>Sign In</span>
+      </button>
     </div>
+
     <div id="user-section">
-      <h4 class="user-login-header" style="margin-bottom: 1.5rem;">Enter your email to login</h4>
+      <h4 class="user-login-header">Enter your email to login</h4>
       <div class="input-icon-wrapper" id="user-email-wrapper">
         <i data-lucide="mail" class="input-icon"></i>
-        <input type="email" id="user-email" placeholder="Email">
+        <input type="email" id="user-email" placeholder="Enter your email address" class="enhanced-input">
       </div>
-      <button id="user-login-btn" class="btn btn-primary w-100 mt-3 mb-3"><i data-lucide="log-in" class="me-1"></i>Login / Check Email</button>
-      <p id="user-error-message" style="display: none; color: red; margin-top: 10px; text-align: center;"></p>
-      <div id="user-contact-links" style="display: none;">
-        <button id="user-mail-btn" class="btn btn-outline-primary contact-link-btn" type="button"><i data-lucide="mail" class="me-1"></i>Email Admin</button>
-        <a href="#" id="user-reddit-link" class="btn btn-outline-danger contact-link-btn"><i data-lucide="message-circle" class="me-1"></i>Message Admin</a>
+      <button id="user-login-btn" class="enhanced-btn btn-primary">
+        <i data-lucide="log-in"></i>
+        <span>Login / Check Email</span>
+      </button>
+      <p id="user-error-message" class="error-message hidden"></p>
+      <div id="user-contact-links" class="hidden">
+        <button id="user-mail-btn" class="contact-link-btn btn-outline-primary">
+          <i data-lucide="mail"></i>
+          <span>Email Admin</span>
+        </button>
+        <a href="#" id="user-reddit-link" class="contact-link-btn btn-outline-danger">
+          <i data-lucide="message-circle"></i>
+          <span>Message Admin</span>
+        </a>
       </div>
     </div>
   </div>
