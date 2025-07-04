@@ -373,6 +373,10 @@ button, .btn {
   transform: rotate(-90deg);
 }
 
+#subscriptions-ui .collapse-title {
+  cursor: pointer;
+}
+
 @media (max-width: 767.98px) {
   #subscriptions-ui .list-wrapper {
     max-height: none;
