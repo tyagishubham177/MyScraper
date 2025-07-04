@@ -1,6 +1,8 @@
 import { kv } from '@vercel/kv';
 import nodemailer from 'nodemailer';
 
+const BASE_URL = process.env.APP_BASE_URL || 'http://localhost:3000';
+
 const removalEmailHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,6 +69,29 @@ async function sendRemovalEmail(emails) {
   }
 }
 
+async function loginAdmin() {
+  const email = process.env.ADMIN_EMAIL || process.env.ADMIN_MAIL;
+  const password = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD_HASH;
+  if (!email || !password) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`Admin login failed: ${res.status} ${text}`);
+      return null;
+    }
+    const data = await res.json();
+    return data.token;
+  } catch (err) {
+    console.error('Admin login request error:', err);
+    return null;
+  }
+}
+
 async function cleanupNonSubscribers() {
   try {
     const recipients = (await kv.get('recipients')) || [];
@@ -82,7 +107,25 @@ async function cleanupNonSubscribers() {
       return;
     }
 
-    await kv.set('recipients', keepRecipients);
+    const token = await loginAdmin();
+    if (token) {
+      for (const r of removedRecipients) {
+        try {
+          const res = await fetch(`${BASE_URL}/api/recipients?id=${encodeURIComponent(r.id)}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!res.ok) {
+            const txt = await res.text();
+            console.error(`Failed to delete ${r.email}: ${res.status} ${txt}`);
+          }
+        } catch (err) {
+          console.error(`Error deleting ${r.email}:`, err);
+        }
+      }
+    } else {
+      await kv.set('recipients', keepRecipients);
+    }
 
     try {
       await sendRemovalEmail(removedRecipients.map(r => r.email));
