@@ -104,12 +104,28 @@ document.addEventListener('DOMContentLoaded', () => {
           baseRecipients = recips.map(r => r.email);
         } else {
           const subs = await window.fetchAPI('/api/subscriptions');
-          const subscribed = new Set();
+          const allSubs = new Set();
+          const activeSubs = new Set();
+          const pausedSubs = new Set();
           subs.forEach(s => {
-            // Count paused subscriptions as subscribed so they are excluded
-            subscribed.add(s.recipient_id);
+            allSubs.add(s.recipient_id);
+            if (s.paused) {
+              pausedSubs.add(s.recipient_id);
+            } else {
+              activeSubs.add(s.recipient_id);
+            }
           });
-          baseRecipients = recips.filter(r => !subscribed.has(r.id)).map(r => r.email);
+          if (type === 'non-subscribers') {
+            baseRecipients = recips.filter(r => !allSubs.has(r.id)).map(r => r.email);
+          } else if (type === 'all-subscribers') {
+            baseRecipients = recips.filter(r => allSubs.has(r.id)).map(r => r.email);
+          } else if (type === 'active-subscribers') {
+            baseRecipients = recips.filter(r => activeSubs.has(r.id)).map(r => r.email);
+          } else if (type === 'paused-subscribers') {
+            baseRecipients = recips.filter(r => pausedSubs.has(r.id)).map(r => r.email);
+          } else {
+            baseRecipients = [];
+          }
         }
       } catch (err) {
         console.error('Error fetching recipients:', err);

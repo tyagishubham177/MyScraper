@@ -62,21 +62,41 @@ export default async function handler(req, res) {
           console.warn("Admin email not provided for 'self' recipient type.");
           return res.status(400).json({ message: 'Admin email required for "self" recipient type and not provided.' });
         }
-      } else if (recipientType === 'all') {
-        allRecipients.forEach(r => addUnique(r.email));
-      } else if (recipientType === 'non-subscribers') {
+      } else {
         const allSubscriptions = await getSubscriptionsFromKV();
-        const subscribedRecipientIds = new Set();
+        const allSubs = new Set();
+        const activeSubs = new Set();
+        const pausedSubs = new Set();
         allSubscriptions.forEach(sub => {
-          // Treat paused subscriptions as still subscribed to exclude them
-          subscribedRecipientIds.add(sub.recipient_id);
+          allSubs.add(sub.recipient_id);
+          if (sub.paused) {
+            pausedSubs.add(sub.recipient_id);
+          } else {
+            activeSubs.add(sub.recipient_id);
+          }
         });
 
-        allRecipients.forEach(r => {
-          if (!subscribedRecipientIds.has(r.id)) addUnique(r.email);
-        });
-      } else {
-        return res.status(400).json({ message: 'Invalid recipient type specified.' });
+        if (recipientType === 'all') {
+          allRecipients.forEach(r => addUnique(r.email));
+        } else if (recipientType === 'non-subscribers') {
+          allRecipients.forEach(r => {
+            if (!allSubs.has(r.id)) addUnique(r.email);
+          });
+        } else if (recipientType === 'all-subscribers') {
+          allRecipients.forEach(r => {
+            if (allSubs.has(r.id)) addUnique(r.email);
+          });
+        } else if (recipientType === 'active-subscribers') {
+          allRecipients.forEach(r => {
+            if (activeSubs.has(r.id)) addUnique(r.email);
+          });
+        } else if (recipientType === 'paused-subscribers') {
+          allRecipients.forEach(r => {
+            if (pausedSubs.has(r.id)) addUnique(r.email);
+          });
+        } else {
+          return res.status(400).json({ message: 'Invalid recipient type specified.' });
+        }
       }
     }
 
