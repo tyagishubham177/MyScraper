@@ -223,6 +223,7 @@ export async function initLogin() {
     const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
     if (!email || !password) {
       showError(adminErrorMessage, 'Please enter both email and password.');
+      hideGlobalLoader();
       return;
     }
     try {
@@ -259,6 +260,7 @@ export async function initLogin() {
     if (email === '') {
       showError(userErrorMessage, 'Please enter your email.');
       if (userContactLinks) userContactLinks.style.display = 'none';
+      hideGlobalLoader();
       return;
     }
     try {
