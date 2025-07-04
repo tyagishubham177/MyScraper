@@ -23,6 +23,11 @@ export async function initLogin() {
   const adminRoleBtn = document.getElementById('admin-role-btn');
   const userRoleBtn = document.getElementById('user-role-btn');
 
+  const loginIcon =
+    loginPopup && typeof loginPopup.querySelector === 'function'
+      ? loginPopup.querySelector('.login-icon i')
+      : null;
+
   const adminSection = document.getElementById('admin-section');
   const userSection = document.getElementById('user-section');
 
@@ -51,7 +56,15 @@ export async function initLogin() {
   function showError(elem, msg) {
     if (elem) {
       elem.textContent = msg;
+      elem.classList.remove('hidden');
       elem.style.display = 'block';
+    }
+  }
+
+  function hideElem(elem) {
+    if (elem) {
+      elem.classList.add('hidden');
+      elem.style.display = 'none';
     }
   }
 
@@ -98,7 +111,8 @@ export async function initLogin() {
       }
       showError(userErrorMessage, msg);
       if (userContactLinks) {
-        userContactLinks.style.display = 'block';
+        userContactLinks.classList.remove('hidden');
+        userContactLinks.style.display = 'flex';
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
           window.lucide.createIcons();
         }
@@ -111,8 +125,8 @@ export async function initLogin() {
       clearInterval(timerVar);
     }
     if (storageKey) localStorage.removeItem(storageKey);
-    if (messageElem) messageElem.style.display = 'none';
-    if (contactLinks) contactLinks.style.display = 'none';
+    if (messageElem) hideElem(messageElem);
+    if (contactLinks) hideElem(contactLinks);
     return null;
   }
 
@@ -124,10 +138,12 @@ export async function initLogin() {
       if (remaining > 0) {
         if (messageElem) {
           messageElem.textContent = `Too many attempts. Try again in ${remaining}s`;
+          messageElem.classList.remove('hidden');
           messageElem.style.display = 'block';
         }
         if (contactLinks) {
-          contactLinks.style.display = 'block';
+          contactLinks.classList.remove('hidden');
+          contactLinks.style.display = 'flex';
           if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
           }
@@ -136,8 +152,8 @@ export async function initLogin() {
         clearInterval(timer);
         button.disabled = false;
         localStorage.removeItem(storageKey);
-        if (messageElem) messageElem.style.display = 'none';
-        if (contactLinks) contactLinks.style.display = 'none';
+        if (messageElem) hideElem(messageElem);
+        if (contactLinks) hideElem(contactLinks);
       }
     }
     update();
@@ -160,8 +176,18 @@ export async function initLogin() {
     if (loginPopup) {
       loginPopup.style.display = 'flex';
     }
-    if (adminSection) adminSection.style.display = 'none';
-    if (userSection) userSection.style.display = 'block';
+    if (adminSection) {
+      adminSection.classList.add('hidden');
+      adminSection.style.display = 'none';
+    }
+    if (userSection) {
+      userSection.classList.remove('hidden');
+      userSection.style.display = 'block';
+    }
+
+    if (loginIcon) {
+      loginIcon.setAttribute('data-lucide', 'user');
+    }
 
     if (userRoleBtn) userRoleBtn.classList.add('active');
     if (adminRoleBtn) adminRoleBtn.classList.remove('active');
@@ -170,9 +196,8 @@ export async function initLogin() {
     // This will also be reset when user tab is clicked
     if (userEmailInput) userEmailInput.value = '';
     if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Make email input visible by default in user section
-    if (userErrorMessage) userErrorMessage.style.display = 'none';
-    // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
-    if (userContactLinks) userContactLinks.style.display = 'none';
+    if (userErrorMessage) hideElem(userErrorMessage);
+    if (userContactLinks) hideElem(userContactLinks);
 
     adminCountdownTimer = clearCountdown(adminCountdownTimer, null, adminErrorMessage);
     adminCountdownTimer = checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
@@ -187,44 +212,68 @@ export async function initLogin() {
 
   if (adminRoleBtn) {
     adminRoleBtn.addEventListener('click', () => {
-      if (adminSection) adminSection.style.display = 'block';
-      if (userSection) userSection.style.display = 'none';
+      if (adminSection) {
+        adminSection.classList.remove('hidden');
+        adminSection.style.display = 'block';
+      }
+      if (userSection) {
+        userSection.classList.add('hidden');
+        userSection.style.display = 'none';
+      }
+      if (loginIcon) {
+        loginIcon.setAttribute('data-lucide', 'shield');
+      }
       adminRoleBtn.classList.add('active');
       if (userRoleBtn) userRoleBtn.classList.remove('active');
-      if (adminErrorMessage) adminErrorMessage.style.display = 'none'; // Hide admin error on tab switch
+      if (adminErrorMessage) hideElem(adminErrorMessage); // Hide admin error on tab switch
       // Clear admin inputs (optional, but good practice)
       if(adminEmailInput) adminEmailInput.value = '';
       if(adminPasswordInput) adminPasswordInput.value = '';
       adminCountdownTimer = clearCountdown(adminCountdownTimer, null, adminErrorMessage);
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
     });
   }
 
   if (userRoleBtn) {
     userRoleBtn.addEventListener('click', () => {
-      if (adminSection) adminSection.style.display = 'none';
-      if (userSection) userSection.style.display = 'block';
+      if (adminSection) {
+        adminSection.classList.add('hidden');
+        adminSection.style.display = 'none';
+      }
+      if (userSection) {
+        userSection.classList.remove('hidden');
+        userSection.style.display = 'block';
+      }
+      if (loginIcon) {
+        loginIcon.setAttribute('data-lucide', 'user');
+      }
       userRoleBtn.classList.add('active');
       if (adminRoleBtn) adminRoleBtn.classList.remove('active');
 
       // Reset User Section to initial state when tab is clicked
       if (userEmailInput) userEmailInput.value = '';
       if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Ensure email input is visible
-      if (userErrorMessage) userErrorMessage.style.display = 'none';
+      if (userErrorMessage) hideElem(userErrorMessage);
       // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
-      if (userContactLinks) userContactLinks.style.display = 'none';
+      if (userContactLinks) hideElem(userContactLinks);
       userCountdownTimer = clearCountdown(userCountdownTimer, null, userErrorMessage, userContactLinks);
       userCountdownTimer = checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil', userContactLinks);
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
     });
   }
 
   async function handleAdminLogin() {
-    showGlobalLoader();
     const email = adminEmailInput ? adminEmailInput.value.trim() : '';
     const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
     if (!email || !password) {
       showError(adminErrorMessage, 'Please enter both email and password.');
       return;
     }
+    showGlobalLoader();
     try {
       const res = await fetch(API_LOGIN, {
         method: 'POST',
@@ -254,13 +303,13 @@ export async function initLogin() {
 
   // New User Login Logic
   async function handleUserLogin() {
-    showGlobalLoader();
     const email = userEmailInput ? userEmailInput.value.trim() : '';
     if (email === '') {
       showError(userErrorMessage, 'Please enter your email.');
-      if (userContactLinks) userContactLinks.style.display = 'none';
+      if (userContactLinks) hideElem(userContactLinks);
       return;
     }
+    showGlobalLoader();
     try {
       const res = await fetch(API_USER_LOGIN, {
         method: 'POST',
