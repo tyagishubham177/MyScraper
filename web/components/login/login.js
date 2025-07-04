@@ -51,7 +51,7 @@ export async function initLogin() {
   function showError(elem, msg) {
     if (elem) {
       elem.textContent = msg;
-      elem.style.display = 'block';
+      elem.classList.remove('hidden');
     }
   }
 
@@ -98,7 +98,7 @@ export async function initLogin() {
       }
       showError(userErrorMessage, msg);
       if (userContactLinks) {
-        userContactLinks.style.display = 'block';
+        userContactLinks.classList.remove('hidden');
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
           window.lucide.createIcons();
         }
@@ -111,8 +111,8 @@ export async function initLogin() {
       clearInterval(timerVar);
     }
     if (storageKey) localStorage.removeItem(storageKey);
-    if (messageElem) messageElem.style.display = 'none';
-    if (contactLinks) contactLinks.style.display = 'none';
+    if (messageElem) messageElem.classList.add('hidden');
+    if (contactLinks) contactLinks.classList.add('hidden');
     return null;
   }
 
@@ -124,10 +124,10 @@ export async function initLogin() {
       if (remaining > 0) {
         if (messageElem) {
           messageElem.textContent = `Too many attempts. Try again in ${remaining}s`;
-          messageElem.style.display = 'block';
+          messageElem.classList.remove('hidden');
         }
         if (contactLinks) {
-          contactLinks.style.display = 'block';
+          contactLinks.classList.remove('hidden');
           if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
           }
@@ -136,8 +136,8 @@ export async function initLogin() {
         clearInterval(timer);
         button.disabled = false;
         localStorage.removeItem(storageKey);
-        if (messageElem) messageElem.style.display = 'none';
-        if (contactLinks) contactLinks.style.display = 'none';
+        if (messageElem) messageElem.classList.add('hidden');
+        if (contactLinks) contactLinks.classList.add('hidden');
       }
     }
     update();
@@ -160,8 +160,8 @@ export async function initLogin() {
     if (loginPopup) {
       loginPopup.style.display = 'flex';
     }
-    if (adminSection) adminSection.style.display = 'none';
-    if (userSection) userSection.style.display = 'block';
+    if (adminSection) adminSection.classList.add('hidden');
+    if (userSection) userSection.classList.remove('hidden');
 
     if (userRoleBtn) userRoleBtn.classList.add('active');
     if (adminRoleBtn) adminRoleBtn.classList.remove('active');
@@ -170,9 +170,8 @@ export async function initLogin() {
     // This will also be reset when user tab is clicked
     if (userEmailInput) userEmailInput.value = '';
     if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Make email input visible by default in user section
-    if (userErrorMessage) userErrorMessage.style.display = 'none';
-    // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
-    if (userContactLinks) userContactLinks.style.display = 'none';
+    if (userErrorMessage) userErrorMessage.classList.add('hidden');
+    if (userContactLinks) userContactLinks.classList.add('hidden');
 
     adminCountdownTimer = clearCountdown(adminCountdownTimer, null, adminErrorMessage);
     adminCountdownTimer = checkStoredLock(adminLoginBtn, adminErrorMessage, 'adminLockUntil');
@@ -187,11 +186,11 @@ export async function initLogin() {
 
   if (adminRoleBtn) {
     adminRoleBtn.addEventListener('click', () => {
-      if (adminSection) adminSection.style.display = 'block';
-      if (userSection) userSection.style.display = 'none';
+      if (adminSection) adminSection.classList.remove('hidden');
+      if (userSection) userSection.classList.add('hidden');
       adminRoleBtn.classList.add('active');
       if (userRoleBtn) userRoleBtn.classList.remove('active');
-      if (adminErrorMessage) adminErrorMessage.style.display = 'none'; // Hide admin error on tab switch
+      if (adminErrorMessage) adminErrorMessage.classList.add('hidden'); // Hide admin error on tab switch
       // Clear admin inputs (optional, but good practice)
       if(adminEmailInput) adminEmailInput.value = '';
       if(adminPasswordInput) adminPasswordInput.value = '';
@@ -201,17 +200,17 @@ export async function initLogin() {
 
   if (userRoleBtn) {
     userRoleBtn.addEventListener('click', () => {
-      if (adminSection) adminSection.style.display = 'none';
-      if (userSection) userSection.style.display = 'block';
+      if (adminSection) adminSection.classList.add('hidden');
+      if (userSection) userSection.classList.remove('hidden');
       userRoleBtn.classList.add('active');
       if (adminRoleBtn) adminRoleBtn.classList.remove('active');
 
       // Reset User Section to initial state when tab is clicked
       if (userEmailInput) userEmailInput.value = '';
       if (userEmailWrapper) userEmailWrapper.style.display = 'flex'; // Ensure email input is visible
-      if (userErrorMessage) userErrorMessage.style.display = 'none';
+      if (userErrorMessage) userErrorMessage.classList.add('hidden');
       // if (userContactAdminText) userContactAdminText.style.display = 'none'; // REMOVED
-      if (userContactLinks) userContactLinks.style.display = 'none';
+      if (userContactLinks) userContactLinks.classList.add('hidden');
       userCountdownTimer = clearCountdown(userCountdownTimer, null, userErrorMessage, userContactLinks);
       userCountdownTimer = checkStoredLock(userLoginBtn, userErrorMessage, 'userLockUntil', userContactLinks);
     });
@@ -258,7 +257,7 @@ export async function initLogin() {
     const email = userEmailInput ? userEmailInput.value.trim() : '';
     if (email === '') {
       showError(userErrorMessage, 'Please enter your email.');
-      if (userContactLinks) userContactLinks.style.display = 'none';
+      if (userContactLinks) userContactLinks.classList.add('hidden');
       return;
     }
     try {
