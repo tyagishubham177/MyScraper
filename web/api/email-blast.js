@@ -82,6 +82,10 @@ export default async function handler(req, res) {
           allRecipients.forEach(r => {
             if (r.pincode === '201305') addUnique(r.email);
           });
+        } else if (recipientType === 'no-pincode') {
+          allRecipients.forEach(r => {
+            if (!r.pincode) addUnique(r.email);
+          });
         } else if (recipientType === 'non-subscribers') {
           allRecipients.forEach(r => {
             if (!allSubs.has(r.id)) addUnique(r.email);
