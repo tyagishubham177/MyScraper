@@ -10,13 +10,19 @@
   <link rel="stylesheet" href="./admin.css">
 </head>
 <body>
+  <script>
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      window.location.href = '../../index.html';
+    }
+  </script>
   <!-- Login UI moved to components/login/login.html -->
   <div id="particles-js" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0;"></div>
   <div id="particles-js-bg"></div> <!-- Div for animated gradient background -->
   <div id="main-app-content">
     <div class="container py-4">
-      <div class="row"> <!-- Single row for the two main columns -->
-        <div class="col-lg-5 mb-4"> <!-- Left Column for Amul Watchdog Control -->
+      <div class="row g-4"> <!-- Single row for the two main columns -->
+        <div class="col-lg-5 col-xl-4 mb-4"> <!-- Left Column for Amul Watchdog Control -->
           <div class="card shadow-lg glass-card float-element">
           <div class="card-body text-center">
             <h1 class="text-primary mb-4">🍼 Amul Watchdog Control</h1>
@@ -135,7 +141,7 @@
   </div> <!-- End of container -->
   </div> <!-- End of main-app-content -->
   <button type="button" class="fab interactive-hover" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
-    <i data-lucide="settings"></i>
+    <i data-lucide="settings-2"></i>
   </button>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="settingsPane" aria-labelledby="settingsPaneLabel">
