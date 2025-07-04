@@ -109,6 +109,7 @@ export async function initLogin() {
       showError(userErrorMessage, msg);
       if (userContactLinks) {
         userContactLinks.classList.remove('hidden');
+        userContactLinks.style.display = 'flex';
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
           window.lucide.createIcons();
         }
@@ -139,7 +140,7 @@ export async function initLogin() {
         }
         if (contactLinks) {
           contactLinks.classList.remove('hidden');
-          contactLinks.style.display = 'block';
+          contactLinks.style.display = 'flex';
           if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
           }
