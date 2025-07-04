@@ -4,7 +4,7 @@
       <a href="#" class="d-sm-none collapse-toggle me-2" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">
         <i data-lucide="chevron-down"></i>
       </a>
-      <span>Your Subscriptions</span>
+      <span class="collapse-title" role="button" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">Your Subscriptions</span>
     </h4>
     <div class="modal fade" id="subscriptionsInfoModal" tabindex="-1" aria-labelledby="subscriptionsInfoModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -27,7 +27,7 @@
         </div>
       </div>
     </div>
-    <div class="collapse show" id="userSubscribedListCollapse">
+    <div class="collapse fade-collapse show" id="userSubscribedListCollapse">
       <div class="list-wrapper">
         <ul id="user-subscribed-list" class="list-group"></ul>
       </div>
@@ -38,10 +38,10 @@
       <a href="#" class="d-sm-none collapse-toggle me-2" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">
         <i data-lucide="chevron-down"></i>
       </a>
-      <h4 class="mb-0">Available Products</h4>
+        <h4 class="mb-0 collapse-title" role="button" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">Available Products</h4>
     </div>
     <input type="text" id="product-search" class="form-control mb-2" placeholder="Search products">
-    <div class="collapse show" id="allProductsListCollapse">
+    <div class="collapse fade-collapse show" id="allProductsListCollapse">
       <div class="list-wrapper">
         <ul id="all-products-list" class="list-group"></ul>
       </div>

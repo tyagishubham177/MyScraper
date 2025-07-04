@@ -373,6 +373,19 @@ button, .btn {
   transform: rotate(-90deg);
 }
 
+#subscriptions-ui .collapse-title {
+  cursor: pointer;
+}
+
+#subscriptions-ui .fade-collapse {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+#subscriptions-ui .fade-collapse.show {
+  opacity: 1;
+}
+
 @media (max-width: 767.98px) {
   #subscriptions-ui .list-wrapper {
     max-height: none;
