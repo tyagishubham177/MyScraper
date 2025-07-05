@@ -332,21 +332,6 @@ async def process_product(
             pincode_entered,
         )
 
-    subs = filter_active_subs(subs, current_time)
-    if not subs:
-        print(f"Skipping product '{effective_name}' - no active subscribers.")
-        return (
-            {
-                "product_id": product_id,
-                "product_name": effective_name,
-                "product_url": product_url,
-                "subscriptions": [
-                    {"user_email": "N/A", "status": "Skipped - No Active Subscribers", "pincode": None}
-                ],
-            },
-            0,
-            pincode_entered,
-        )
 
     try:
         log_prefix = f"{pincode}|{product_id}"
@@ -453,37 +438,77 @@ async def main():
             browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
 
             async def process_pincode(pincode, recips_subset):
-                page = await browser.new_page()
-                entered = False
+                """Handle all products for a given pincode concurrently."""
                 results = []
+
+                subs_subset = {
+                    pid: filter_active_subs(
+                        [s for s in subs if s.get("recipient_id") in recips_subset],
+                        current_time,
+                    )
+                    for pid, subs in subs_map.items()
+                }
+
+                # Filter products that actually need checking
+                products_to_check = []
+                for product_info in all_products:
+                    pid = product_info.get("id")
+                    product_subs = subs_subset.get(pid, [])
+                    if product_subs:
+                        products_to_check.append(product_info)
+
+                if not products_to_check:
+                    return results
+
+                # Open a page once to set the pincode and obtain cookies for the context
+                setup_page = await browser.new_page()
                 try:
-                    subs_subset = {
-                        pid: [s for s in subs if s.get("recipient_id") in recips_subset]
-                        for pid, subs in subs_map.items()
-                    }
-                    for product_info in all_products:
-                        pid = product_info.get("id")
-                        product_subs = subs_subset.get(pid, [])
-                        if not filter_active_subs(product_subs, current_time):
-                            continue
-                        summary, sent, entered = await process_product(
-                            session,
-                            page,
-                            product_info,
-                            recips_subset,
-                            current_time,
-                            entered,
-                            subs_subset,
-                            pincode,
-                        )
-                        results.append((product_info, summary, sent))
+                    # Use the first product page to set the pincode
+                    first = products_to_check[0]
+                    summary, sent, _ = await process_product(
+                        session,
+                        setup_page,
+                        first,
+                        recips_subset,
+                        current_time,
+                        False,  # enter pincode
+                        subs_subset,
+                        pincode,
+                    )
+                    results.append((first, summary, sent))
                 finally:
-                    if hasattr(page, "close"):
-                        close_fn = page.close
+                    if hasattr(setup_page, "close"):
+                        close_fn = setup_page.close
                         if inspect.iscoroutinefunction(close_fn):
                             await close_fn()
                         else:
                             close_fn()
+
+                async def handle_product(prod_info):
+                    page = await browser.new_page()
+                    try:
+                        summary, sent, _ = await process_product(
+                            session,
+                            page,
+                            prod_info,
+                            recips_subset,
+                            current_time,
+                            True,  # pincode already entered
+                            subs_subset,
+                            pincode,
+                        )
+                        return (prod_info, summary, sent)
+                    finally:
+                        if hasattr(page, "close"):
+                            close_fn = page.close
+                            if inspect.iscoroutinefunction(close_fn):
+                                await close_fn()
+                            else:
+                                close_fn()
+
+                tasks = [handle_product(p) for p in products_to_check[1:]]
+                if tasks:
+                    results.extend(await asyncio.gather(*tasks))
                 return results
 
             pincode_tasks = [
