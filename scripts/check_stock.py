@@ -437,6 +437,7 @@ async def main():
 
         subs_map = await load_subscriptions(session)
         subs_by_pin = build_subs_by_pincode(recipients_map, subs_map)
+        product_map = {p.get("id"): p for p in all_products if p.get("id")}
         subscribed_rids = {
             sub.get("recipient_id")
             for subs in subs_map.values()
@@ -474,10 +475,9 @@ async def main():
                         pid: filter_active_subs(subs, current_time)
                         for pid, subs in subs_by_pin.get(pincode, {}).items()
                     }
-                    for product_info in all_products:
-                        pid = product_info.get("id")
-                        product_subs = subs_subset.get(pid, [])
-                        if not product_subs:
+                    for pid, product_subs in subs_subset.items():
+                        product_info = product_map.get(pid)
+                        if not product_info:
                             continue
                         summary, sent, entered = await process_product(
                             session,
@@ -486,7 +486,7 @@ async def main():
                             recips_subset,
                             current_time,
                             entered,
-                            subs_subset,
+                            {pid: product_subs},
                             pincode,
                         )
                         results.append((product_info, summary, sent))
