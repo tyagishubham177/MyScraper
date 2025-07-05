@@ -332,21 +332,6 @@ async def process_product(
             pincode_entered,
         )
 
-    subs = filter_active_subs(subs, current_time)
-    if not subs:
-        print(f"Skipping product '{effective_name}' - no active subscribers.")
-        return (
-            {
-                "product_id": product_id,
-                "product_name": effective_name,
-                "product_url": product_url,
-                "subscriptions": [
-                    {"user_email": "N/A", "status": "Skipped - No Active Subscribers", "pincode": None}
-                ],
-            },
-            0,
-            pincode_entered,
-        )
 
     try:
         log_prefix = f"{pincode}|{product_id}"
@@ -458,13 +443,16 @@ async def main():
                 results = []
                 try:
                     subs_subset = {
-                        pid: [s for s in subs if s.get("recipient_id") in recips_subset]
+                        pid: filter_active_subs(
+                            [s for s in subs if s.get("recipient_id") in recips_subset],
+                            current_time,
+                        )
                         for pid, subs in subs_map.items()
                     }
                     for product_info in all_products:
                         pid = product_info.get("id")
                         product_subs = subs_subset.get(pid, [])
-                        if not filter_active_subs(product_subs, current_time):
+                        if not product_subs:
                             continue
                         summary, sent, entered = await process_product(
                             session,
