@@ -450,59 +450,107 @@ async def main():
             pincode_groups.setdefault(pin, {})[rid] = info
 
         async with async_playwright() as pw:
+            # Group pincodes for batch processing
+            # Adjust MAX_CONCURRENT_BROWSERS based on resource availability and desired parallelism
+            MAX_CONCURRENT_BROWSERS = getattr(config, "MAX_CONCURRENT_BROWSERS", 3)
+            all_pincode_items = list(pincode_groups.items())
 
-            async def process_pincode(pincode, recips_subset):
-                browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
-                page = await browser.new_page()
-                entered = False
-                results = []
+            # Launch browsers first
+            browsers = []
+            for i in range(min(MAX_CONCURRENT_BROWSERS, len(all_pincode_items))):
                 try:
-                    for product_info in all_products:
-                        pid = product_info.get("id")
-                        subs = subs_map.get(pid)
-                        if subs is not None:
-                            filtered = [
-                                s for s in subs if s.get("recipient_id") in recips_subset
-                            ]
-                            if not filter_active_subs(filtered, current_time):
-                                continue
-                        summary, sent, entered = await process_product(
-                            session,
-                            page,
-                            product_info,
-                            recips_subset,
-                            current_time,
-                            entered,
-                            {
-                                pid: [
-                                    s
-                                    for s in subs
-                                    if s.get("recipient_id") in recips_subset
-                                ]
-                                for pid, subs in subs_map.items()
-                            },
-                            pincode,
-                        )
-                        results.append((product_info, summary, sent))
-                finally:
-                    if hasattr(page, "close"):
-                        close_fn = page.close
-                        if inspect.iscoroutinefunction(close_fn):
-                            await close_fn()
-                        else:
-                            close_fn()
+                    browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
+                    browsers.append(browser)
+                except Exception as e:
+                    print(f"Failed to launch browser {i+1}: {e}")
+
+            if not browsers:
+                print("No browsers could be launched. Exiting Playwright block.")
+                # Fallback or error handling if no browsers launched
+                pincode_results = []
+            else:
+                print(f"Launched {len(browsers)} browser instances for processing.")
+
+                async def process_pincode_batch(browser_instance, batch_items):
+                    batch_results = []
+                    for pincode, recips_subset in batch_items:
+                        page = None
+                        try:
+                            page = await browser_instance.new_page()
+                            entered_pincode_on_page = False # Reset for each pincode
+                            pincode_product_results = []
+                            for product_info in all_products:
+                                pid = product_info.get("id")
+
+                                # Filter subscriptions relevant to this pincode's recipients and product
+                                current_product_subs_for_pincode = []
+                                if pid in subs_map and subs_map[pid] is not None:
+                                    current_product_subs_for_pincode = [
+                                        s for s in subs_map[pid] if s.get("recipient_id") in recips_subset
+                                    ]
+
+                                if not filter_active_subs(current_product_subs_for_pincode, current_time):
+                                    # print(f"No active subs for product {pid} in pincode {pincode}")
+                                    continue
+
+                                # Prepare subs_map specifically for this product and pincode's recipients
+                                process_product_subs_map = {pid: current_product_subs_for_pincode}
+
+                                summary, sent, entered_pincode_on_page = await process_product(
+                                    session,
+                                    page,
+                                    product_info,
+                                    recips_subset, # recipient_map filtered for this pincode
+                                    current_time,
+                                    entered_pincode_on_page,
+                                    process_product_subs_map, # subs_map filtered for this product & pincode
+                                    pincode,
+                                )
+                                if summary: # Ensure summary is not None before appending
+                                    pincode_product_results.append((product_info, summary, sent))
+                            batch_results.extend(pincode_product_results)
+                        except Exception as e:
+                            print(f"Error processing pincode {pincode} in batch: {e}")
+                            # Optionally append error information to results
+                        finally:
+                            if page:
+                                try:
+                                    await page.close()
+                                except Exception as e:
+                                    print(f"Error closing page for pincode {pincode}: {e}")
+                    return batch_results
+
+                pincode_tasks = []
+                items_per_browser = (len(all_pincode_items) + len(browsers) - 1) // len(browsers) # Ceiling division
+
+                for i, browser in enumerate(browsers):
+                    start_index = i * items_per_browser
+                    end_index = min((i + 1) * items_per_browser, len(all_pincode_items))
+                    batch = all_pincode_items[start_index:end_index]
+                    if batch: # Ensure batch is not empty
+                        pincode_tasks.append(process_pincode_batch(browser, batch))
+
+                # Gather results from all batches
+                pincode_results_batched = await asyncio.gather(*pincode_tasks, return_exceptions=True)
+
+                # Flatten results and handle exceptions from gather
+                pincode_results = []
+                for res_batch in pincode_results_batched:
+                    if isinstance(res_batch, Exception):
+                        print(f"A pincode batch processing task failed: {res_batch}")
+                    elif res_batch: # If result is not an exception and not empty
+                        pincode_results.extend(res_batch)
+
+            # Close all browsers after processing
+            for browser in browsers:
+                try:
                     await browser.close()
-                return results
+                except Exception as e:
+                    print(f"Error closing a browser instance: {e}")
 
-            pincode_tasks = [
-                process_pincode(pin, subset) for pin, subset in pincode_groups.items()
-            ]
-
-            pincode_results = await asyncio.gather(*pincode_tasks)
-
-            for results in pincode_results:
-                for product_info, summary, sent in results:
-                    if summary:
+            # Process results (flattened from batches)
+            for product_info, summary, sent in pincode_results: # Ensure this structure matches what process_pincode_batch returns
+                if summary: # Check if summary is not None
                         pid = product_info.get("id")
                         pin = summary.get("pincode")
                         key = f"{pid}|{pin}"
