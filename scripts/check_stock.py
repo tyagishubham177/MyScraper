@@ -450,9 +450,9 @@ async def main():
             pincode_groups.setdefault(pin, {})[rid] = info
 
         async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
 
             async def process_pincode(pincode, recips_subset):
-                browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
                 page = await browser.new_page()
                 entered = False
                 results = []
@@ -491,7 +491,6 @@ async def main():
                             await close_fn()
                         else:
                             close_fn()
-                    await browser.close()
                 return results
 
             pincode_tasks = [
@@ -513,6 +512,8 @@ async def main():
                         summary["consecutive_in_stock"] = stock_counters.get(key, 0)
                         summary_email_data.append(summary)
                     total_sent += sent
+
+            await browser.close()
 
         print("\nStock check finished.")
         await save_stock_counters(session, stock_counters)
