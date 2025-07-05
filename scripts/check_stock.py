@@ -420,6 +420,12 @@ async def main():
             return
 
         subs_map = await load_subscriptions(session)
+        subscribed_rids = {
+            sub.get("recipient_id")
+            for subs in subs_map.values()
+            for sub in subs
+            if sub.get("recipient_id") is not None
+        }
 
         stock_counters = await load_stock_counters(session)
         if not isinstance(stock_counters, dict):
@@ -429,8 +435,13 @@ async def main():
             datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)
         ).time()
 
+        # Only build groups for recipients that actually have active
+        # subscriptions. This avoids spawning browser pages for pincodes
+        # with no interested users.
         pincode_groups = {}
         for rid, info in recipients_map.items():
+            if rid not in subscribed_rids:
+                continue
             pin = info.get("pincode", config.PINCODE)
             pincode_groups.setdefault(pin, {})[rid] = info
 
