@@ -685,6 +685,9 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
+    async def mock_load_subscriptions_for_main(session):
+        return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
+    monkeypatch.setattr(check_stock, "load_subscriptions", mock_load_subscriptions_for_main)
     # Simulate process_product returning one sent notification
     async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):
         return {
@@ -801,6 +804,9 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
+    async def mock_load_subscriptions_for_main(session):
+        return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
+    monkeypatch.setattr(check_stock, "load_subscriptions", mock_load_subscriptions_for_main)
     # Ensure total_sent > 0 so summary sending is attempted
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (
@@ -859,6 +865,9 @@ async def test_main_summary_email_exception(monkeypatch):
     monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
     monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
+    async def mock_load_subscriptions_for_main(session):
+        return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
+    monkeypatch.setattr(check_stock, "load_subscriptions", mock_load_subscriptions_for_main)
     # Ensure total_sent > 0 for exception path to be tested
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (
