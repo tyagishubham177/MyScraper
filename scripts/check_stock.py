@@ -523,12 +523,12 @@ async def main():
                 pincode_tasks = []
                 items_per_browser = (len(all_pincode_items) + len(browsers) - 1) // len(browsers) # Ceiling division
 
-                for i, browser in enumerate(browsers):
+                for i, browser_instance_for_task in enumerate(browsers): # Renamed 'browser' to avoid conflict
                     start_index = i * items_per_browser
                     end_index = min((i + 1) * items_per_browser, len(all_pincode_items))
                     batch = all_pincode_items[start_index:end_index]
                     if batch: # Ensure batch is not empty
-                        pincode_tasks.append(process_pincode_batch(browser, batch))
+                        pincode_tasks.append(process_pincode_batch(browser_instance_for_task, batch))
 
                 # Gather results from all batches
                 pincode_results_batched = await asyncio.gather(*pincode_tasks, return_exceptions=True)
@@ -541,16 +541,16 @@ async def main():
                     elif res_batch: # If result is not an exception and not empty
                         pincode_results.extend(res_batch)
 
-            # Close all browsers after processing
-            for browser in browsers:
-                try:
-                    await browser.close()
-                except Exception as e:
-                    print(f"Error closing a browser instance: {e}")
+                # Close all browsers after processing
+                for browser_to_close in browsers: # Renamed 'browser' to avoid conflict
+                    try:
+                        await browser_to_close.close()
+                    except Exception as e:
+                        print(f"Error closing a browser instance: {e}")
 
-            # Process results (flattened from batches)
-            for product_info, summary, sent in pincode_results: # Ensure this structure matches what process_pincode_batch returns
-                if summary: # Check if summary is not None
+                # Process results (flattened from batches) - CORRECTED INDENTATION HERE
+                for product_info, summary, sent in pincode_results: # Ensure this structure matches what process_pincode_batch returns
+                    if summary: # Check if summary is not None
                         pid = product_info.get("id")
                         pin = summary.get("pincode")
                         key = f"{pid}|{pin}"
@@ -560,7 +560,10 @@ async def main():
                             stock_counters[key] = 0
                         summary["consecutive_in_stock"] = stock_counters.get(key, 0)
                         summary_email_data.append(summary)
-                    total_sent += sent
+                    total_sent += sent # This line is part of the loop
+            # This 'else' block corresponding to 'if not browsers:' ends here.
+            # The following print statement is outside the 'async with async_playwright() as pw:' block,
+            # which means the results processing loop must also be inside that pw block.
 
         print("\nStock check finished.")
         await save_stock_counters(session, stock_counters)
