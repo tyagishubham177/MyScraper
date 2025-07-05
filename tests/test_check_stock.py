@@ -1043,7 +1043,6 @@ def test_process_product_missing_data():
 
 
 def test_process_product_out_of_stock(monkeypatch):
-    monkeypatch.setattr(check_stock, "filter_active_subs", lambda subs, ct: subs)
 
     async def fake_check(url, pin, page=None, skip_pincode=False, log_prefix=""):
         return False, "Scraped"
@@ -1070,7 +1069,6 @@ def test_process_product_out_of_stock(monkeypatch):
 
 
 def test_process_product_in_stock(monkeypatch):
-    monkeypatch.setattr(check_stock, "filter_active_subs", lambda subs, ct: subs)
 
     async def fake_notify(*a, **k):
         return ([{"user_email": "u@example.com", "status": "Sent"}], 1)

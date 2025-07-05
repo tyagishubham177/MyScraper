@@ -332,21 +332,6 @@ async def process_product(
             pincode_entered,
         )
 
-    subs = filter_active_subs(subs, current_time)
-    if not subs:
-        print(f"Skipping product '{effective_name}' - no active subscribers.")
-        return (
-            {
-                "product_id": product_id,
-                "product_name": effective_name,
-                "product_url": product_url,
-                "subscriptions": [
-                    {"user_email": "N/A", "status": "Skipped - No Active Subscribers", "pincode": None}
-                ],
-            },
-            0,
-            pincode_entered,
-        )
 
     try:
         log_prefix = f"{pincode}|{product_id}"
@@ -455,24 +440,21 @@ async def main():
             async def process_pincode(pincode, recips_subset):
                 """Handle all products for a given pincode concurrently."""
                 results = []
-
                 subs_subset = {
-                    pid: [s for s in subs if s.get("recipient_id") in recips_subset]
+                    pid: filter_active_subs(
+                        [s for s in subs if s.get("recipient_id") in recips_subset],
+                        current_time,
+                    )
                     for pid, subs in subs_map.items()
                 }
 
-                # Filter products that actually need checking
-                products_to_check = []
-                for product_info in all_products:
-                    pid = product_info.get("id")
-                    product_subs = subs_subset.get(pid, [])
-                    if filter_active_subs(product_subs, current_time):
-                        products_to_check.append(product_info)
+                products_to_check = [
+                    p for p in all_products if subs_subset.get(p.get("id"))
+                ]
 
                 if not products_to_check:
                     return results
 
-                # Open a page once to set the pincode and obtain cookies for the context
                 setup_page = await browser.new_page()
                 try:
                     # Use the first product page to set the pincode
