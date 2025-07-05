@@ -457,15 +457,15 @@ async def main():
                 entered = False
                 results = []
                 try:
+                    subs_subset = {
+                        pid: [s for s in subs if s.get("recipient_id") in recips_subset]
+                        for pid, subs in subs_map.items()
+                    }
                     for product_info in all_products:
                         pid = product_info.get("id")
-                        subs = subs_map.get(pid)
-                        if subs is not None:
-                            filtered = [
-                                s for s in subs if s.get("recipient_id") in recips_subset
-                            ]
-                            if not filter_active_subs(filtered, current_time):
-                                continue
+                        product_subs = subs_subset.get(pid, [])
+                        if not filter_active_subs(product_subs, current_time):
+                            continue
                         summary, sent, entered = await process_product(
                             session,
                             page,
@@ -473,14 +473,7 @@ async def main():
                             recips_subset,
                             current_time,
                             entered,
-                            {
-                                pid: [
-                                    s
-                                    for s in subs
-                                    if s.get("recipient_id") in recips_subset
-                                ]
-                                for pid, subs in subs_map.items()
-                            },
+                            subs_subset,
                             pincode,
                         )
                         results.append((product_info, summary, sent))
