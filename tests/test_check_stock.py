@@ -934,6 +934,22 @@ def test_filter_active_subs():
     assert len(active) == 1
 
 
+def test_build_subs_by_pincode():
+    recipients = {
+        1: {"email": "a@example.com", "pincode": "111"},
+        2: {"email": "b@example.com", "pincode": "222"},
+    }
+    sub_a = {"recipient_id": 1, "product_id": 10}
+    sub_b = {"recipient_id": 2, "product_id": 10}
+    sub_c = {"recipient_id": 1, "product_id": 20}
+    subs_map = {10: [sub_a, sub_b], 20: [sub_c, {"recipient_id": 3}]}
+    result = check_stock.build_subs_by_pincode(recipients, subs_map)
+    assert result == {
+        "111": {10: [sub_a], 20: [sub_c]},
+        "222": {10: [sub_b]},
+    }
+
+
 def test_aggregate_product_summaries():
     summaries = [
         {
