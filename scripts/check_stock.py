@@ -91,6 +91,22 @@ async def load_subscriptions(session):
     return subs_by_product
 
 
+def build_subs_by_pincode(recipients_map, subs_map):
+    """Return {pincode: {product_id: [subscription, ...]}}."""
+    result = {}
+    for pid, subs in subs_map.items():
+        for sub in subs:
+            rid = sub.get("recipient_id")
+            if rid is None:
+                continue
+            rec = recipients_map.get(rid)
+            if not rec:
+                continue
+            pin = rec.get("pincode", config.PINCODE)
+            result.setdefault(pin, {}).setdefault(pid, []).append(sub)
+    return result
+
+
 async def fetch_subscriptions(session, product_id):
     url = f"{config.APP_BASE_URL}/api/subscriptions?product_id={product_id}"
     return await fetch_api_data(session, url)
@@ -420,6 +436,7 @@ async def main():
             return
 
         subs_map = await load_subscriptions(session)
+        subs_by_pin = build_subs_by_pincode(recipients_map, subs_map)
         subscribed_rids = {
             sub.get("recipient_id")
             for subs in subs_map.values()
@@ -454,11 +471,8 @@ async def main():
                 results = []
                 try:
                     subs_subset = {
-                        pid: filter_active_subs(
-                            [s for s in subs if s.get("recipient_id") in recips_subset],
-                            current_time,
-                        )
-                        for pid, subs in subs_map.items()
+                        pid: filter_active_subs(subs, current_time)
+                        for pid, subs in subs_by_pin.get(pincode, {}).items()
                     }
                     for product_info in all_products:
                         pid = product_info.get("id")
