@@ -462,6 +462,15 @@ body {
     animation: slideUp 0.4s ease-out;
 }
 
+.fade-slide-in {
+    animation: fadeSlideIn 0.3s ease-out;
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     .login-container {

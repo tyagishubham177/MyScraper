@@ -31,7 +31,10 @@ export async function initLogin() {
   const adminSection = document.getElementById('admin-section');
   const userSection = document.getElementById('user-section');
 
-  const loginContainer = loginPopup ? loginPopup.querySelector('.login-container') : null;
+  const loginContainer =
+    loginPopup && typeof loginPopup.querySelector === 'function'
+      ? loginPopup.querySelector('.login-container')
+      : null;
 
   const adminEmailInput = document.getElementById('admin-email');
   const adminPasswordInput = document.getElementById('admin-password');
@@ -69,6 +72,14 @@ export async function initLogin() {
   }
 
   adjustContainerHeight();
+
+  function animateSection(section) {
+    if (section) {
+      section.classList.remove('fade-slide-in');
+      void section.offsetWidth;
+      section.classList.add('fade-slide-in');
+    }
+  }
 
   if (adminPasswordToggle && adminPasswordInput) {
     adminPasswordToggle.addEventListener('click', () => {
@@ -243,6 +254,7 @@ export async function initLogin() {
       if (adminSection) {
         adminSection.classList.remove('hidden');
         adminSection.style.display = 'block';
+        animateSection(adminSection);
       }
       if (userSection) {
         userSection.classList.add('hidden');
@@ -273,6 +285,7 @@ export async function initLogin() {
       if (userSection) {
         userSection.classList.remove('hidden');
         userSection.style.display = 'block';
+        animateSection(userSection);
       }
       if (loginIcon) {
         loginIcon.setAttribute('data-lucide', 'user');
