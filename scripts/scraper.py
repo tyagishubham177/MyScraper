@@ -58,6 +58,31 @@ async def _check_availability_on_page(
         await page.wait_for_load_state("networkidle")
         await log("Pincode selected/attempted")
 
+    async def confirm_pincode(expected: str) -> bool:
+        selector = (
+            "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span"
+        )
+        try:
+            elem = await page.wait_for_selector(selector, timeout=5000)
+        except Exception:
+            await log("Pincode confirmation element not found")
+            return False
+        try:
+            text = await elem.text_content() or ""
+        except Exception as e:
+            await log(f"Error reading pincode text: {e}")
+            return False
+        match = re.search(r"\b(\d{6})\b", text)
+        extracted = match.group(1) if match else None
+        await log("Displayed pincode:", text)
+        if not extracted:
+            await log("No pincode found in text")
+            return False
+        if extracted != expected:
+            await log("Pincode mismatch:", extracted, "!=", expected)
+            return False
+        return True
+
     async def element_visibility(selector: str) -> tuple[bool, str]:
         elem = await page.query_selector(selector)
         visible = await elem.is_visible() if elem else False
@@ -65,6 +90,12 @@ async def _check_availability_on_page(
         return visible, status
 
     await handle_pincode_modal()
+
+    pincode_confirmed = True
+    if not skip_pincode:
+        pincode_confirmed = await confirm_pincode(pincode)
+        if not pincode_confirmed:
+            await log("Pincode verification failed")
 
     await log("Checking availability indicators…")
     sold_out_visible, so_status = await element_visibility(
@@ -87,7 +118,18 @@ async def _check_availability_on_page(
         "a.btn.btn-primary.add-to-cart:not(.disabled)"
     )
     await log("Add to Cart enabled:", ab_status)
-    add_btn = enabled_visible
+    add_btn = False
+    if enabled_visible:
+        btn_elem = await page.query_selector(
+            "a.btn.btn-primary.add-to-cart:not(.disabled)"
+        )
+        try:
+            enabled_state = await btn_elem.is_enabled() if btn_elem else False
+        except Exception as e:
+            await log(f"Error checking add-to-cart enabled state: {e}")
+            enabled_state = False
+        await log("Add to Cart is_enabled:", enabled_state)
+        add_btn = enabled_state
 
     product_name = "The Product"
     elem = await page.query_selector(
@@ -107,7 +149,13 @@ async def _check_availability_on_page(
     else:
         await log("Product name element not found. Using default.")
 
-    in_stock = add_btn and not sold_out_visible and not disabled_btn
+    in_stock = (
+        add_btn
+        and not sold_out_visible
+        and not disabled_btn
+        and not notify_visible
+        and pincode_confirmed
+    )
 
     current_reasons = []
     if add_btn:
@@ -116,6 +164,10 @@ async def _check_availability_on_page(
         current_reasons.append("sold_out_visible")
     if disabled_btn:
         current_reasons.append("disabled_btn_visible")
+    if notify_visible:
+        current_reasons.append("notify_visible")
+    if not pincode_confirmed:
+        current_reasons.append("pincode_mismatch")
     await log(
         "Scraper decision:",
         "in_stock" if in_stock else "out_of_stock",
