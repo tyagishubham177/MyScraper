@@ -197,6 +197,7 @@ async def test_pincode_modal_not_present(mock_page, monkeypatch, capsys):
         "a.btn.btn-primary.add-to-cart.disabled": {"visible": False}, # ADD_TO_CART_DISABLED_SELECTOR
         "a.btn.btn-primary.add-to-cart:not(.disabled)": {"visible": True, "enabled": True}, # ADD_TO_CART_ENABLED_SELECTOR
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"text_content": "Test Product"}, # PRODUCT_NAME_SELECTOR
+        "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span": {"visible": True, "text_content": "mumbai-br, 123456"},
     })
 
     in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "123456", skip_pincode=False)
@@ -244,6 +245,8 @@ async def test_pincode_modal_appears_input_success_dropdown(mock_page, monkeypat
         if selector == suggestion_selector_str:
             # print("mock_wait_for_selector: suggestion_selector_str found")
             return suggestion_el
+        if selector == "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span":
+            return MockElementHandle(name=selector, visible=True, text_content_val="mumbai-br, 123456")
         # Fallback or raise timeout for other unexpected selectors
         # print(f"mock_wait_for_selector: {selector} caused timeout")
         raise Exception(f"Timeout waiting for {selector}")
@@ -255,6 +258,7 @@ async def test_pincode_modal_appears_input_success_dropdown(mock_page, monkeypat
         "a.btn.btn-primary.add-to-cart.disabled": {"visible": False},
         "a.btn.btn-primary.add-to-cart:not(.disabled)": {"visible": True, "enabled": True},
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"text_content": "Test Product"},
+        "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span": {"visible": True, "text_content": "mumbai-br, 123456"},
     })
 
     in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", pincode, skip_pincode=False)
@@ -305,6 +309,7 @@ async def test_pincode_modal_input_no_dropdown_use_keyboard(mock_page, monkeypat
         "a.btn.btn-primary.add-to-cart.disabled": {"visible": False},
         "a.btn.btn-primary.add-to-cart:not(.disabled)": {"visible": True, "enabled": True},
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"text_content": "Test Product"},
+        "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span": {"visible": True, "text_content": "mumbai-br, 123456"},
     })
 
     await scraper._check_availability_on_page(mock_page, "http://testurl.com", pincode, skip_pincode=False) # Added URL
