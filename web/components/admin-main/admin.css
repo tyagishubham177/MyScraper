@@ -216,6 +216,9 @@ body {
 
 /* FAB button */
 .fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: fixed;
   bottom: 32px;
   right: 32px;
@@ -229,6 +232,11 @@ body {
   box-shadow: var(--shadow-primary);
   transition: var(--transition);
   z-index: 1000;
+}
+
+.fab i,
+.fab svg {
+  display: block;
 }
 
 .fab:hover {
@@ -281,7 +289,8 @@ body {
 
 /* Spinner enhancement */
 .spinner-border {
-  animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
+  /* Only apply rotation to avoid conflicts with the pulse animation */
+  animation: spinner-border 0.75s linear infinite;
 }
 
 @keyframes spin {
