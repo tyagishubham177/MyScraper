@@ -234,6 +234,11 @@ body {
   z-index: 1000;
 }
 
+.fab i,
+.fab svg {
+  display: block;
+}
+
 .fab:hover {
   transform: scale(1.1) rotate(180deg);
   box-shadow: var(--shadow-hover);
