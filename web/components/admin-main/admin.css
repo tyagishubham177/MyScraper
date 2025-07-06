@@ -281,7 +281,8 @@ body {
 
 /* Spinner enhancement */
 .spinner-border {
-  animation: spinner-border 0.75s linear infinite, pulse 2s ease-in-out infinite;
+  /* Only apply rotation to avoid conflicts with the pulse animation */
+  animation: spinner-border 0.75s linear infinite;
 }
 
 @keyframes spin {
