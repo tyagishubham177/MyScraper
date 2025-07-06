@@ -31,8 +31,14 @@ export async function initLogin() {
   const adminSection = document.getElementById('admin-section');
   const userSection = document.getElementById('user-section');
 
+  const loginContainer =
+    loginPopup && typeof loginPopup.querySelector === 'function'
+      ? loginPopup.querySelector('.login-container')
+      : null;
+
   const adminEmailInput = document.getElementById('admin-email');
   const adminPasswordInput = document.getElementById('admin-password');
+  const adminPasswordToggle = document.getElementById('admin-password-toggle');
   const adminLoginBtn = document.getElementById('admin-login-btn');
   const adminErrorMessage = document.getElementById('admin-error-message'); // Added
 
@@ -52,6 +58,39 @@ export async function initLogin() {
 
   let adminCountdownTimer = null;
   let userCountdownTimer = null;
+
+  function adjustContainerHeight() {
+    if (!loginContainer || !adminSection || !userSection) return;
+    const adminDisplay = adminSection.style.display;
+    const userDisplay = userSection.style.display;
+    adminSection.style.display = 'block';
+    userSection.style.display = 'block';
+    const maxHeight = Math.max(adminSection.offsetHeight, userSection.offsetHeight);
+    loginContainer.style.minHeight = maxHeight + 'px';
+    adminSection.style.display = adminDisplay;
+    userSection.style.display = userDisplay;
+  }
+
+  adjustContainerHeight();
+
+  function animateSection(section) {
+    if (section) {
+      section.classList.remove('fade-slide-in');
+      void section.offsetWidth;
+      section.classList.add('fade-slide-in');
+    }
+  }
+
+  if (adminPasswordToggle && adminPasswordInput) {
+    adminPasswordToggle.addEventListener('click', () => {
+      const visible = adminPasswordInput.getAttribute('type') === 'text';
+      adminPasswordInput.setAttribute('type', visible ? 'password' : 'text');
+      adminPasswordToggle.setAttribute('data-lucide', visible ? 'eye' : 'eye-off');
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    });
+  }
 
   function showError(elem, msg) {
     if (elem) {
@@ -215,6 +254,7 @@ export async function initLogin() {
       if (adminSection) {
         adminSection.classList.remove('hidden');
         adminSection.style.display = 'block';
+        animateSection(adminSection);
       }
       if (userSection) {
         userSection.classList.add('hidden');
@@ -245,6 +285,7 @@ export async function initLogin() {
       if (userSection) {
         userSection.classList.remove('hidden');
         userSection.style.display = 'block';
+        animateSection(userSection);
       }
       if (loginIcon) {
         loginIcon.setAttribute('data-lucide', 'user');
