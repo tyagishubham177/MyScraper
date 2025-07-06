@@ -57,7 +57,7 @@
       border-width: 0.4rem;
       border-color: white;
       border-right-color: transparent;
-      animation: spinner-border 0.75s linear infinite, pulse 2s ease-in-out infinite;
+      animation: spinner-border 0.75s linear infinite;
     }
 
     @keyframes pulse {
