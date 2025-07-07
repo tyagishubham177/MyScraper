@@ -138,11 +138,16 @@ async def main():
                 pin_start = time.perf_counter()
                 results = []
                 pincode_entered = False
+                pin_lock = asyncio.Lock()
                 subs_subset = {
                     pid: stock_utils.filter_active_subs(subs, current_time)
                     for pid, subs in subs_by_pin.get(pincode, {}).items()
                 }
 
+                if hasattr(browser, "new_context"):
+                    context = await browser.new_context()
+                else:
+                    context = browser
                 semaphore = asyncio.Semaphore(config.MAX_PARALLEL_PAGE_CHECKS)
 
                 async def handle_product(pid, product_subs):
@@ -151,18 +156,34 @@ async def main():
                     if not product_info:
                         return None
                     async with semaphore:
-                        page = await browser.new_page()
+                        page = await context.new_page()
                         try:
-                            summary, sent, pincode_entered = await process_product(
-                                session,
-                                page,
-                                product_info,
-                                recips_subset,
-                                current_time,
-                                pincode_entered,
-                                {pid: product_subs},
-                                pincode,
-                            )
+                            if not pincode_entered:
+                                async with pin_lock:
+                                    skip_pin = pincode_entered
+                                    summary, sent, entered = await process_product(
+                                        session,
+                                        page,
+                                        product_info,
+                                        recips_subset,
+                                        current_time,
+                                        skip_pin,
+                                        {pid: product_subs},
+                                        pincode,
+                                    )
+                                    if entered and not pincode_entered:
+                                        pincode_entered = True
+                            else:
+                                summary, sent, _ = await process_product(
+                                    session,
+                                    page,
+                                    product_info,
+                                    recips_subset,
+                                    current_time,
+                                    True,
+                                    {pid: product_subs},
+                                    pincode,
+                                )
                         finally:
                             if hasattr(page, "close"):
                                 close_fn = page.close
@@ -182,6 +203,8 @@ async def main():
                         "duration": time.perf_counter() - pin_start,
                         "products": len(results),
                     })
+                    if context is not browser and hasattr(context, "close"):
+                        await context.close()
                 return results
 
             pincode_tasks = [
