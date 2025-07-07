@@ -55,6 +55,9 @@ if not hasattr(aiohttp, "ClientSession"):
             pass
 
     aiohttp.ClientSession = _DummyClientSession
+
+# Limit the number of simultaneously open browser pages per pincode
+MAX_CONCURRENT_PAGES = 3
 import config
 import notifications
 from notifications import format_summary_email_body
@@ -298,36 +301,48 @@ async def main():
 
             async def process_pincode(pincode, recips_subset):
                 pin_start = time.perf_counter()
-                page = await browser.new_page()
-                entered = False
                 results = []
+                sem = asyncio.Semaphore(MAX_CONCURRENT_PAGES)
+
+                async def handle_product(pid, product_subs):
+                    product_info = product_map.get(pid)
+                    if not product_info:
+                        return None
+                    async with sem:
+                        page = await browser.new_page()
+                        try:
+                            summary, sent, _ = await process_product(
+                                session,
+                                page,
+                                product_info,
+                                recips_subset,
+                                current_time,
+                                False,
+                                {pid: product_subs},
+                                pincode,
+                            )
+                            return product_info, summary, sent
+                        finally:
+                            if hasattr(page, "close"):
+                                close_fn = page.close
+                                if inspect.iscoroutinefunction(close_fn):
+                                    await close_fn()
+                                else:
+                                    close_fn()
+
                 try:
                     subs_subset = {
                         pid: stock_utils.filter_active_subs(subs, current_time)
                         for pid, subs in subs_by_pin.get(pincode, {}).items()
                     }
-                    for pid, product_subs in subs_subset.items():
-                        product_info = product_map.get(pid)
-                        if not product_info:
-                            continue
-                        summary, sent, entered = await process_product(
-                            session,
-                            page,
-                            product_info,
-                            recips_subset,
-                            current_time,
-                            entered,
-                            {pid: product_subs},
-                            pincode,
-                        )
-                        results.append((product_info, summary, sent))
+                    tasks = [
+                        asyncio.create_task(handle_product(pid, product_subs))
+                        for pid, product_subs in subs_subset.items()
+                    ]
+                    for result in await asyncio.gather(*tasks):
+                        if result:
+                            results.append(result)
                 finally:
-                    if hasattr(page, "close"):
-                        close_fn = page.close
-                        if inspect.iscoroutinefunction(close_fn):
-                            await close_fn()
-                        else:
-                            close_fn()
                     pincode_stats.append({
                         "pincode": pincode,
                         "duration": time.perf_counter() - pin_start,
