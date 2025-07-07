@@ -22,7 +22,7 @@ async def _check_availability_on_page(
     await log("Navigating to", url)
     await page.goto(url, timeout=60000)
     await page.wait_for_load_state("networkidle")
-    await asyncio.sleep(1)
+    await page.wait_for_timeout(500)
     await log("Page loaded")
 
     async def handle_pincode_modal():
@@ -39,7 +39,6 @@ async def _check_availability_on_page(
             return
         await log("Pincode input found → typing", pincode)
         await pincode_input.fill(pincode)
-        await asyncio.sleep(3)
         await log("Pincode typed")
         try:
             await page.wait_for_selector("#automatic", timeout=5000)
@@ -54,7 +53,7 @@ async def _check_availability_on_page(
             await log(f"Could not click suggestion for {pincode}, trying keyboard.")
             await page.keyboard.press("ArrowDown")
             await page.keyboard.press("Enter")
-        await asyncio.sleep(3)
+        await page.wait_for_timeout(500)
         await page.wait_for_load_state("networkidle")
         await log("Pincode selected/attempted")
 
