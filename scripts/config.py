@@ -21,4 +21,6 @@ RUN_OFFSET_MINUTES = 15
 
 # Base URL for the application itself, used for constructing absolute URLs if needed
 APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:3000")
+# Maximum number of product pages to check in parallel
+MAX_PARALLEL_PAGE_CHECKS = int(os.getenv("MAX_PARALLEL_PAGE_CHECKS", "5"))
 # ——————————————————————————————————————————

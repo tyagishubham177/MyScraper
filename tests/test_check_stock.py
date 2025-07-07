@@ -1,4 +1,5 @@
 import asyncio
+import time
 from datetime import time as dt_time
 import pytest
 import sys
@@ -1125,3 +1126,98 @@ def test_process_product_in_stock(monkeypatch):
     assert summary["product_name"] == "New"
     assert summary["subscriptions"][0]["status"] == "Sent"
     assert pin
+
+
+@pytest.mark.asyncio
+async def test_main_parallel_page_checks(monkeypatch):
+    monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
+    monkeypatch.setattr(check_stock.config, "MAX_PARALLEL_PAGE_CHECKS", 2)
+    monkeypatch.setattr(check_stock.config, "EMAIL_HOST", None)
+    monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", None)
+    monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
+
+    async def mock_load_recipients(session):
+        return {1: {"email": "test@example.com", "pincode": "201305"}}
+
+    async def mock_load_products(session):
+        return [
+            {"id": 1, "name": "P1", "url": "http://p1"},
+            {"id": 2, "name": "P2", "url": "http://p2"},
+            {"id": 3, "name": "P3", "url": "http://p3"},
+        ]
+
+    async def mock_load_subscriptions(session):
+        return {
+            1: [{"recipient_id": 1}],
+            2: [{"recipient_id": 1}],
+            3: [{"recipient_id": 1}],
+        }
+
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products)
+    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions)
+    async def mock_load_stock_counters(session):
+        return {}
+
+    async def mock_save_stock_counters(session, counters):
+        pass
+
+    monkeypatch.setattr(api_utils, "load_stock_counters", mock_load_stock_counters)
+    monkeypatch.setattr(api_utils, "save_stock_counters", mock_save_stock_counters)
+
+    async def mock_process_product(
+        session,
+        page,
+        product_info,
+        recipients_map,
+        current_time,
+        skip_pin,
+        subs_map,
+        pincode,
+    ):
+        await asyncio.sleep(0.2)
+        return (
+            {
+                "product_id": product_info["id"],
+                "product_name": product_info["name"],
+                "product_url": product_info["url"],
+                "pincode": pincode,
+                "subscriptions": [],
+            },
+            0,
+            False,
+        )
+
+    monkeypatch.setattr(check_stock, "process_product", mock_process_product)
+
+    class MockBrowser:
+        async def new_page(self):
+            return MockPage()
+
+        async def close(self):
+            pass
+
+    class MockPage:
+        async def close(self):
+            pass
+
+    class MockPlaywright:
+        def __init__(self):
+            self.chromium = self
+
+        async def launch(self, **kwargs):
+            return MockBrowser()
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+    monkeypatch.setattr(check_stock, "async_playwright", lambda: MockPlaywright())
+
+    start = time.perf_counter()
+    await check_stock.main()
+    elapsed = time.perf_counter() - start
+
+    assert elapsed < 0.55
