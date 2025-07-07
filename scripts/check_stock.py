@@ -137,6 +137,7 @@ async def main():
             async def process_pincode(pincode, recips_subset):
                 pin_start = time.perf_counter()
                 results = []
+                pincode_entered = False
                 subs_subset = {
                     pid: stock_utils.filter_active_subs(subs, current_time)
                     for pid, subs in subs_by_pin.get(pincode, {}).items()
@@ -145,19 +146,20 @@ async def main():
                 semaphore = asyncio.Semaphore(config.MAX_PARALLEL_PAGE_CHECKS)
 
                 async def handle_product(pid, product_subs):
+                    nonlocal pincode_entered
                     product_info = product_map.get(pid)
                     if not product_info:
                         return None
                     async with semaphore:
                         page = await browser.new_page()
                         try:
-                            summary, sent, _ = await process_product(
+                            summary, sent, pincode_entered = await process_product(
                                 session,
                                 page,
                                 product_info,
                                 recips_subset,
                                 current_time,
-                                False,
+                                pincode_entered,
                                 {pid: product_subs},
                                 pincode,
                             )
