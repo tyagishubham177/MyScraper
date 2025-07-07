@@ -2,8 +2,32 @@ import asyncio
 from datetime import datetime, timezone, timedelta, time as dt_time
 import inspect
 import os
+import sys
 import time
-import aiohttp
+import types
+try:
+    import aiohttp  # type: ignore
+except Exception:  # pragma: no cover - fallback when aiohttp not installed
+    aiohttp = types.SimpleNamespace()
+
+# Allow running via `python scripts/check_stock.py`
+if __package__ is None and __name__ == "__main__":
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+try:
+    from playwright.async_api import async_playwright
+except Exception:  # pragma: no cover - fallback when playwright not installed
+    playwright_module = types.ModuleType("playwright")
+    playwright_async = types.ModuleType("playwright.async_api")
+
+    async def async_playwright():
+        raise RuntimeError("playwright not installed")
+
+    playwright_async.async_playwright = async_playwright
+    playwright_async.Page = object
+    playwright_module.async_api = playwright_async
+    sys.modules.setdefault("playwright", playwright_module)
+    sys.modules.setdefault("playwright.async_api", playwright_async)
 
 # Provide a minimal fallback ClientSession when aiohttp is not fully available
 if not hasattr(aiohttp, "ClientSession"):
@@ -31,266 +55,13 @@ if not hasattr(aiohttp, "ClientSession"):
             pass
 
     aiohttp.ClientSession = _DummyClientSession
-from playwright.async_api import async_playwright
 import config
 import notifications
 from notifications import format_summary_email_body
 import scraper
+from scripts import api_utils, stock_utils
 
 
-def _add_timing(label: str, duration: float, timings: dict[str, float]) -> None:
-    """Store the elapsed duration for a step."""
-    timings[label] = duration
-
-
-async def _timed(label: str, coro, timings: dict[str, float]):
-    """Await *coro* and record how long it took."""
-    start = time.perf_counter()
-    result = await coro
-    _add_timing(label, time.perf_counter() - start, timings)
-    return result
-
-
-def _print_summary(timings: dict[str, float], pincode_stats: list[dict]):
-    """Print a markdown table of timings and pincode processing info."""
-    lines = ["### Workflow Timing Summary", "| Step | Duration (s) |", "| --- | --- |"]
-    for step, dur in timings.items():
-        lines.append(f"| {step} | {dur:.2f} |")
-
-    if pincode_stats:
-        lines.extend([
-            "",
-            "### Pincode Groups",
-            "| Pincode | Duration (s) | Products Checked |",
-            "| --- | --- | --- |",
-        ])
-        for info in pincode_stats:
-            lines.append(
-                f"| {info['pincode']} | {info['duration']:.2f} | {info['products']} |"
-            )
-
-    summary = "\n".join(lines)
-    print(summary)
-    summary_file = os.getenv("GITHUB_STEP_SUMMARY")
-    if summary_file:
-        with open(summary_file, "a", encoding="utf-8") as fh:
-            fh.write(summary + "\n")
-
-
-def within_time_window(start_str: str, end_str: str, now: dt_time) -> bool:
-    fmt = "%H:%M"
-    try:
-        start = datetime.strptime(start_str, fmt).time()
-        end = datetime.strptime(end_str, fmt).time()
-    except Exception:
-        return True
-    if start <= end:
-        return start <= now <= end
-    return now >= start or now <= end
-
-
-async def fetch_api_data(session, url, headers=None):
-    try:
-        async with session.get(url, headers=headers) as response:
-            response.raise_for_status()
-            return await response.json()
-    except Exception as e:
-        print(f"API request to {url} failed: {e}")
-        return None
-
-
-async def load_recipients(session):
-    recipients_url = f"{config.APP_BASE_URL}/api/recipients"
-    data = await fetch_api_data(session, recipients_url)
-    return {
-        r.get("id"): {
-            "email": r.get("email"),
-            "pincode": r.get("pincode", config.PINCODE),
-        }
-        for r in data or []
-        if r.get("id") and r.get("email")
-    }
-
-
-async def load_products(session):
-    products_url = f"{config.APP_BASE_URL}/api/products"
-    return await fetch_api_data(session, products_url)
-
-
-async def load_subscriptions(session):
-    """Fetch all subscriptions and return a dict keyed by product_id."""
-    subs_url = f"{config.APP_BASE_URL}/api/subscriptions"
-    data = await fetch_api_data(session, subs_url)
-    if not data or not isinstance(data, list):
-        return {}
-    subs_by_product = {}
-    for sub in data:
-        pid = sub.get("product_id")
-        if pid is None:
-            continue
-        subs_by_product.setdefault(pid, []).append(sub)
-    return subs_by_product
-
-
-def build_subs_by_pincode(recipients_map, subs_map):
-    """Return {pincode: {product_id: [subscription, ...]}}."""
-    result = {}
-    for pid, subs in subs_map.items():
-        for sub in subs:
-            rid = sub.get("recipient_id")
-            if rid is None:
-                continue
-            rec = recipients_map.get(rid)
-            if not rec:
-                continue
-            pin = rec.get("pincode", config.PINCODE)
-            result.setdefault(pin, {}).setdefault(pid, []).append(sub)
-    return result
-
-
-async def fetch_subscriptions(session, product_id):
-    url = f"{config.APP_BASE_URL}/api/subscriptions?product_id={product_id}"
-    return await fetch_api_data(session, url)
-
-
-async def login_admin(session):
-    """Fetch an admin token using the login API if credentials are provided."""
-    email = getattr(config, "ADMIN_EMAIL", None)
-    password = getattr(config, "ADMIN_PASSWORD", None)
-    if not email or not password:
-        print("Admin credentials not provided; skipping login.")
-        return None
-
-    url = f"{config.APP_BASE_URL}/api/login"
-    try:
-        async with session.post(
-            url, json={"email": email, "password": password}
-        ) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                token = data.get("token")
-                if token:
-                    config.ADMIN_TOKEN = token
-                    print("Admin login successful.")
-                    return token
-                print("Admin login returned no token")
-            else:
-                text = await resp.text()
-                print(f"Admin login failed: {resp.status} {text}")
-    except Exception as e:
-        print(f"Admin login failed: {e}")
-    return None
-
-
-async def load_stock_counters(session):
-    url = f"{config.APP_BASE_URL}/api/stock-counters"
-    headers = (
-        {"Authorization": f"Bearer {config.ADMIN_TOKEN}"}
-        if config.ADMIN_TOKEN
-        else None
-    )
-    data = await fetch_api_data(session, url, headers=headers)
-    if isinstance(data, dict):
-        converted = {}
-        for key, val in data.items():
-            converted[str(key)] = val
-        return converted
-    return {}
-
-
-async def save_stock_counters(session, counters):
-    url = f"{config.APP_BASE_URL}/api/stock-counters"
-    headers = (
-        {"Authorization": f"Bearer {config.ADMIN_TOKEN}"}
-        if config.ADMIN_TOKEN
-        else None
-    )
-    try:
-        payload = {"counters": {str(k): v for k, v in counters.items()}}
-        async with session.put(
-            url, json=payload, headers=headers
-        ) as resp:
-            if resp.status == 401:
-                print("Stock counter update unauthorized. Retrying after login.")
-                await login_admin(session)
-                headers = (
-                    {"Authorization": f"Bearer {config.ADMIN_TOKEN}"}
-                    if config.ADMIN_TOKEN
-                    else None
-                )
-                async with session.put(
-                    url, json=payload, headers=headers
-                ) as resp_retry:
-                    if resp_retry.status >= 400:
-                        text = await resp_retry.text()
-                        raise Exception(f"{resp_retry.status}: {text}")
-            elif resp.status >= 400:
-                text = await resp.text()
-                raise Exception(f"{resp.status}: {text}")
-    except Exception as e:
-        print(f"Failed to update stock counters: {e}")
-
-
-def filter_active_subs(subs, current_time):
-    active = []
-    for sub in subs:
-        if sub.get("paused"):
-            continue
-        start_t = sub.get("start_time", "00:00")
-        end_t = sub.get("end_time", "23:59")
-        if within_time_window(start_t, end_t, current_time):
-            active.append(sub)
-    return active
-
-
-def aggregate_product_summaries(summary_items):
-    """Combine summary entries per product and pincode."""
-    aggregated = {}
-    for item in summary_items:
-        pid = item.get("product_id")
-        if pid is None:
-            continue
-        item_pin = item.get("pincode")
-        subs = item.get("subscriptions", [])
-        if item_pin:
-            key = (pid, item_pin)
-            entry = aggregated.setdefault(
-                key,
-                {
-                    "product_id": pid,
-                    "pincode": item_pin,
-                    "product_name": item.get("product_name"),
-                    "product_url": item.get("product_url"),
-                    "consecutive_in_stock": item.get("consecutive_in_stock", 0),
-                    "subscriptions": [],
-                },
-            )
-            entry["subscriptions"].extend(subs)
-            entry["consecutive_in_stock"] = item.get(
-                "consecutive_in_stock", entry.get("consecutive_in_stock", 0)
-            )
-        else:
-            for sub in subs:
-                pin = sub.get("pincode")
-                key = (pid, pin)
-                entry = aggregated.setdefault(
-                    key,
-                    {
-                        "product_id": pid,
-                        "pincode": pin,
-                        "product_name": item.get("product_name"),
-                        "product_url": item.get("product_url"),
-                        "consecutive_in_stock": item.get(
-                            "consecutive_in_stock", 0
-                        ),
-                        "subscriptions": [],
-                    },
-                )
-                entry["subscriptions"].append(sub)
-                entry["consecutive_in_stock"] = item.get(
-                    "consecutive_in_stock", entry.get("consecutive_in_stock", 0)
-                )
-    return list(aggregated.values())
 
 
 async def notify_users(
@@ -313,7 +84,7 @@ async def notify_users(
 
         if sub.get("paused"):
             status = "Skipped - Paused"
-        elif not within_time_window(start_t, end_t, current_time):
+        elif not stock_utils.within_time_window(start_t, end_t, current_time):
             status = "Skipped - Subscription Not Due"
         elif email:
             valid_emails.append(email)
@@ -469,27 +240,27 @@ async def main():
 
     async with aiohttp.ClientSession() as session:
         if not config.ADMIN_TOKEN:
-            await _timed("Admin login", login_admin(session), timings)
+            await stock_utils._timed("Admin login", api_utils.login_admin(session), timings)
         else:
-            _add_timing("Admin login", 0.0, timings)
+            stock_utils._add_timing("Admin login", 0.0, timings)
 
-        recipients_map = await _timed(
-            "Load recipients", load_recipients(session), timings
+        recipients_map = await stock_utils._timed(
+            "Load recipients", api_utils.load_recipients(session), timings
         )
         if not recipients_map:
             print("No recipients found. Notifications may not be sent.")
 
-        all_products = await _timed(
-            "Load products", load_products(session), timings
+        all_products = await stock_utils._timed(
+            "Load products", api_utils.load_products(session), timings
         )
         if not all_products:
             print("No products fetched from API. Exiting.")
             return
 
-        subs_map = await _timed(
-            "Load subscriptions", load_subscriptions(session), timings
+        subs_map = await stock_utils._timed(
+            "Load subscriptions", api_utils.load_subscriptions(session), timings
         )
-        subs_by_pin = build_subs_by_pincode(recipients_map, subs_map)
+        subs_by_pin = stock_utils.build_subs_by_pincode(recipients_map, subs_map)
         product_map = {p.get("id"): p for p in all_products if p.get("id")}
         subscribed_rids = {
             sub.get("recipient_id")
@@ -498,8 +269,8 @@ async def main():
             if sub.get("recipient_id") is not None
         }
 
-        stock_counters = await _timed(
-            "Load stock counters", load_stock_counters(session), timings
+        stock_counters = await stock_utils._timed(
+            "Load stock counters", api_utils.load_stock_counters(session), timings
         )
         if not isinstance(stock_counters, dict):
             stock_counters = {}
@@ -518,12 +289,12 @@ async def main():
                 continue
             pin = info.get("pincode", config.PINCODE)
             pincode_groups.setdefault(pin, {})[rid] = info
-        _add_timing("Build pincode groups", time.perf_counter() - group_start, timings)
+        stock_utils._add_timing("Build pincode groups", time.perf_counter() - group_start, timings)
 
         async with async_playwright() as pw:
             launch_start = time.perf_counter()
             browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
-            _add_timing("Launch browser", time.perf_counter() - launch_start, timings)
+            stock_utils._add_timing("Launch browser", time.perf_counter() - launch_start, timings)
 
             async def process_pincode(pincode, recips_subset):
                 pin_start = time.perf_counter()
@@ -532,7 +303,7 @@ async def main():
                 results = []
                 try:
                     subs_subset = {
-                        pid: filter_active_subs(subs, current_time)
+                        pid: stock_utils.filter_active_subs(subs, current_time)
                         for pid, subs in subs_by_pin.get(pincode, {}).items()
                     }
                     for pid, product_subs in subs_subset.items():
@@ -586,10 +357,10 @@ async def main():
 
             close_start = time.perf_counter()
             await browser.close()
-            _add_timing("Close browser", time.perf_counter() - close_start, timings)
+            stock_utils._add_timing("Close browser", time.perf_counter() - close_start, timings)
 
         print("\nStock check finished.")
-        await save_stock_counters(session, stock_counters)
+        await api_utils.save_stock_counters(session, stock_counters)
 
     run_timestamp_utc = datetime.now(timezone.utc)
     ist_offset = timedelta(hours=5, minutes=30)
@@ -598,7 +369,7 @@ async def main():
     run_timestamp_str = (
         run_timestamp_ist.strftime(f"%d-{month_name}-%Y / %I:%M%p") + ", IST"
     )
-    aggregated_summary = aggregate_product_summaries(summary_email_data)
+    aggregated_summary = stock_utils.aggregate_product_summaries(summary_email_data)
     subject = f"Stock Check Summary: {run_timestamp_str} - {total_sent} User Notifications Sent"
     summary_body = format_summary_email_body(
         run_timestamp_str, aggregated_summary, total_sent
@@ -627,8 +398,8 @@ async def main():
     else:
         print("No user notifications were sent. Skipping summary email.")
 
-    _add_timing("Total runtime", time.perf_counter() - overall_start, timings)
-    _print_summary(timings, pincode_stats)
+    stock_utils._add_timing("Total runtime", time.perf_counter() - overall_start, timings)
+    stock_utils._print_summary(timings, pincode_stats)
 
 
 if __name__ == "__main__":
