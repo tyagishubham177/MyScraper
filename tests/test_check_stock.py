@@ -1165,6 +1165,8 @@ async def test_main_parallel_page_checks(monkeypatch):
     monkeypatch.setattr(api_utils, "load_stock_counters", mock_load_stock_counters)
     monkeypatch.setattr(api_utils, "save_stock_counters", mock_save_stock_counters)
 
+    skip_args = []
+
     async def mock_process_product(
         session,
         page,
@@ -1175,6 +1177,7 @@ async def test_main_parallel_page_checks(monkeypatch):
         subs_map,
         pincode,
     ):
+        skip_args.append(skip_pin)
         await asyncio.sleep(0.2)
         return (
             {
@@ -1185,7 +1188,7 @@ async def test_main_parallel_page_checks(monkeypatch):
                 "subscriptions": [],
             },
             0,
-            False,
+            True,
         )
 
     monkeypatch.setattr(check_stock, "process_product", mock_process_product)
@@ -1221,3 +1224,5 @@ async def test_main_parallel_page_checks(monkeypatch):
     elapsed = time.perf_counter() - start
 
     assert elapsed < 0.55
+    assert skip_args[0] is False
+    assert any(arg is True for arg in skip_args[1:])
