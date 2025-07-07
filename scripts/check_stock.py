@@ -1,6 +1,8 @@
 import asyncio
 from datetime import datetime, timezone, timedelta, time as dt_time
 import inspect
+import os
+import time
 import aiohttp
 
 # Provide a minimal fallback ClientSession when aiohttp is not fully available
@@ -34,6 +36,45 @@ import config
 import notifications
 from notifications import format_summary_email_body
 import scraper
+
+
+def _add_timing(label: str, duration: float, timings: dict[str, float]) -> None:
+    """Store the elapsed duration for a step."""
+    timings[label] = duration
+
+
+async def _timed(label: str, coro, timings: dict[str, float]):
+    """Await *coro* and record how long it took."""
+    start = time.perf_counter()
+    result = await coro
+    _add_timing(label, time.perf_counter() - start, timings)
+    return result
+
+
+def _print_summary(timings: dict[str, float], pincode_stats: list[dict]):
+    """Print a markdown table of timings and pincode processing info."""
+    lines = ["### Workflow Timing Summary", "| Step | Duration (s) |", "| --- | --- |"]
+    for step, dur in timings.items():
+        lines.append(f"| {step} | {dur:.2f} |")
+
+    if pincode_stats:
+        lines.extend([
+            "",
+            "### Pincode Groups",
+            "| Pincode | Duration (s) | Products Checked |",
+            "| --- | --- | --- |",
+        ])
+        for info in pincode_stats:
+            lines.append(
+                f"| {info['pincode']} | {info['duration']:.2f} | {info['products']} |"
+            )
+
+    summary = "\n".join(lines)
+    print(summary)
+    summary_file = os.getenv("GITHUB_STEP_SUMMARY")
+    if summary_file:
+        with open(summary_file, "a", encoding="utf-8") as fh:
+            fh.write(summary + "\n")
 
 
 def within_time_window(start_str: str, end_str: str, now: dt_time) -> bool:
@@ -422,20 +463,32 @@ async def main():
     print("Starting stock check...")
     summary_email_data = []
     total_sent = 0
+    timings: dict[str, float] = {}
+    pincode_stats: list[dict] = []
+    overall_start = time.perf_counter()
 
     async with aiohttp.ClientSession() as session:
         if not config.ADMIN_TOKEN:
-            await login_admin(session)
-        recipients_map = await load_recipients(session)
+            await _timed("Admin login", login_admin(session), timings)
+        else:
+            _add_timing("Admin login", 0.0, timings)
+
+        recipients_map = await _timed(
+            "Load recipients", load_recipients(session), timings
+        )
         if not recipients_map:
             print("No recipients found. Notifications may not be sent.")
 
-        all_products = await load_products(session)
+        all_products = await _timed(
+            "Load products", load_products(session), timings
+        )
         if not all_products:
             print("No products fetched from API. Exiting.")
             return
 
-        subs_map = await load_subscriptions(session)
+        subs_map = await _timed(
+            "Load subscriptions", load_subscriptions(session), timings
+        )
         subs_by_pin = build_subs_by_pincode(recipients_map, subs_map)
         product_map = {p.get("id"): p for p in all_products if p.get("id")}
         subscribed_rids = {
@@ -445,7 +498,9 @@ async def main():
             if sub.get("recipient_id") is not None
         }
 
-        stock_counters = await load_stock_counters(session)
+        stock_counters = await _timed(
+            "Load stock counters", load_stock_counters(session), timings
+        )
         if not isinstance(stock_counters, dict):
             stock_counters = {}
 
@@ -456,17 +511,22 @@ async def main():
         # Only build groups for recipients that actually have active
         # subscriptions. This avoids spawning browser pages for pincodes
         # with no interested users.
+        group_start = time.perf_counter()
         pincode_groups = {}
         for rid, info in recipients_map.items():
             if rid not in subscribed_rids:
                 continue
             pin = info.get("pincode", config.PINCODE)
             pincode_groups.setdefault(pin, {})[rid] = info
+        _add_timing("Build pincode groups", time.perf_counter() - group_start, timings)
 
         async with async_playwright() as pw:
+            launch_start = time.perf_counter()
             browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
+            _add_timing("Launch browser", time.perf_counter() - launch_start, timings)
 
             async def process_pincode(pincode, recips_subset):
+                pin_start = time.perf_counter()
                 page = await browser.new_page()
                 entered = False
                 results = []
@@ -497,6 +557,11 @@ async def main():
                             await close_fn()
                         else:
                             close_fn()
+                    pincode_stats.append({
+                        "pincode": pincode,
+                        "duration": time.perf_counter() - pin_start,
+                        "products": len(results),
+                    })
                 return results
 
             pincode_tasks = [
@@ -519,7 +584,9 @@ async def main():
                         summary_email_data.append(summary)
                     total_sent += sent
 
+            close_start = time.perf_counter()
             await browser.close()
+            _add_timing("Close browser", time.perf_counter() - close_start, timings)
 
         print("\nStock check finished.")
         await save_stock_counters(session, stock_counters)
@@ -559,6 +626,9 @@ async def main():
             print("Email sender or host not configured, cannot send summary email.")
     else:
         print("No user notifications were sent. Skipping summary email.")
+
+    _add_timing("Total runtime", time.perf_counter() - overall_start, timings)
+    _print_summary(timings, pincode_stats)
 
 
 if __name__ == "__main__":
