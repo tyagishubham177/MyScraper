@@ -42,7 +42,7 @@ import scripts.scraper as scraper_module
 
 sys.modules.setdefault("scraper", scraper_module)
 
-from scripts import check_stock, config, notifications
+from scripts import check_stock, api_utils, stock_utils, config, notifications
 
 
 # Mocks for aiohttp ClientSession
@@ -93,7 +93,7 @@ async def test_fetch_api_data_success():
     """Test fetch_api_data with a successful API call and valid JSON."""
     mock_data = {"key": "value"}
     session = MockClientSession(response_data=mock_data)
-    result = await check_stock.fetch_api_data(session, "http://fakeurl")
+    result = await api_utils.fetch_api_data(session, "http://fakeurl")
     assert result == mock_data
 
 
@@ -101,7 +101,7 @@ async def test_fetch_api_data_success():
 async def test_fetch_api_data_failure():
     """Test fetch_api_data with an API call failure (e.g., network error)."""
     session = MockClientSession(response_data=None, raise_exception=aiohttp.ClientError("Network error Mock"))
-    result = await check_stock.fetch_api_data(session, "http://fakeurl")
+    result = await api_utils.fetch_api_data(session, "http://fakeurl")
     assert result is None
 
 
@@ -109,7 +109,7 @@ async def test_fetch_api_data_failure():
 async def test_fetch_api_data_non_200_status():
     """Test fetch_api_data with a non-200 status code."""
     session = MockClientSession(response_data={"error": "failed"}, status_code=404)
-    result = await check_stock.fetch_api_data(session, "http://fakeurl")
+    result = await api_utils.fetch_api_data(session, "http://fakeurl")
     assert result is None
 
 
@@ -118,7 +118,7 @@ async def test_fetch_api_data_invalid_json():
     """Test fetch_api_data with an invalid JSON response."""
     # Simulate invalid JSON by having .json() raise an error
     session = MockClientSession(response_data=lambda: (_ for _ in ()).throw(ValueError("Invalid JSON")))
-    result = await check_stock.fetch_api_data(session, "http://fakeurl")
+    result = await api_utils.fetch_api_data(session, "http://fakeurl")
     assert result is None
 
 
@@ -127,8 +127,8 @@ async def test_load_recipients_empty_list(monkeypatch):
     """Test load_recipients with an empty list from fetch_api_data."""
     async def mock_fetch_empty(session, url):
         return []
-    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch_empty)
-    recipients = await check_stock.load_recipients(None)
+    monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch_empty)
+    recipients = await api_utils.load_recipients(None)
     assert recipients == {}
 
 
@@ -137,8 +137,8 @@ async def test_load_recipients_none_response(monkeypatch):
     """Test load_recipients with None from fetch_api_data."""
     async def mock_fetch_none(session, url):
         return None
-    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch_none)
-    recipients = await check_stock.load_recipients(None)
+    monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch_none)
+    recipients = await api_utils.load_recipients(None)
     assert recipients == {}
 
 
@@ -153,8 +153,8 @@ async def test_load_recipients_missing_data(monkeypatch):
     ]
     async def mock_fetch(session, url):
         return mock_data
-    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch)
-    recipients = await check_stock.load_recipients(None)
+    monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch)
+    recipients = await api_utils.load_recipients(None)
     assert len(recipients) == 1
     assert recipients[1]["email"] == "valid@example.com"
     assert recipients[1]["pincode"] == "201305"
@@ -165,8 +165,8 @@ async def test_load_products_empty_list(monkeypatch):
     """Test load_products with an empty list from fetch_api_data."""
     async def mock_fetch_empty(session, url):
         return []
-    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch_empty)
-    products = await check_stock.load_products(None)
+    monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch_empty)
+    products = await api_utils.load_products(None)
     assert products == []
 
 
@@ -175,8 +175,8 @@ async def test_load_products_none_response(monkeypatch):
     """Test load_products with None from fetch_api_data."""
     async def mock_fetch_none(session, url):
         return None
-    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch_none)
-    products = await check_stock.load_products(None)
+    monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch_none)
+    products = await api_utils.load_products(None)
     assert products is None # Or [] depending on desired behavior, current is None
 
 
@@ -185,8 +185,8 @@ async def test_fetch_subscriptions_empty_list(monkeypatch):
     """Test fetch_subscriptions with an empty list from fetch_api_data."""
     async def mock_fetch_empty(session, url):
         return []
-    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch_empty)
-    subscriptions = await check_stock.fetch_subscriptions(None, 1)
+    monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch_empty)
+    subscriptions = await api_utils.fetch_subscriptions(None, 1)
     assert subscriptions == []
 
 
@@ -195,8 +195,8 @@ async def test_fetch_subscriptions_none_response(monkeypatch):
     """Test fetch_subscriptions with None from fetch_api_data."""
     async def mock_fetch_none(session, url):
         return None
-    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch_none)
-    subscriptions = await check_stock.fetch_subscriptions(None, 1)
+    monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch_none)
+    subscriptions = await api_utils.fetch_subscriptions(None, 1)
     assert subscriptions is None # Or [] depending on desired behavior, current is None
 
 
@@ -224,7 +224,7 @@ async def test_save_stock_counters_with_admin_token(monkeypatch):
 
     monkeypatch.setattr(config, "APP_BASE_URL", "http://api")
     monkeypatch.setattr(config, "ADMIN_TOKEN", "secret")
-    await check_stock.save_stock_counters(DummySession(), {"p": 1})
+    await api_utils.save_stock_counters(DummySession(), {"p": 1})
     assert captured["headers"]["Authorization"] == "Bearer secret"
 
 
@@ -234,8 +234,8 @@ async def test_load_stock_counters_key_conversion(monkeypatch):
     async def mock_fetch(session, url, headers=None):
         return {"1|111": 5, "2|222": 3}
 
-    monkeypatch.setattr(check_stock, "fetch_api_data", mock_fetch)
-    counters = await check_stock.load_stock_counters(None)
+    monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch)
+    counters = await api_utils.load_stock_counters(None)
     assert counters == {"1|111": 5, "2|222": 3}
     assert all(isinstance(k, str) for k in counters.keys())
 
@@ -583,13 +583,13 @@ async def test_main_load_recipients_empty(monkeypatch):
     """Test main when load_recipients returns an empty map."""
     async def mock_load_recipients(session):
         return {}
-    monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients)
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients)
     
     monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     # Mock other dependencies to prevent actual calls
     async def mock_load_products_generic(session): return [{"id": 1, "name": "Prod", "url": "url"}]
-    monkeypatch.setattr(check_stock, "load_products", mock_load_products_generic)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products_generic)
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (None, 0, False)  # Ensure this is async
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_generic)
@@ -627,10 +627,10 @@ async def test_main_load_products_none(monkeypatch):
     """Test main when load_products returns None."""
     async def mock_load_products(session):
         return None
-    monkeypatch.setattr(check_stock, "load_products", mock_load_products)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products)
     async def mock_load_recipients_for_main(session):
         return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
     monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
@@ -651,10 +651,10 @@ async def test_main_load_products_empty_list(monkeypatch):
     """Test main when load_products returns an empty list."""
     async def mock_load_products(session):
         return []
-    monkeypatch.setattr(check_stock, "load_products", mock_load_products)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products)
     async def mock_load_recipients_for_main(session):
         return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
 
     from io import StringIO
@@ -682,12 +682,12 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
 
     async def mock_load_recipients_for_main(session):
         return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
-    monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products_for_main)
     async def mock_load_subscriptions_for_main(session):
         return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
-    monkeypatch.setattr(check_stock, "load_subscriptions", mock_load_subscriptions_for_main)
+    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions_for_main)
     # Simulate process_product returning one sent notification
     async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):
         return {
@@ -741,9 +741,9 @@ async def test_main_summary_email_total_sent_zero(monkeypatch):
 
     async def mock_load_recipients_for_main(session):
         return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}] # Ensure async mock
-    monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products_for_main)
     async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):  # Ensure async mock
         return {
             "product_id": product_info["id"],
@@ -801,12 +801,12 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
 
     async def mock_load_recipients_for_main(session):
         return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
-    monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products_for_main)
     async def mock_load_subscriptions_for_main(session):
         return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
-    monkeypatch.setattr(check_stock, "load_subscriptions", mock_load_subscriptions_for_main)
+    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions_for_main)
     # Ensure total_sent > 0 so summary sending is attempted
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (
@@ -862,12 +862,12 @@ async def test_main_summary_email_exception(monkeypatch):
 
     async def mock_load_recipients_for_main(session):
         return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(check_stock, "load_recipients", mock_load_recipients_for_main)
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
     async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
-    monkeypatch.setattr(check_stock, "load_products", mock_load_products_for_main)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products_for_main)
     async def mock_load_subscriptions_for_main(session):
         return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
-    monkeypatch.setattr(check_stock, "load_subscriptions", mock_load_subscriptions_for_main)
+    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions_for_main)
     # Ensure total_sent > 0 for exception path to be tested
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (
@@ -918,9 +918,9 @@ async def test_main_summary_email_exception(monkeypatch):
 
 def test_within_time_window_simple():
     now = dt_time(12, 0)
-    assert check_stock.within_time_window("10:00", "13:00", now)
-    assert not check_stock.within_time_window("13:01", "14:00", now)
-    assert check_stock.within_time_window("23:00", "01:00", dt_time(23, 30))
+    assert stock_utils.within_time_window("10:00", "13:00", now)
+    assert not stock_utils.within_time_window("13:01", "14:00", now)
+    assert stock_utils.within_time_window("23:00", "01:00", dt_time(23, 30))
 
 
 def test_filter_active_subs():
@@ -930,7 +930,7 @@ def test_filter_active_subs():
         {"start_time": "08:00", "end_time": "10:00"},
         {"start_time": "10:00", "end_time": "12:00"},
     ]
-    active = check_stock.filter_active_subs(subs, now)
+    active = stock_utils.filter_active_subs(subs, now)
     assert len(active) == 1
 
 
@@ -943,7 +943,7 @@ def test_build_subs_by_pincode():
     sub_b = {"recipient_id": 2, "product_id": 10}
     sub_c = {"recipient_id": 1, "product_id": 20}
     subs_map = {10: [sub_a, sub_b], 20: [sub_c, {"recipient_id": 3}]}
-    result = check_stock.build_subs_by_pincode(recipients, subs_map)
+    result = stock_utils.build_subs_by_pincode(recipients, subs_map)
     assert result == {
         "111": {10: [sub_a], 20: [sub_c]},
         "222": {10: [sub_b]},
@@ -974,7 +974,7 @@ def test_aggregate_product_summaries():
             "subscriptions": [{"user_email": "c@x", "status": "Sent", "pincode": "333"}],
         },
     ]
-    result = check_stock.aggregate_product_summaries(summaries)
+    result = stock_utils.aggregate_product_summaries(summaries)
     assert len(result) == 3
     combo_keys = {(r["product_id"], r["pincode"]) for r in result}
     assert combo_keys == {(1, "111"), (1, "222"), (2, "333")}
@@ -999,7 +999,7 @@ def test_aggregate_product_summaries_streaks_per_pin():
             "subscriptions": [],
         },
     ]
-    result = check_stock.aggregate_product_summaries(summaries)
+    result = stock_utils.aggregate_product_summaries(summaries)
     streak_map = {
         (r["product_id"], r["pincode"]): r["consecutive_in_stock"] for r in result
     }
@@ -1037,7 +1037,7 @@ def test_notify_users(monkeypatch):
 def test_within_time_window_invalid():
     now = dt_time(12, 0)
     # Invalid time strings should default to True
-    assert check_stock.within_time_window("bad", "time", now)
+    assert stock_utils.within_time_window("bad", "time", now)
 
 
 def test_process_product_missing_data():
