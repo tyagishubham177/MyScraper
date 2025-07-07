@@ -94,6 +94,9 @@ class MockPage:
         self.waited_for_load_state = state
         # print(f"MockPage: Waited for load state '{state}'")
 
+    async def wait_for_timeout(self, timeout):
+        await asyncio.sleep(timeout / 1000)
+
     async def query_selector(self, selector):
         # print(f"MockPage: Querying selector '{selector}'")
         config = self.selectors_config.get(selector)
