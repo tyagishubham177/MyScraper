@@ -2,8 +2,32 @@ import asyncio
 from datetime import datetime, timezone, timedelta, time as dt_time
 import inspect
 import os
+import sys
 import time
-import aiohttp
+import types
+try:
+    import aiohttp  # type: ignore
+except Exception:  # pragma: no cover - fallback when aiohttp not installed
+    aiohttp = types.SimpleNamespace()
+
+# Allow running via `python scripts/check_stock.py`
+if __package__ is None and __name__ == "__main__":
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+try:
+    from playwright.async_api import async_playwright
+except Exception:  # pragma: no cover - fallback when playwright not installed
+    playwright_module = types.ModuleType("playwright")
+    playwright_async = types.ModuleType("playwright.async_api")
+
+    async def async_playwright():
+        raise RuntimeError("playwright not installed")
+
+    playwright_async.async_playwright = async_playwright
+    playwright_async.Page = object
+    playwright_module.async_api = playwright_async
+    sys.modules.setdefault("playwright", playwright_module)
+    sys.modules.setdefault("playwright.async_api", playwright_async)
 
 # Provide a minimal fallback ClientSession when aiohttp is not fully available
 if not hasattr(aiohttp, "ClientSession"):
@@ -31,7 +55,6 @@ if not hasattr(aiohttp, "ClientSession"):
             pass
 
     aiohttp.ClientSession = _DummyClientSession
-from playwright.async_api import async_playwright
 import config
 import notifications
 from notifications import format_summary_email_body

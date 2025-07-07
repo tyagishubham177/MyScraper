@@ -1,5 +1,9 @@
 # Utilities for interacting with the API layer.
-import aiohttp
+import types
+try:
+    import aiohttp  # type: ignore
+except Exception:  # pragma: no cover - fallback when aiohttp not installed
+    aiohttp = types.SimpleNamespace()
 import config
 
 # Provide a minimal fallback ClientSession when aiohttp is not fully available
