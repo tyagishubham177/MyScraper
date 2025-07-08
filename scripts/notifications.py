@@ -322,6 +322,139 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
 def format_short_message(product_name: str) -> str:
     return f"ALERT: {product_name.strip()} is back in stock!"
 
+def format_auto_pause_message(product_name: str) -> str:
+    """Return HTML body for auto pause notifications."""
+    html_body = f"""
+    <html>
+    <head>
+        <meta charset=\"UTF-8\">
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+            }}
+            .announcement {{
+                background: linear-gradient(135deg, #FF6B35, #FF8E53);
+                color: white;
+                padding: 20px 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                text-align: center;
+                max-width: 420px;
+                position: relative;
+                overflow: hidden;
+            }}
+            .announcement::before {{
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                animation: shimmer 3s ease-in-out infinite;
+            }}
+            @keyframes shimmer {{
+                0%, 100% {{ transform: translateX(-100%) translateY(-100%); }}
+                50% {{ transform: translateX(0%) translateY(0%); }}
+            }}
+            .content {{
+                position: relative;
+                z-index: 1;
+            }}
+            .icon {{
+                font-size: 2em;
+                margin-bottom: 10px;
+                display: block;
+            }}
+            .title {{
+                font-size: 1.3em;
+                font-weight: bold;
+                margin-bottom: 12px;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            }}
+            .message {{
+                font-size: 0.95em;
+                line-height: 1.4;
+                margin-bottom: 8px;
+                opacity: 0.95;
+            }}
+            .product-name {{
+                background-color: rgba(255,255,255,0.25);
+                padding: 8px 12px;
+                border-radius: 5px;
+                margin: 12px 0;
+                font-weight: bold;
+                border: 1px solid rgba(255,255,255,0.3);
+                font-size: 1.1em;
+            }}
+            .urgency-text {{
+                background-color: rgba(255,193,7,0.9);
+                color: #333;
+                padding: 10px 15px;
+                border-radius: 8px;
+                margin: 15px 0;
+                font-size: 0.9em;
+                border-left: 4px solid #ff9800;
+            }}
+            .settings-hint {{
+                font-size: 0.85em;
+                opacity: 0.9;
+                margin-top: 15px;
+                font-style: italic;
+            }}
+            .action-button {{
+                background-color: rgba(255,255,255,0.2);
+                color: white;
+                padding: 10px 20px;
+                border: 2px solid rgba(255,255,255,0.4);
+                border-radius: 25px;
+                text-decoration: none;
+                font-weight: bold;
+                display: inline-block;
+                margin: 8px 5px;
+                transition: all 0.3s ease;
+                font-size: 0.9em;
+            }}
+            .action-button:hover {{
+                background-color: rgba(255,255,255,0.3);
+                transform: translateY(-2px);
+            }}
+        </style>
+    </head>
+    <body>
+        <div class=\"announcement\">
+            <div class=\"content\">
+                <span class=\"icon\">⏸️</span>
+                <div class=\"title\">Auto-Paused Subscription</div>
+                <div class=\"message\">
+                    Too many consecutive alerts detected! 📧
+                </div>
+                <div class=\"product-name\">
+                    {product_name}
+                </div>
+                <div class=\"urgency-text\">
+                    🔄 <strong>Auto-Paused:</strong> Your subscription has been paused to prevent spam. You can resume anytime when you need more!
+                </div>
+                <div style=\"margin: 15px 0;\">
+                    <a href=\"https://my-scraper-nine.vercel.app\" class=\"action-button\">🛒 Visit Tracker App</a>
+                </div>
+                <div class=\"settings-hint\">
+                    Resume subscription anytime in Settings
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_body
+
 async def send_email_notification(
     subject: str,
     body: str,

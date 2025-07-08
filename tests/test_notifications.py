@@ -9,6 +9,11 @@ def test_format_messages():
     short_msg = notifications.format_short_message("Prod")
     assert "Prod" in short_msg
 
+def test_format_auto_pause_message():
+    html = notifications.format_auto_pause_message("Prod")
+    assert "Prod" in html
+    assert "Auto-Paused" in html
+
 
 def test_send_email_notification(monkeypatch):
     sent = {}
