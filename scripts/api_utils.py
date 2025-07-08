@@ -159,3 +159,29 @@ async def save_stock_counters(session, counters):
     except Exception as e:
         print(f"Failed to update stock counters: {e}")
 
+
+async def update_subscription(
+    session,
+    recipient_id,
+    product_id,
+    start_time,
+    end_time,
+    paused: bool,
+):
+    """Create or update a subscription via the API."""
+    url = f"{config.APP_BASE_URL}/api/subscriptions"
+    payload = {
+        "recipient_id": recipient_id,
+        "product_id": product_id,
+        "start_time": start_time,
+        "end_time": end_time,
+        "paused": paused,
+    }
+    try:
+        async with session.post(url, json=payload) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+    except Exception as e:  # pragma: no cover - network errors not deterministic
+        print(f"Failed to update subscription: {e}")
+        return None
+

@@ -223,7 +223,25 @@ async def main():
                             stock_counters[key] = stock_counters.get(key, 0) + 1
                         else:
                             stock_counters[key] = 0
-                        summary["consecutive_in_stock"] = stock_counters.get(key, 0)
+                        streak = stock_counters.get(key, 0)
+                        summary["consecutive_in_stock"] = streak
+                        if streak > 30:
+                            for sub in subs_map.get(pid, []):
+                                rid = sub.get("recipient_id")
+                                rec_pin = recipients_map.get(rid, {}).get(
+                                    "pincode", config.PINCODE
+                                )
+                                if rec_pin != pin or sub.get("paused"):
+                                    continue
+                                await api_utils.update_subscription(
+                                    session,
+                                    rid,
+                                    pid,
+                                    sub.get("start_time", "00:00"),
+                                    sub.get("end_time", "23:59"),
+                                    True,
+                                )
+                                sub["paused"] = True
                         summary_email_data.append(summary)
                     total_sent += sent
 

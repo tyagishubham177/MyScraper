@@ -254,6 +254,38 @@ async def test_load_stock_counters_key_conversion(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_update_subscription(monkeypatch):
+    captured = {}
+
+    class DummyResp:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+        async def json(self):
+            return {"ok": True}
+
+        def raise_for_status(self):
+            captured["raised"] = True
+
+    class DummySession:
+        def post(self, url, json=None):
+            captured["url"] = url
+            captured["json"] = json
+            return DummyResp()
+
+    monkeypatch.setattr(config, "APP_BASE_URL", "http://api")
+    result = await api_utils.update_subscription(
+        DummySession(), 1, 10, "00:00", "23:59", True
+    )
+    assert result == {"ok": True}
+    assert captured["url"] == "http://api/api/subscriptions"
+    assert captured["json"]["paused"] is True
+
+
+@pytest.mark.asyncio
 async def test_process_product_fetch_subscriptions_none(monkeypatch):
     """Test process_product when fetch_subscriptions returns None."""
     product_info = {"id": 1, "name": "Test Product", "url": "http://example.com"}
@@ -1226,3 +1258,108 @@ async def test_main_parallel_page_checks(monkeypatch):
     assert elapsed < 0.55
     assert skip_args[0] is False
     assert any(arg is True for arg in skip_args[1:])
+
+
+@pytest.mark.asyncio
+async def test_auto_pause_after_streak(monkeypatch):
+    monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://api")
+    monkeypatch.setattr(check_stock.config, "EMAIL_HOST", None)
+    monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", None)
+    monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
+
+    recipients = {1: {"email": "u@example.com", "pincode": "111"}}
+
+    async def mock_load_recipients(session):
+        return recipients
+
+    async def mock_load_products(session):
+        return [{"id": 1, "name": "Prod", "url": "http://p"}]
+
+    subs_map = {
+        1: [
+            {"recipient_id": 1, "start_time": "00:00", "end_time": "23:59", "paused": False}
+        ]
+    }
+
+    async def mock_load_subscriptions(session):
+        return subs_map
+
+    async def mock_load_stock_counters(session):
+        return {"1|111": 30}
+
+    saved = {}
+
+    async def mock_save_stock_counters(session, counters):
+        saved.update(counters)
+
+    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients)
+    monkeypatch.setattr(api_utils, "load_products", mock_load_products)
+    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions)
+    monkeypatch.setattr(api_utils, "load_stock_counters", mock_load_stock_counters)
+    monkeypatch.setattr(api_utils, "save_stock_counters", mock_save_stock_counters)
+
+    called = {}
+
+    async def mock_update_subscription(session, rid, pid, start, end, paused):
+        called["called"] = True
+        called["paused"] = paused
+
+    monkeypatch.setattr(api_utils, "update_subscription", mock_update_subscription)
+
+    async def mock_process_product(
+        session,
+        page,
+        product_info,
+        recipients_map,
+        current_time,
+        skip_pin,
+        subs_map_in,
+        pincode,
+    ):
+        return (
+            {
+                "product_id": 1,
+                "product_name": "Prod",
+                "product_url": "http://p",
+                "pincode": pincode,
+                "subscriptions": [],
+                "in_stock": True,
+            },
+            0,
+            True,
+        )
+
+    monkeypatch.setattr(check_stock, "process_product", mock_process_product)
+
+    class MockBrowser:
+        async def new_page(self):
+            return MockPage()
+
+        async def close(self):
+            pass
+
+    class MockPage:
+        async def close(self):
+            pass
+
+    class MockPlaywright:
+        def __init__(self):
+            self.chromium = self
+
+        async def launch(self, **kwargs):
+            return MockBrowser()
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+    monkeypatch.setattr(check_stock, "async_playwright", lambda: MockPlaywright())
+
+    await check_stock.main()
+
+    assert called.get("called")
+    assert called.get("paused") is True
+    assert subs_map[1][0]["paused"] is True
+    assert saved.get("1|111") == 31
