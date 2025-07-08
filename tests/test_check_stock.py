@@ -1164,8 +1164,11 @@ def test_process_product_in_stock(monkeypatch):
 async def test_main_parallel_page_checks(monkeypatch):
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
     monkeypatch.setattr(check_stock.config, "MAX_PARALLEL_PAGE_CHECKS", 2)
-    monkeypatch.setattr(check_stock.config, "EMAIL_HOST", None)
-    monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", None)
+    monkeypatch.setattr(check_stock.config, "EMAIL_HOST", "smtp.example.com")
+    monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", "sender@example.com")
+    monkeypatch.setattr(check_stock.config, "EMAIL_PORT", 587)
+    monkeypatch.setattr(check_stock.config, "EMAIL_HOST_USER", "user")
+    monkeypatch.setattr(check_stock.config, "EMAIL_HOST_PASSWORD", "pass")
     monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     async def mock_load_recipients(session):
@@ -1263,8 +1266,11 @@ async def test_main_parallel_page_checks(monkeypatch):
 @pytest.mark.asyncio
 async def test_auto_pause_after_streak(monkeypatch):
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://api")
-    monkeypatch.setattr(check_stock.config, "EMAIL_HOST", None)
-    monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", None)
+    monkeypatch.setattr(check_stock.config, "EMAIL_HOST", "smtp.example.com")
+    monkeypatch.setattr(check_stock.config, "EMAIL_SENDER", "sender@example.com")
+    monkeypatch.setattr(check_stock.config, "EMAIL_PORT", 587)
+    monkeypatch.setattr(check_stock.config, "EMAIL_HOST_USER", "user")
+    monkeypatch.setattr(check_stock.config, "EMAIL_HOST_PASSWORD", "pass")
     monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     recipients = {1: {"email": "u@example.com", "pincode": "111"}}
@@ -1299,12 +1305,20 @@ async def test_auto_pause_after_streak(monkeypatch):
     monkeypatch.setattr(api_utils, "save_stock_counters", mock_save_stock_counters)
 
     called = {}
+    email_called = {}
 
     async def mock_update_subscription(session, rid, pid, start, end, paused):
         called["called"] = True
         called["paused"] = paused
 
     monkeypatch.setattr(api_utils, "update_subscription", mock_update_subscription)
+
+    async def mock_send_email(subject, body, sender, recipients, host, port, username, password):
+        email_called["called"] = True
+        email_called["recipients"] = recipients
+        email_called["body"] = body
+
+    monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_email)
 
     async def mock_process_product(
         session,
@@ -1363,3 +1377,6 @@ async def test_auto_pause_after_streak(monkeypatch):
     assert called.get("paused") is True
     assert subs_map[1][0]["paused"] is True
     assert saved.get("1|111") == 31
+    assert email_called.get("called")
+    assert email_called.get("recipients") == ["u@example.com"]
+    assert "Prod" in email_called.get("body", "")

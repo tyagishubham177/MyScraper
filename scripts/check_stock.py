@@ -242,6 +242,29 @@ async def main():
                                     True,
                                 )
                                 sub["paused"] = True
+                                email = recipients_map.get(rid, {}).get("email")
+                                if (
+                                    email
+                                    and config.EMAIL_HOST
+                                    and config.EMAIL_SENDER
+                                ):
+                                    try:
+                                        await notifications.send_email_notification(
+                                            subject="Subscription Auto-Paused",
+                                            body=notifications.format_auto_pause_message(
+                                                product_info.get("name", "Product")
+                                            ),
+                                            sender=config.EMAIL_SENDER,
+                                            recipients=[email],
+                                            host=config.EMAIL_HOST,
+                                            port=config.EMAIL_PORT,
+                                            username=config.EMAIL_HOST_USER,
+                                            password=config.EMAIL_HOST_PASSWORD,
+                                        )
+                                    except Exception as e:
+                                        print(
+                                            f"Error sending auto-pause email to {email}: {e}"
+                                        )
                         summary_email_data.append(summary)
                     total_sent += sent
 
