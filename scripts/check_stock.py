@@ -225,7 +225,7 @@ async def main():
                             stock_counters[key] = 0
                         streak = stock_counters.get(key, 0)
                         summary["consecutive_in_stock"] = streak
-                        if streak > 30:
+                        if streak > 20:
                             for sub in subs_map.get(pid, []):
                                 rid = sub.get("recipient_id")
                                 rec_pin = recipients_map.get(rid, {}).get(

@@ -1291,7 +1291,7 @@ async def test_auto_pause_after_streak(monkeypatch):
         return subs_map
 
     async def mock_load_stock_counters(session):
-        return {"1|111": 30}
+        return {"1|111": 20}
 
     saved = {}
 
@@ -1376,7 +1376,7 @@ async def test_auto_pause_after_streak(monkeypatch):
     assert called.get("called")
     assert called.get("paused") is True
     assert subs_map[1][0]["paused"] is True
-    assert saved.get("1|111") == 31
+    assert saved.get("1|111") == 21
     assert email_called.get("called")
     assert email_called.get("recipients") == ["u@example.com"]
     assert "Prod" in email_called.get("body", "")
