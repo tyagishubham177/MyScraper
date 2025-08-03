@@ -68,7 +68,13 @@ async function fetchAPI(url, options = {}) {
 function renderRecipientsList(recipients) {
   const recipientsList = document.getElementById('recipients-list');
   const recipientSubscriptionsSection = document.getElementById('recipient-subscriptions-section');
+  const recipientCount = document.getElementById('recipients-count');
   recipientsList.innerHTML = ''; // Clear current list
+
+  const count = recipients && Array.isArray(recipients) ? recipients.length : 0;
+  if (recipientCount) {
+    recipientCount.textContent = count;
+  }
 
   if (!recipients || recipients.length === 0) {
     recipientsList.innerHTML = '<li class="list-group-item">No recipients found.</li>';
@@ -136,6 +142,10 @@ async function fetchRecipients() {
     console.error('Error fetching recipients:', error);
     const recipientsList = document.getElementById('recipients-list');
     recipientsList.innerHTML = `<li class="list-group-item list-group-item-danger">Error loading recipients: ${error.message}</li>`;
+    const recipientCount = document.getElementById('recipients-count');
+    if (recipientCount) {
+      recipientCount.textContent = '0';
+    }
   }
 }
 
