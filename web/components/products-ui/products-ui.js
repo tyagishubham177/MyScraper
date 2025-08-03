@@ -49,7 +49,13 @@ function clearError(elementId) {
 // Renders the list of products
 function renderProductsList(products) {
   const productsListEl = document.getElementById('products-list');
+  const productsCount = document.getElementById('products-count');
   productsListEl.innerHTML = ''; // Clear current list
+
+  const count = products && Array.isArray(products) ? products.length : 0;
+  if (productsCount) {
+    productsCount.textContent = count;
+  }
 
   if (!products || products.length === 0) {
     productsListEl.innerHTML = '<li class="list-group-item">No products found.</li>';
@@ -122,6 +128,10 @@ async function fetchProducts() {
     console.error('Error fetching products:', error);
     const productsListEl = document.getElementById('products-list');
     productsListEl.innerHTML = `<li class="list-group-item list-group-item-danger">Error loading products: ${error.message}</li>`;
+    const productsCount = document.getElementById('products-count');
+    if (productsCount) {
+      productsCount.textContent = '0';
+    }
   }
 }
 
