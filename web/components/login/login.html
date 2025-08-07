@@ -1,20 +1,20 @@
-<div id="login-popup" style="display: none;">
+<div id="login-popup" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="login-title" aria-describedby="login-subtitle">
   <div class="particles"></div>
   <div class="login-container">
     <div class="login-header">
       <div class="login-icon">
         <i data-lucide="user"></i>
       </div>
-      <h2 class="login-title">Welcome Back</h2>
-      <p class="login-subtitle">Sign in to your account</p>
+      <h2 id="login-title" class="login-title">Welcome Back</h2>
+      <p id="login-subtitle" class="login-subtitle">Sign in to your account</p>
     </div>
 
     <div class="login-role-selector">
-      <button id="user-role-btn" class="active">
+      <button id="user-role-btn" class="active" type="button" aria-pressed="true" aria-controls="user-section">
         <i data-lucide="user"></i>
         <span>User</span>
       </button>
-      <button id="admin-role-btn">
+      <button id="admin-role-btn" type="button" aria-pressed="false" aria-controls="admin-section">
         <i data-lucide="shield"></i>
         <span>Admin</span>
       </button>
@@ -23,37 +23,37 @@
     <div id="admin-section" class="hidden">
       <div class="input-icon-wrapper">
         <i data-lucide="mail" class="input-icon"></i>
-        <input type="email" id="admin-email" placeholder="Enter your email" class="enhanced-input">
+        <input type="email" id="admin-email" placeholder="Enter your email" class="enhanced-input" aria-label="Admin email address" autocomplete="username" inputmode="email">
       </div>
       <div class="input-icon-wrapper with-toggle">
         <i data-lucide="lock" class="input-icon"></i>
-        <input type="password" id="admin-password" placeholder="Enter your password" class="enhanced-input">
-        <i id="admin-password-toggle" data-lucide="eye" class="password-toggle"></i>
+        <input type="password" id="admin-password" placeholder="Enter your password" class="enhanced-input" aria-label="Admin password" autocomplete="current-password">
+        <i id="admin-password-toggle" data-lucide="eye" class="password-toggle" role="button" aria-label="Toggle password visibility" tabindex="0"></i>
       </div>
-      <p id="admin-error-message" class="error-message hidden"></p>
-      <button id="admin-login-btn" class="enhanced-btn btn-success">
+      <p id="admin-error-message" class="error-message hidden" role="alert" aria-live="polite"></p>
+      <button id="admin-login-btn" class="enhanced-btn btn-success" type="button" aria-label="Sign in as admin">
         <i data-lucide="log-in"></i>
         <span>Sign In</span>
       </button>
     </div>
 
     <div id="user-section">
-      <h4 class="user-login-header">Enter your email to login</h4>
+      <h4 class="user-login-header" id="user-login-header">Enter your email to login</h4>
       <div class="input-icon-wrapper" id="user-email-wrapper">
         <i data-lucide="mail" class="input-icon"></i>
-        <input type="email" id="user-email" placeholder="Enter your email address" class="enhanced-input">
+        <input type="email" id="user-email" placeholder="Enter your email address" class="enhanced-input" aria-label="Your email address" aria-describedby="user-login-header" autocomplete="email" inputmode="email">
       </div>
-      <button id="user-login-btn" class="enhanced-btn btn-primary">
+      <button id="user-login-btn" class="enhanced-btn btn-primary" type="button" aria-label="Login or check email">
         <i data-lucide="log-in"></i>
         <span>Login / Check Email</span>
       </button>
-      <p id="user-error-message" class="error-message hidden"></p>
-      <div id="user-contact-links" class="hidden">
-        <button id="user-mail-btn" class="contact-link-btn btn-outline-primary">
+      <p id="user-error-message" class="error-message hidden" role="alert" aria-live="polite"></p>
+      <div id="user-contact-links" class="hidden" aria-label="Contact admin options">
+        <button id="user-mail-btn" class="contact-link-btn btn-outline-primary" type="button" aria-label="Email admin">
           <i data-lucide="mail"></i>
           <span>Email Admin</span>
         </button>
-        <a href="#" id="user-reddit-link" class="contact-link-btn btn-outline-danger">
+        <a href="#" id="user-reddit-link" class="contact-link-btn btn-outline-danger" aria-label="Message admin on Reddit">
           <i data-lucide="message-circle"></i>
           <span>Message Admin</span>
         </a>

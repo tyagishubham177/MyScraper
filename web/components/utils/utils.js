@@ -54,12 +54,12 @@ export function cleanLogText(logText) {
 export function formatRunDate(dateString) {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const month = monthNames[date.getMonth()];
-  const year = String(date.getFullYear()).slice(-2);
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const month = monthNames[date.getUTCMonth()];
+  const year = String(date.getUTCFullYear()).slice(-2);
+  let hours = date.getUTCHours();
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12;
   const formattedHours = String(hours).padStart(2, '0');
