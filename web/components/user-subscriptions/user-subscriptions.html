@@ -1,49 +1,45 @@
 <div class="row" id="subscriptions-ui">
-  <div class="col-md-6 mb-4">
-    <h4 class="d-flex align-items-center">
-      <a href="#" class="d-sm-none collapse-toggle me-2" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">
-        <i data-lucide="chevron-down"></i>
-      </a>
-      <span class="collapse-title" role="button" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">Your Subscriptions</span>
-    </h4>
-    <div class="modal fade" id="subscriptionsInfoModal" tabindex="-1" aria-labelledby="subscriptionsInfoModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="subscriptionsInfoModalLabel">Subscription Controls</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <ul class="list-unstyled small mb-0">
-              <li>➕ Add products from the available product list</li>
-              <li>🔎 Use search to filter products</li>
-              <li>💬 Reach out to admin from the settings pane to add products</li>
-              <li>❌ Remove a subscription with the X button</li>
-              <li>🔗 Links open the product page</li>
-              <li>⏯ Pause or resume your subscriptions when you don't want to be notified</li>
-              <li>⏰ Set start/end times to set a window in which you want email notifications</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+  <!-- Your Subscriptions Section -->
+  <div class="col-lg-6 mb-4">
+    <div classs="d-flex justify-content-between align-items-center mb-3">
+      <h4>Your Subscriptions</h4>
+      <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#subscriptionsInfoModal">
+        <i data-lucide="help-circle" class="me-1"></i> Info
+      </button>
     </div>
-    <div class="collapse fade-collapse show" id="userSubscribedListCollapse">
-      <div class="list-wrapper">
-        <ul id="user-subscribed-list" class="list-group"></ul>
-      </div>
+    <div id="user-subscribed-list" class="product-grid">
+      <!-- Subscribed product cards will be injected here -->
     </div>
   </div>
-  <div class="col-md-6 mb-4">
-    <div class="d-flex align-items-center mb-2">
-      <a href="#" class="d-sm-none collapse-toggle me-2" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">
-        <i data-lucide="chevron-down"></i>
-      </a>
-        <h4 class="mb-0 collapse-title" role="button" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">Available Products</h4>
+
+  <!-- Available Products Section -->
+  <div class="col-lg-6 mb-4">
+    <h4 class="mb-3">Available Products</h4>
+    <input type="text" id="product-search" class="form-control enhanced-input mb-3" placeholder="Search products...">
+    <div id="all-products-list" class="product-grid">
+      <!-- All product cards will be injected here -->
     </div>
-    <input type="text" id="product-search" class="form-control mb-2" placeholder="Search products">
-    <div class="collapse fade-collapse show" id="allProductsListCollapse">
-      <div class="list-wrapper">
-        <ul id="all-products-list" class="list-group"></ul>
+  </div>
+</div>
+
+<!-- Info Modal -->
+<div class="modal fade" id="subscriptionsInfoModal" tabindex="-1" aria-labelledby="subscriptionsInfoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="subscriptionsInfoModalLabel">Subscription Controls</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-unstyled mb-0">
+          <li class="mb-2"><i data-lucide="plus-circle" class="me-2 text-success"></i>Add products from the available product list.</li>
+          <li class="mb-2"><i data-lucide="search" class="me-2 text-info"></i>Use search to filter products.</li>
+          <li class="mb-2"><i data-lucide="message-square" class="me-2 text-primary"></i>Reach out to admin to request new products.</li>
+          <li class="mb-2"><i data-lucide="x-circle" class="me-2 text-danger"></i>Remove a subscription with the 'X' button.</li>
+          <li class="mb-2"><i data-lucide="link" class="me-2"></i>Product names link to the official product page.</li>
+          <li class="mb-2"><i data-lucide="pause-circle" class="me-2 text-warning"></i>Pause or resume subscriptions to control notifications.</li>
+          <li><i data-lucide="clock" class="me-2 text-secondary"></i>Set start/end times for a notification window.</li>
+        </ul>
       </div>
     </div>
   </div>

@@ -35,102 +35,54 @@ export async function initUserSubscriptionsUI() {
   const subscribedList = document.getElementById('user-subscribed-list');
   const allList = document.getElementById('all-products-list');
   const searchInput = document.getElementById('product-search');
-  const productsCollapse = document.getElementById('allProductsListCollapse');
-
-  if (productsCollapse && searchInput) {
-    const showSearch = () => {
-      searchInput.classList.remove('d-none');
-      searchInput.classList.add('fade-in-content');
-      setTimeout(() => searchInput.classList.remove('fade-in-content'), 500);
-    };
-    const hideSearch = () => {
-      searchInput.classList.add('d-none');
-    };
-    productsCollapse.addEventListener('show.bs.collapse', showSearch);
-    productsCollapse.addEventListener('hide.bs.collapse', hideSearch);
-    if (productsCollapse.classList.contains('show')) {
-      showSearch();
-    } else {
-      hideSearch();
-    }
-  }
 
   function createSubscribedItem(product, sub, paused = false) {
-    const li = document.createElement('li');
-    li.className = 'list-group-item product-list-item-mobile' + (paused ? ' paused' : '');
-    li.dataset.productId = product.id;
-    li.dataset.name = product.name.toLowerCase();
+    const card = document.createElement('div');
+    card.className = 'product-card' + (paused ? ' paused' : '');
+    card.dataset.productId = product.id;
+    card.dataset.name = product.name.toLowerCase();
 
-    const details = document.createElement('div');
-    details.className = 'product-details mb-2';
-    const nameEl = document.createElement('h5');
-    nameEl.className = 'product-name mb-0';
-    nameEl.textContent = product.name;
-    const linkEl = document.createElement('a');
-    const safeUrl = sanitizeUrl(product.url);
-    linkEl.href = safeUrl || '#';
-    linkEl.target = '_blank';
-    linkEl.className = 'product-url d-block small';
-    linkEl.title = product.url;
-    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
-    linkEl.textContent = `${displayUrl} `;
-    const icon = document.createElement('i');
-    icon.setAttribute('data-lucide', 'external-link');
-    icon.className = 'lucide-xs';
-    linkEl.appendChild(icon);
-    details.appendChild(nameEl);
-    details.appendChild(linkEl);
+    const safeUrl = sanitizeUrl(product.url) || '#';
 
-    const controls = document.createElement('div');
-    controls.className = 'product-controls d-flex align-items-center';
-    controls.innerHTML = `
-      <div class="time-slot-group me-1">
-        <input type="time" class="form-control form-control-sm sub-start" value="${sub.start_time || '00:00'}">
+    card.innerHTML = `
+      <h5 class="product-name">
+        <a href="${safeUrl}" target="_blank" title="${product.url}">${product.name}</a>
+      </h5>
+      <div class="product-controls">
+        <div class="time-slot-group me-auto">
+          <input type="time" class="form-control form-control-sm sub-start" value="${sub.start_time || '00:00'}" title="Notification start time">
+          <input type="time" class="form-control form-control-sm sub-end" value="${sub.end_time || '23:59'}" title="Notification end time">
+        </div>
+        <button class="btn btn-sm btn-outline-secondary pause-btn" title="${paused ? 'Resume' : 'Pause'}">
+          <i data-lucide="${paused ? 'play' : 'pause'}"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger unsub-btn" title="Unsubscribe">
+          <i data-lucide="x"></i>
+        </button>
       </div>
-      <div class="time-slot-group me-2">
-        <input type="time" class="form-control form-control-sm sub-end" value="${sub.end_time || '23:59'}">
-      </div>
-      <button class="btn btn-sm btn-outline-secondary pause-btn me-1 btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}"></i></button>
-      <button class="btn btn-sm btn-outline-danger unsub-btn btn-icon"><i data-lucide="x"></i></button>`;
-
-    li.appendChild(details);
-    li.appendChild(controls);
-    return li;
+    `;
+    return card;
   }
 
   function createAllProductItem(product) {
-    const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-    li.dataset.productId = product.id;
-    li.dataset.name = product.name.toLowerCase();
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.dataset.productId = product.id;
+    card.dataset.name = product.name.toLowerCase();
 
-    const info = document.createElement('div');
-    const strong = document.createElement('strong');
-    strong.textContent = product.name;
-    const link = document.createElement('small');
-    link.className = 'd-block text-muted';
-    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
-    const anchor = document.createElement('a');
-    const safeUrl = sanitizeUrl(product.url);
-    anchor.href = safeUrl || '#';
-    anchor.target = '_blank';
-    anchor.title = product.url;
-    anchor.textContent = `${displayUrl} `;
-    const icon2 = document.createElement('i');
-    icon2.setAttribute('data-lucide', 'external-link');
-    icon2.className = 'lucide-small';
-    anchor.appendChild(icon2);
-    link.appendChild(anchor);
-    info.appendChild(strong);
-    info.appendChild(link);
+    const safeUrl = sanitizeUrl(product.url) || '#';
 
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-sm btn-outline-primary sub-btn';
-    btn.innerHTML = '<i data-lucide="plus"></i>';
-
-    li.appendChild(info);
-    li.appendChild(btn);
-    return li;
+    card.innerHTML = `
+      <h5 class="product-name">
+        <a href="${safeUrl}" target="_blank" title="${product.url}">${product.name}</a>
+      </h5>
+      <div class="product-controls">
+        <button class="btn btn-sm btn-primary sub-btn" title="Subscribe">
+          <i data-lucide="plus"></i> Subscribe
+        </button>
+      </div>
+    `;
+    return card;
   }
 
   function render() {
@@ -147,10 +99,7 @@ export async function initUserSubscriptionsUI() {
       });
 
     if (sortedSubs.length === 0) {
-      const emptyLi = document.createElement('li');
-      emptyLi.className = 'list-group-item text-center text-muted';
-      emptyLi.textContent = 'Uh oh, your subscriptions list is empty 😢 Add products from the available list below.';
-      subscribedList.appendChild(emptyLi);
+      subscribedList.innerHTML = '<p class="text-muted text-center w-100">Your subscriptions list is empty. Add products from the available list.</p>';
     } else {
       for (const item of sortedSubs) {
         subscribedList.appendChild(
@@ -162,6 +111,11 @@ export async function initUserSubscriptionsUI() {
     products.forEach(p => {
       if (!subscribedMap.has(p.id)) allList.appendChild(createAllProductItem(p));
     });
+
+    if (allList.children.length === 0) {
+        allList.innerHTML = '<p class="text-muted text-center w-100">All available products are subscribed.</p>';
+    }
+
     if (window.lucide) window.lucide.createIcons();
     filterProducts(searchInput.value || '');
   }
@@ -200,111 +154,66 @@ export async function initUserSubscriptionsUI() {
     }
   }
 
-  async function pause(productId) {
-    const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
-    const start = li ? li.querySelector('.sub-start').value : (subscribedMap.get(productId)?.start_time || '00:00');
-    const end = li ? li.querySelector('.sub-end').value : (subscribedMap.get(productId)?.end_time || '23:59');
+  async function updateSubscription(productId, updates) {
     showGlobalLoader();
     try {
+        const currentSub = subscribedMap.get(productId) || {};
+        const body = {
+            recipient_id: recipient.id,
+            product_id: productId,
+            start_time: updates.start_time ?? currentSub.start_time ?? '00:00',
+            end_time: updates.end_time ?? currentSub.end_time ?? '23:59',
+            paused: updates.paused ?? currentSub.paused ?? false,
+        };
       const res = await fetchAPI('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: true })
+        body: JSON.stringify(body)
       });
       subscribedMap.set(productId, res);
       render();
     } catch (err) {
-      alert(err.message || 'Failed to pause');
-    } finally {
-      hideGlobalLoader();
-    }
-  }
-
-  async function resume(productId) {
-    const li = subscribedList.querySelector(`li[data-product-id="${productId}"]`);
-    const start = li ? li.querySelector('.sub-start').value : (subscribedMap.get(productId)?.start_time || '00:00');
-    const end = li ? li.querySelector('.sub-end').value : (subscribedMap.get(productId)?.end_time || '23:59');
-    showGlobalLoader();
-    try {
-      const res = await fetchAPI('/api/subscriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: false })
-      });
-      subscribedMap.set(productId, res);
-      render();
-    } catch (err) {
-      alert(err.message || 'Failed to resume');
-    } finally {
-      hideGlobalLoader();
-    }
-  }
-
-  async function updateTimes(productId, start, end) {
-    showGlobalLoader();
-    try {
-      const res = await fetchAPI('/api/subscriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient_id: recipient.id, product_id: productId, start_time: start, end_time: end, paused: !!subscribedMap.get(productId)?.paused })
-      });
-      subscribedMap.set(productId, res);
-    } catch (err) {
-      alert(err.message || 'Failed to update times');
+      alert(err.message || 'Failed to update subscription');
     } finally {
       hideGlobalLoader();
     }
   }
 
   subscribedList.addEventListener('click', e => {
-    const li = e.target.closest('li[data-product-id]');
-    if (!li) return;
-    if (e.target.closest('button')) e.preventDefault();
+    const card = e.target.closest('.product-card[data-product-id]');
+    if (!card) return;
+
+    const id = card.dataset.productId;
     if (e.target.closest('.unsub-btn')) {
-      const id = li.dataset.productId;
       unsubscribe(id);
     } else if (e.target.closest('.pause-btn')) {
-      const id = li.dataset.productId;
       const sub = subscribedMap.get(id);
-      if (sub && sub.paused) {
-        resume(id);
-      } else {
-        pause(id);
-      }
+      updateSubscription(id, { paused: !sub.paused });
     }
   });
 
   subscribedList.addEventListener('change', e => {
     if (!e.target.classList.contains('sub-start') && !e.target.classList.contains('sub-end')) return;
-    const li = e.target.closest('li[data-product-id]');
-    const start = li.querySelector('.sub-start').value;
-    const end = li.querySelector('.sub-end').value;
-    updateTimes(li.dataset.productId, start, end);
+    const card = e.target.closest('.product-card[data-product-id]');
+    const start = card.querySelector('.sub-start').value;
+    const end = card.querySelector('.sub-end').value;
+    updateSubscription(card.dataset.productId, { start_time: start, end_time: end });
   });
 
   allList.addEventListener('click', e => {
     const btn = e.target.closest('.sub-btn');
     if (!btn) return;
-    if (typeof e.preventDefault === 'function') {
-      e.preventDefault();
-    }
-    const li = btn.closest('li[data-product-id]');
-    subscribe(li.dataset.productId);
+    const card = btn.closest('.product-card[data-product-id]');
+    subscribe(card.dataset.productId);
   });
 
   function filterProducts(term) {
-    const items = allList.querySelectorAll('li');
-    const searchWords = term.toLowerCase().split(' ').filter(word => word.length > 0);
+    const searchWords = term.toLowerCase().split(' ').filter(Boolean);
 
-    items.forEach(item => {
-      const title = (item.dataset.name || item.querySelector('strong')?.textContent || '').toLowerCase();
-      const matches = searchWords.every(word => title.includes(word));
-
-      if (matches) {
-        item.classList.remove('product-item-hidden');
-      } else {
-        item.classList.add('product-item-hidden');
-      }
+    document.querySelectorAll('#all-products-list .product-card').forEach(card => {
+        const name = card.dataset.name || '';
+        const isVisible = searchWords.every(word => name.includes(word));
+        card.style.display = isVisible ? '' : 'none';
     });
   }
 
@@ -316,5 +225,3 @@ export async function initUserSubscriptionsUI() {
   hideGlobalLoader();
   return recipient;
 }
-
-// Initialization is handled by the page that loads this component

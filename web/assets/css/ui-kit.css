@@ -1,0 +1,107 @@
+/*
+ * UI Kit: Playful Minimalist Theme
+ */
+
+/* 1. Color Palette & Root Variables */
+:root {
+  --primary-color: #6a11cb;
+  --primary-color-dark: #2575fc;
+  --secondary-color: #f0f2f5;
+  --background-color: #ffffff;
+  --text-color: #333;
+  --card-background-color: rgba(255, 255, 255, 0.9);
+  --border-radius: 12px;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--text-color);
+}
+
+/* 2. Buttons */
+.btn-enhanced {
+  border-radius: var(--border-radius);
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: var(--box-shadow);
+}
+
+.btn-primary.btn-enhanced {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary.btn-enhanced:hover {
+  background-color: var(--primary-color-dark);
+  border-color: var(--primary-color-dark);
+  transform: translateY(-2px);
+}
+
+.btn-secondary.btn-enhanced {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: var(--text-color);
+}
+
+.btn-secondary.btn-enhanced:hover {
+    background-color: #e0e2e5;
+    border-color: #e0e2e5;
+    transform: translateY(-2px);
+}
+
+
+/* 3. Inputs */
+.enhanced-input {
+  border-radius: var(--border-radius);
+  padding: 10px 15px;
+  border: 1px solid #ccc;
+  transition: all 0.3s ease;
+}
+
+.enhanced-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.2);
+}
+
+
+/* 4. Cards */
+.glass-card {
+  background: var(--card-background-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* 5. Modals */
+.modal-content {
+  border-radius: var(--border-radius);
+  background-color: var(--background-color);
+  box-shadow: var(--box-shadow);
+}
+
+.modal-header {
+  border-bottom: none;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.modal-footer {
+    border-top: none;
+    padding: 0 1.5rem 1.5rem;
+}
+
+/* 6. Offcanvas */
+.offcanvas {
+    background-color: var(--background-color);
+    box-shadow: var(--box-shadow);
+}
+
+/* 7. General Class for playful hover effect */
+.interactive-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    transition: all 0.2s ease-in-out;
+}
