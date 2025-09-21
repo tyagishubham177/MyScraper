@@ -36,6 +36,22 @@ export async function initUserSubscriptionsUI() {
   const allList = document.getElementById('all-products-list');
   const searchInput = document.getElementById('product-search');
   const productsCollapse = document.getElementById('allProductsListCollapse');
+  const subscribedCollapse = document.getElementById('userSubscribedListCollapse');
+
+  const collapsibleSections = [productsCollapse, subscribedCollapse].filter(Boolean);
+
+  function syncDesktopCollapses() {
+    if (typeof bootstrap === 'undefined' || !bootstrap.Collapse) return;
+    if (window.innerWidth >= 1200) {
+      collapsibleSections.forEach(section => {
+        const instance = bootstrap.Collapse.getOrCreateInstance(section, { toggle: false });
+        instance.show();
+      });
+    }
+  }
+
+  window.addEventListener('resize', syncDesktopCollapses);
+  syncDesktopCollapses();
 
   if (productsCollapse && searchInput) {
     const showSearch = () => {
@@ -63,9 +79,14 @@ export async function initUserSubscriptionsUI() {
 
     const details = document.createElement('div');
     details.className = 'product-details mb-2';
+    const headingRow = document.createElement('div');
+    headingRow.className = 'product-heading-row';
     const nameEl = document.createElement('h5');
     nameEl.className = 'product-name mb-0';
     nameEl.textContent = product.name;
+    const statusPill = document.createElement('span');
+    statusPill.className = 'subscription-status ' + (paused ? 'is-paused' : 'is-active');
+    statusPill.textContent = paused ? 'Paused' : 'Active';
     const linkEl = document.createElement('a');
     const safeUrl = sanitizeUrl(product.url);
     linkEl.href = safeUrl || '#';
@@ -78,7 +99,9 @@ export async function initUserSubscriptionsUI() {
     icon.setAttribute('data-lucide', 'external-link');
     icon.className = 'lucide-xs';
     linkEl.appendChild(icon);
-    details.appendChild(nameEl);
+    headingRow.appendChild(nameEl);
+    headingRow.appendChild(statusPill);
+    details.appendChild(headingRow);
     details.appendChild(linkEl);
 
     const controls = document.createElement('div');

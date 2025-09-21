@@ -110,8 +110,8 @@ body.user-dashboard #particles-js-bg::before {
 }
 
 .user-dashboard .brand-logo {
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 88px;
   object-fit: contain;
   border-radius: var(--radius-md);
   background: rgba(15, 23, 42, 0.45);
@@ -363,6 +363,18 @@ body.user-dashboard #particles-js-bg::before {
   background: transparent;
 }
 
+@media (min-width: 1200px) {
+  .user-dashboard .collapse.fade-collapse {
+    display: block !important;
+    height: auto !important;
+    visibility: visible !important;
+  }
+
+  .user-dashboard .collapse.fade-collapse:not(.show) {
+    display: block !important;
+  }
+}
+
 .user-dashboard .list-wrapper {
   background: var(--surface-muted);
   border-radius: var(--radius-md);
@@ -423,9 +435,61 @@ body.user-dashboard #particles-js-bg::before {
   gap: 1rem;
 }
 
+.user-dashboard .product-list-item-mobile:not(.paused) {
+  border-left: 4px solid rgba(37, 99, 235, 0.45);
+}
+
 .user-dashboard .product-list-item-mobile.paused {
-  border-color: rgba(220, 38, 38, 0.25);
-  background: rgba(220, 38, 38, 0.05);
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(254, 226, 226, 0.65);
+  box-shadow: 0 10px 22px rgba(220, 38, 38, 0.12);
+}
+
+.user-dashboard .product-heading-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.user-dashboard .product-heading-row .subscription-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: background 0.3s var(--transition), color 0.3s var(--transition);
+}
+
+.user-dashboard .subscription-status::before {
+  content: '';
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+}
+
+.user-dashboard .subscription-status.is-active {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.35);
+}
+
+.user-dashboard .subscription-status.is-active::before {
+  background: #16a34a;
+}
+
+.user-dashboard .subscription-status.is-paused {
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 38, 38, 0.28);
+}
+
+.user-dashboard .subscription-status.is-paused::before {
+  background: #dc2626;
 }
 
 .user-dashboard .product-details {
