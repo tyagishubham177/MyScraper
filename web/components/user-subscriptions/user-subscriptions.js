@@ -41,13 +41,20 @@ export async function initUserSubscriptionsUI() {
   const collapsibleSections = [productsCollapse, subscribedCollapse].filter(Boolean);
   const collapseToggleMap = new Map();
 
-  document.querySelectorAll('.panel-toggle[data-collapsible-target]').forEach(btn => {
+  const toggleButtons = typeof document?.querySelectorAll === 'function'
+    ? Array.from(document.querySelectorAll('.panel-toggle[data-collapsible-target]'))
+    : [];
+
+  toggleButtons.forEach(btn => {
     collapseToggleMap.set(btn.dataset.collapsibleTarget, btn);
   });
 
   function updateCollapseMode() {
     if (typeof bootstrap === 'undefined' || !bootstrap.Collapse) return;
-    const isMobile = window.innerWidth < 1200;
+    const viewportWidth = typeof window !== 'undefined' && typeof window.innerWidth === 'number'
+      ? window.innerWidth
+      : 1200;
+    const isMobile = viewportWidth < 1200;
 
     collapsibleSections.forEach(section => {
       const selector = `#${section.id}`;
@@ -79,7 +86,9 @@ export async function initUserSubscriptionsUI() {
     section.addEventListener('hide.bs.collapse', () => toggle.setAttribute('aria-expanded', 'false'));
   });
 
-  window.addEventListener('resize', updateCollapseMode);
+  if (typeof window?.addEventListener === 'function') {
+    window.addEventListener('resize', updateCollapseMode);
+  }
   updateCollapseMode();
 
   function createSubscribedItem(product, sub, paused = false) {
