@@ -90,8 +90,10 @@ export async function initUserSubscriptionsUI() {
       <div class="time-slot-group me-2">
         <input type="time" class="form-control form-control-sm sub-end" value="${sub.end_time || '23:59'}">
       </div>
-      <button class="btn btn-sm btn-outline-secondary pause-btn me-1 btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}"></i></button>
-      <button class="btn btn-sm btn-outline-danger unsub-btn btn-icon"><i data-lucide="x"></i></button>`;
+      <div class="control-actions">
+        <button class="btn btn-sm btn-outline-secondary pause-btn btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}"></i></button>
+        <button class="btn btn-sm btn-outline-danger unsub-btn btn-icon"><i data-lucide="x"></i></button>
+      </div>`;
 
     li.appendChild(details);
     li.appendChild(controls);
