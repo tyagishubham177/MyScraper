@@ -2,12 +2,10 @@
   <div class="col-12 col-xl-6">
     <section class="dashboard-panel">
       <header class="panel-header">
-        <div class="panel-title-group">
-          <a href="#" class="collapse-toggle me-2 d-xl-none" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">
-            <i data-lucide="chevron-down"></i>
-          </a>
-          <span class="panel-title collapse-title" role="button" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">Your Subscriptions</span>
-        </div>
+        <button type="button" class="panel-toggle" data-collapsible-target="#userSubscribedPanel" aria-expanded="true">
+          <span class="panel-title">Your Subscriptions</span>
+          <i data-lucide="chevron-down" aria-hidden="true"></i>
+        </button>
       </header>
       <div class="modal fade" id="subscriptionsInfoModal" tabindex="-1" aria-labelledby="subscriptionsInfoModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -30,7 +28,7 @@
           </div>
         </div>
       </div>
-      <div class="collapse fade-collapse show" id="userSubscribedListCollapse">
+      <div class="collapse collapse-panel show" id="userSubscribedPanel">
         <div class="panel-body">
           <div class="list-wrapper">
             <ul id="user-subscribed-list" class="list-group"></ul>
@@ -42,19 +40,17 @@
   <div class="col-12 col-xl-6">
     <section class="dashboard-panel">
       <header class="panel-header">
-        <div class="panel-title-group">
-          <a href="#" class="collapse-toggle me-2 d-xl-none" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">
-            <i data-lucide="chevron-down"></i>
-          </a>
-          <h4 class="panel-title mb-0 collapse-title" role="button" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">Available Products</h4>
-        </div>
+        <button type="button" class="panel-toggle" data-collapsible-target="#availableProductsPanel" aria-expanded="true">
+          <span class="panel-title mb-0">Available Products</span>
+          <i data-lucide="chevron-down" aria-hidden="true"></i>
+        </button>
       </header>
-      <div class="panel-body">
-        <div class="search-bar">
-          <i data-lucide="search"></i>
-          <input type="text" id="product-search" class="form-control" placeholder="Search products">
-        </div>
-        <div class="collapse fade-collapse show" id="allProductsListCollapse">
+      <div class="collapse collapse-panel show" id="availableProductsPanel">
+        <div class="panel-body">
+          <div class="search-bar">
+            <i data-lucide="search"></i>
+            <input type="text" id="product-search" class="form-control" placeholder="Search products">
+          </div>
           <div class="list-wrapper">
             <ul id="all-products-list" class="list-group"></ul>
           </div>

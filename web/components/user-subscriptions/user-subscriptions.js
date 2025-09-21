@@ -35,41 +35,52 @@ export async function initUserSubscriptionsUI() {
   const subscribedList = document.getElementById('user-subscribed-list');
   const allList = document.getElementById('all-products-list');
   const searchInput = document.getElementById('product-search');
-  const productsCollapse = document.getElementById('allProductsListCollapse');
-  const subscribedCollapse = document.getElementById('userSubscribedListCollapse');
+  const productsCollapse = document.getElementById('availableProductsPanel');
+  const subscribedCollapse = document.getElementById('userSubscribedPanel');
 
   const collapsibleSections = [productsCollapse, subscribedCollapse].filter(Boolean);
+  const collapseToggleMap = new Map();
 
-  function syncDesktopCollapses() {
+  document.querySelectorAll('.panel-toggle[data-collapsible-target]').forEach(btn => {
+    collapseToggleMap.set(btn.dataset.collapsibleTarget, btn);
+  });
+
+  function updateCollapseMode() {
     if (typeof bootstrap === 'undefined' || !bootstrap.Collapse) return;
-    if (window.innerWidth >= 1200) {
-      collapsibleSections.forEach(section => {
-        const instance = bootstrap.Collapse.getOrCreateInstance(section, { toggle: false });
-        instance.show();
-      });
-    }
+    const isMobile = window.innerWidth < 1200;
+
+    collapsibleSections.forEach(section => {
+      const selector = `#${section.id}`;
+      const toggle = collapseToggleMap.get(selector);
+      if (!toggle) return;
+
+      const collapseInstance = bootstrap.Collapse.getOrCreateInstance(section, { toggle: false });
+
+      if (isMobile) {
+        toggle.setAttribute('data-bs-target', selector);
+        toggle.setAttribute('data-bs-toggle', 'collapse');
+        toggle.classList.remove('desktop-static');
+        toggle.setAttribute('aria-expanded', section.classList.contains('show') ? 'true' : 'false');
+      } else {
+        toggle.removeAttribute('data-bs-target');
+        toggle.removeAttribute('data-bs-toggle');
+        toggle.classList.add('desktop-static');
+        collapseInstance.show();
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+    });
   }
 
-  window.addEventListener('resize', syncDesktopCollapses);
-  syncDesktopCollapses();
+  collapsibleSections.forEach(section => {
+    const selector = `#${section.id}`;
+    const toggle = collapseToggleMap.get(selector);
+    if (!toggle) return;
+    section.addEventListener('show.bs.collapse', () => toggle.setAttribute('aria-expanded', 'true'));
+    section.addEventListener('hide.bs.collapse', () => toggle.setAttribute('aria-expanded', 'false'));
+  });
 
-  if (productsCollapse && searchInput) {
-    const showSearch = () => {
-      searchInput.classList.remove('d-none');
-      searchInput.classList.add('fade-in-content');
-      setTimeout(() => searchInput.classList.remove('fade-in-content'), 500);
-    };
-    const hideSearch = () => {
-      searchInput.classList.add('d-none');
-    };
-    productsCollapse.addEventListener('show.bs.collapse', showSearch);
-    productsCollapse.addEventListener('hide.bs.collapse', hideSearch);
-    if (productsCollapse.classList.contains('show')) {
-      showSearch();
-    } else {
-      hideSearch();
-    }
-  }
+  window.addEventListener('resize', updateCollapseMode);
+  updateCollapseMode();
 
   function createSubscribedItem(product, sub, paused = false) {
     const li = document.createElement('li');
@@ -188,7 +199,9 @@ export async function initUserSubscriptionsUI() {
       if (!subscribedMap.has(p.id)) allList.appendChild(createAllProductItem(p));
     });
     if (window.lucide) window.lucide.createIcons();
-    filterProducts(searchInput.value || '');
+    if (searchInput) {
+      filterProducts(searchInput.value || '');
+    }
   }
 
   async function subscribe(productId) {

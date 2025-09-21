@@ -131,12 +131,13 @@
           ? `Hi ${safeName}! ${getGreeting()}`
           : `Hi! ${getGreeting()}`;
 
-        const emailSpan = document.createElement('span');
-        emailSpan.className = 'welcome-email';
-        emailSpan.textContent = safeEmail;
-
         textWrap.appendChild(greetingSpan);
-        textWrap.appendChild(emailSpan);
+        if (!username) {
+          const emailSpan = document.createElement('span');
+          emailSpan.className = 'welcome-email';
+          emailSpan.textContent = safeEmail;
+          textWrap.appendChild(emailSpan);
+        }
         welcomeEl.appendChild(textWrap);
 
         const iconEl = document.createElement('i');
