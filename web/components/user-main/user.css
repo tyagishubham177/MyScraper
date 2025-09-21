@@ -195,6 +195,13 @@ body.user-dashboard #particles-js-bg::before {
   transform: translateY(1px);
 }
 
+.user-dashboard .settings-fab.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.92);
+  pointer-events: none;
+}
+
 .user-dashboard .app-main {
   flex: 1;
   width: 100%;
@@ -378,6 +385,15 @@ body.user-dashboard #particles-js-bg::before {
 @media (min-width: 1200px) {
   .user-dashboard .panel-toggle.desktop-static {
     pointer-events: none;
+    gap: 0;
+  }
+
+  .user-dashboard .panel-toggle.desktop-static i[data-lucide] {
+    display: none;
+  }
+
+  .user-dashboard .panel-toggle.desktop-static svg[data-lucide] {
+    display: none;
   }
 }
 

@@ -40,7 +40,7 @@
   </div>
 
   <button type="button" class="settings-fab" data-bs-toggle="offcanvas" data-bs-target="#settingsPane" aria-controls="settingsPane" aria-label="Open Settings">
-    <i data-lucide="settings"></i>
+    <i data-lucide="cog"></i>
   </button>
 
   <div class="offcanvas offcanvas-end" tabindex="-1" id="settingsPane" aria-labelledby="settingsPaneLabel">
@@ -153,6 +153,18 @@
       }
 
       updateWelcome();
+
+      const settingsFab = document.querySelector('.settings-fab');
+      const settingsPaneEl = document.getElementById('settingsPane');
+      if (settingsFab && settingsPaneEl) {
+        settingsPaneEl.addEventListener('show.bs.offcanvas', () => {
+          settingsFab.classList.add('is-hidden');
+        });
+        settingsPaneEl.addEventListener('hidden.bs.offcanvas', () => {
+          settingsFab.classList.remove('is-hidden');
+        });
+      }
+
       setTimeout(() => {
         welcomeEl.classList.remove('initial');
         welcomeEl.classList.add('shrunk');
