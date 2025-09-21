@@ -33,6 +33,19 @@ body.user-dashboard {
   overflow-x: hidden;
 }
 
+body.user-dashboard::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(37, 99, 235, 0.18) 0%, rgba(37, 99, 235, 0) 55%),
+    radial-gradient(circle at 82% 12%, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0) 50%),
+    radial-gradient(circle at 18% 78%, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0) 50%),
+    radial-gradient(circle at 88% 74%, rgba(14, 165, 233, 0.18) 0%, rgba(14, 165, 233, 0) 45%);
+  z-index: -3;
+}
+
 body.user-dashboard .app-shell {
   min-height: 100vh;
   display: flex;
@@ -46,8 +59,24 @@ body.user-dashboard #particles-js {
 }
 
 body.user-dashboard #particles-js-bg {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(56, 189, 248, 0.18));
-  filter: blur(80px);
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  filter: blur(65px);
+  pointer-events: none;
+}
+
+body.user-dashboard #particles-js-bg::before {
+  content: '';
+  position: absolute;
+  inset: -20% -15%;
+  background:
+    radial-gradient(40% 40% at 20% 25%, rgba(37, 99, 235, 0.35), transparent 70%),
+    radial-gradient(35% 35% at 75% 20%, rgba(14, 165, 233, 0.3), transparent 70%),
+    radial-gradient(32% 32% at 70% 75%, rgba(59, 130, 246, 0.28), transparent 70%),
+    radial-gradient(38% 38% at 25% 78%, rgba(56, 189, 248, 0.3), transparent 72%);
+  opacity: 0.8;
 }
 
 .user-dashboard .page-header {
@@ -57,8 +86,11 @@ body.user-dashboard #particles-js-bg {
   -webkit-backdrop-filter: blur(18px);
   padding: 1.25rem 0;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1020;
 }
 
 .user-dashboard .page-header .container {
@@ -123,6 +155,7 @@ body.user-dashboard #particles-js-bg {
   box-shadow: 0 24px 45px rgba(37, 99, 235, 0.28);
   transition: transform 0.3s var(--transition), box-shadow 0.3s var(--transition);
   z-index: 1055;
+  isolation: isolate;
 }
 
 .user-dashboard .settings-fab::after {
@@ -132,11 +165,24 @@ body.user-dashboard #particles-js-bg {
   border-radius: 50%;
   border: 1px solid rgba(37, 99, 235, 0.35);
   opacity: 0.4;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .user-dashboard .settings-fab i[data-lucide] {
   width: 1.5rem;
   height: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.user-dashboard .settings-fab svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  position: relative;
+  z-index: 1;
 }
 
 .user-dashboard .settings-fab:hover {
@@ -153,7 +199,7 @@ body.user-dashboard #particles-js-bg {
   width: 100%;
   max-width: 1080px;
   margin: 0 auto;
-  padding: 3rem 1.5rem 5rem;
+  padding: clamp(9rem, 12vw, 12rem) 1.5rem 5rem;
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
@@ -188,6 +234,31 @@ body.user-dashboard #particles-js-bg {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
+  line-height: 1.4;
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.user-dashboard .welcome-copy .welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.user-dashboard .welcome-copy .welcome-greeting {
+  display: block;
+}
+
+.user-dashboard .welcome-copy .welcome-email {
+  display: block;
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
 }
 
 .user-dashboard .welcome-copy.initial {
@@ -207,6 +278,12 @@ body.user-dashboard #particles-js-bg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.user-dashboard .welcome-copy #edit-username svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke-width: 1.8;
 }
 
 .user-dashboard .welcome-copy #edit-username:hover {
@@ -429,6 +506,12 @@ body.user-dashboard #particles-js-bg {
   border-radius: 50%;
 }
 
+.user-dashboard .btn-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 1.9;
+}
+
 .user-dashboard .btn-outline-secondary {
   background: var(--surface-muted);
   border-color: var(--surface-outline);
@@ -599,6 +682,7 @@ body.user-dashboard #particles-js-bg {
 
 @media (max-width: 1199.98px) {
   .user-dashboard .app-main {
+    padding-top: clamp(8.5rem, 14vw, 10rem);
     padding-bottom: 6rem;
   }
 }
@@ -613,7 +697,7 @@ body.user-dashboard #particles-js-bg {
   }
 
   .user-dashboard .app-main {
-    padding: 2.25rem 1rem 6.5rem;
+    padding: clamp(7.5rem, 18vw, 9rem) 1rem 6.5rem;
   }
 
   .user-dashboard .dashboard-panel {
@@ -639,6 +723,10 @@ body.user-dashboard #particles-js-bg {
 }
 
 @media (max-width: 575.98px) {
+  .user-dashboard .page-header {
+    padding: 0.85rem 0.5rem;
+  }
+
   .user-dashboard .brand-logo {
     width: 56px;
     height: 56px;
@@ -663,7 +751,7 @@ body.user-dashboard #particles-js-bg {
 
   .user-dashboard .product-controls {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
   }
 
   .user-dashboard .product-controls .time-slot-group {
@@ -673,6 +761,7 @@ body.user-dashboard #particles-js-bg {
   }
 
   .user-dashboard .product-controls .btn-icon {
-    width: 100%;
+    width: 2.6rem;
+    height: 2.6rem;
   }
 }
