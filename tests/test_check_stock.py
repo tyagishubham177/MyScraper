@@ -190,7 +190,7 @@ async def test_load_products_none_response(monkeypatch):
         return None
     monkeypatch.setattr(api_utils, "fetch_api_data", mock_fetch_none)
     products = await api_utils.load_products(None)
-    assert products is None # Or [] depending on desired behavior, current is None
+    assert products == []
 
 
 @pytest.mark.asyncio

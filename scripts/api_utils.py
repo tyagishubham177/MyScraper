@@ -38,7 +38,11 @@ async def fetch_api_data(session, url, headers=None):
     try:
         async with session.get(url, headers=headers) as response:
             response.raise_for_status()
-            return await response.json()
+            data = await response.json()
+            print(
+                f"Fetched {url} ({response.status})",
+            )
+            return data
     except Exception as e:
         print(f"API request to {url} failed: {e}")
         return None
@@ -59,7 +63,10 @@ async def load_recipients(session):
 
 async def load_products(session):
     products_url = f"{config.APP_BASE_URL}/api/products"
-    return await fetch_api_data(session, products_url)
+    data = await fetch_api_data(session, products_url)
+    if isinstance(data, list):
+        return data
+    return []
 
 
 async def load_subscriptions(session):
@@ -86,6 +93,7 @@ async def load_configuration(session):
     url = f"{config.APP_BASE_URL}/api/configuration"
     data = await fetch_api_data(session, url)
     if not data or not isinstance(data, dict):
+        print("Configuration endpoint unavailable, falling back to individual requests.")
         recipients = await load_recipients(session)
         products = await load_products(session)
         subs = await load_subscriptions(session)

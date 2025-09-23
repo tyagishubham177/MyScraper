@@ -82,6 +82,7 @@ async def main():
         else:
             stock_utils._add_timing("Admin login", 0.0, timings)
 
+        print("Loading configuration from API...")
         (
             recipients_map,
             all_products,
@@ -92,6 +93,18 @@ async def main():
             api_utils.load_configuration(session),
             timings,
         )
+        all_products = all_products or []
+        subs_map = subs_map or {}
+        stock_counters = stock_counters or {}
+        recipients_map = recipients_map or {}
+        total_subs = sum(len(subs) for subs in subs_map.values())
+        print(
+            "Configuration loaded:",
+            f"{len(recipients_map)} recipients,",
+            f"{len(all_products)} products,",
+            f"{total_subs} subscriptions,",
+            f"{len(stock_counters)} stock counters.",
+        )
         if not recipients_map:
             print("No recipients found. Notifications may not be sent.")
 
@@ -101,12 +114,18 @@ async def main():
 
         subs_by_pin = stock_utils.build_subs_by_pincode(recipients_map, subs_map)
         product_map = {p.get("id"): p for p in all_products if p.get("id")}
+        if not product_map:
+            print("Warning: No product IDs available after configuration load.")
         subscribed_rids = {
             sub.get("recipient_id")
             for subs in subs_map.values()
             for sub in subs
             if sub.get("recipient_id") is not None
         }
+        print(
+            "Active recipients with subscriptions:",
+            len(subscribed_rids),
+        )
 
         if not isinstance(stock_counters, dict):
             stock_counters = {}
