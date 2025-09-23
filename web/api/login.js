@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { kv as defaultKv } from '@vercel/kv';
+import { listRecipients } from './data-store.js';
 
 let kv = defaultKv;
 export function __setKv(obj) {
@@ -87,7 +88,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const recipients = await kv.get('recipients');
+    const recipients = await listRecipients();
     const exists = Array.isArray(recipients) && recipients.some(r => r.email === email);
     if (exists) {
       await kv.del(ATTEMPT_KEY);

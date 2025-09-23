@@ -1,11 +1,10 @@
-import { kv } from '@vercel/kv';
-import { requireAdmin } from '../utils/auth.js'; 
+import { requireAdmin } from '../utils/auth.js';
 import nodemailer from 'nodemailer';
+import { listRecipients, listSubscriptions } from './data-store.js';
 
 async function getRecipientsFromKV() {
   try {
-    const recipientsData = await kv.get('recipients');
-    return recipientsData || [];
+    return await listRecipients();
   } catch (error) {
     console.error('Error fetching recipients from KV:', error);
     return [];
@@ -14,8 +13,7 @@ async function getRecipientsFromKV() {
 
 async function getSubscriptionsFromKV() {
   try {
-    const subscriptionsData = await kv.get('subscriptions');
-    return subscriptionsData || [];
+    return await listSubscriptions();
   } catch (error) {
     console.error('Error fetching subscriptions from KV:', error);
     return [];

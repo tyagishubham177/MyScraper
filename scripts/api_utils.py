@@ -82,6 +82,44 @@ async def fetch_subscriptions(session, product_id):
     return await fetch_api_data(session, url)
 
 
+async def load_configuration(session):
+    url = f"{config.APP_BASE_URL}/api/configuration"
+    data = await fetch_api_data(session, url)
+    if not data or not isinstance(data, dict):
+        recipients = await load_recipients(session)
+        products = await load_products(session)
+        subs = await load_subscriptions(session)
+        counters = await load_stock_counters(session)
+        return recipients, products, subs, counters
+
+    raw_recipients = data.get("recipients") or []
+    recipients_map = {
+        r.get("id"): {
+            "email": r.get("email"),
+            "pincode": r.get("pincode", config.PINCODE),
+        }
+        for r in raw_recipients
+        if r and r.get("id") and r.get("email")
+    }
+
+    products = data.get("products") or []
+
+    subs_by_product = {}
+    for sub in data.get("subscriptions") or []:
+        pid = sub.get("product_id")
+        if pid is None:
+            continue
+        subs_by_product.setdefault(pid, []).append(sub)
+
+    counters = data.get("stock_counters") or {}
+    normalized_counters = {}
+    if isinstance(counters, dict):
+        for key, value in counters.items():
+            normalized_counters[str(key)] = value
+
+    return recipients_map, products, subs_by_product, normalized_counters
+
+
 async def login_admin(session):
     """Fetch an admin token using the login API if credentials are provided."""
     email = getattr(config, "ADMIN_EMAIL", None)

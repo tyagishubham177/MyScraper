@@ -1,9 +1,9 @@
-import { kv } from '@vercel/kv';
 import { requireAdmin } from '../utils/auth.js';
+import { listStockCounters, saveStockCounters } from './data-store.js';
 
 async function handleGet(req, res) {
   try {
-    const data = await kv.get('stock_counters');
+    const data = await listStockCounters();
     res.status(200).json(data || {});
   } catch (err) {
     console.error('Error fetching stock counters from KV:', err);
@@ -18,7 +18,7 @@ async function handlePut(req, res) {
     if (!counters || typeof counters !== 'object') {
       return res.status(400).json({ message: 'Invalid counters data' });
     }
-    await kv.set('stock_counters', counters);
+    await saveStockCounters(counters);
     res.status(200).json({ message: 'Counters updated' });
   } catch (err) {
     console.error('Error saving stock counters to KV:', err);

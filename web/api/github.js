@@ -1,3 +1,4 @@
+import { kv } from '@vercel/kv';
 import { requireAdmin as defaultRequireAdmin } from '../utils/auth.js';
 let requireAdmin = defaultRequireAdmin;
 export function __setRequireAdmin(fn){requireAdmin = fn;}
@@ -23,6 +24,12 @@ export default async function handler(req, res) {
 
   switch (action) {
     case 'status': {
+      const cacheKey = `gh:status:${workflow}`;
+      const cached = await getCachedJson(cacheKey);
+      if (cached) {
+        res.status(200).json(cached);
+        break;
+      }
       const url = `https://api.github.com/repos/${repo}/actions/workflows/${workflow}`;
       const resp = await fetch(url, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
@@ -33,10 +40,18 @@ export default async function handler(req, res) {
         return;
       }
       const data = await resp.json();
-      res.status(200).json({ state: data.state });
+      const payload = { state: data.state };
+      await setCachedJson(cacheKey, payload, STATUS_CACHE_TTL);
+      res.status(200).json(payload);
       break;
     }
     case 'runs': {
+      const cacheKey = `gh:runs:${workflow}`;
+      const cached = await getCachedJson(cacheKey);
+      if (cached) {
+        res.status(200).json(cached);
+        break;
+      }
       const url = `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/runs?per_page=5`;
       const resp = await fetch(url, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
@@ -56,13 +71,21 @@ export default async function handler(req, res) {
         created_at: run.created_at,
         updated_at: run.updated_at
       }));
-      res.status(200).json({ runs });
+      const payload = { runs };
+      await setCachedJson(cacheKey, payload, RUNS_CACHE_TTL);
+      res.status(200).json(payload);
       break;
     }
     case 'run': {
       if (!id) {
         res.status(400).send('Missing id');
         return;
+      }
+      const cacheKey = `gh:run:${id}`;
+      const cached = await getCachedJson(cacheKey);
+      if (cached) {
+        res.status(200).json(cached);
+        break;
       }
       const runDetailsUrl = `https://api.github.com/repos/${repo}/actions/runs/${id}`;
       let runStatus = null, runConclusion = null, runStartedAt = null, runCompletedAt = null, runHtmlUrl = null;
@@ -109,13 +132,22 @@ export default async function handler(req, res) {
         const artData = await artRes.json();
         artifacts = artData.artifacts.map(a => ({ id: a.id, name: a.name }));
       }
-      res.status(200).json({ status: runStatus, conclusion: runConclusion, started_at: runStartedAt, completed_at: runCompletedAt, html_url: runHtmlUrl, step: stepInfo, artifacts });
+      const payload = { status: runStatus, conclusion: runConclusion, started_at: runStartedAt, completed_at: runCompletedAt, html_url: runHtmlUrl, step: stepInfo, artifacts };
+      await setCachedJson(cacheKey, payload, RUN_CACHE_TTL);
+      res.status(200).json(payload);
       break;
     }
     case 'logs': {
       if (!id) {
         res.status(400).send('Missing id');
         return;
+      }
+      const cacheKey = `gh:logs:${id}`;
+      const cachedBuffer = await getCachedBuffer(cacheKey);
+      if (cachedBuffer) {
+        res.setHeader('Content-Type', 'application/zip');
+        res.send(cachedBuffer);
+        break;
       }
       const url = `https://api.github.com/repos/${repo}/actions/runs/${id}/logs`;
       const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' } });
@@ -125,6 +157,7 @@ export default async function handler(req, res) {
         return;
       }
       const buffer = Buffer.from(await resp.arrayBuffer());
+      await setCachedBuffer(cacheKey, buffer, LOG_CACHE_TTL);
       res.setHeader('Content-Type', 'application/zip');
       res.send(buffer);
       break;
@@ -134,6 +167,13 @@ export default async function handler(req, res) {
         res.status(400).send('Missing id');
         return;
       }
+      const cacheKey = `gh:artifact:${id}`;
+      const cachedBuffer = await getCachedBuffer(cacheKey);
+      if (cachedBuffer) {
+        res.setHeader('Content-Type', 'application/zip');
+        res.send(cachedBuffer);
+        break;
+      }
       const url = `https://api.github.com/repos/${repo}/actions/artifacts/${id}/zip`;
       const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' } });
       if (!resp.ok) {
@@ -142,11 +182,54 @@ export default async function handler(req, res) {
         return;
       }
       const buffer = Buffer.from(await resp.arrayBuffer());
+      await setCachedBuffer(cacheKey, buffer, ARTIFACT_CACHE_TTL);
       res.setHeader('Content-Type', 'application/zip');
       res.send(buffer);
       break;
     }
     default:
       res.status(400).json({ message: 'Invalid action' });
+  }
+}
+const STATUS_CACHE_TTL = 30;
+const RUNS_CACHE_TTL = 30;
+const RUN_CACHE_TTL = 45;
+const LOG_CACHE_TTL = 300;
+const ARTIFACT_CACHE_TTL = 300;
+
+async function getCachedJson(key) {
+  try {
+    return await kv.get(key);
+  } catch (err) {
+    console.warn(`KV get failed for ${key}:`, err);
+    return null;
+  }
+}
+
+async function setCachedJson(key, value, ttlSeconds) {
+  try {
+    await kv.set(key, value, { ex: ttlSeconds });
+  } catch (err) {
+    console.warn(`KV set failed for ${key}:`, err);
+  }
+}
+
+async function getCachedBuffer(key) {
+  try {
+    const cached = await kv.get(key);
+    if (typeof cached === 'string') {
+      return Buffer.from(cached, 'base64');
+    }
+  } catch (err) {
+    console.warn(`KV get buffer failed for ${key}:`, err);
+  }
+  return null;
+}
+
+async function setCachedBuffer(key, buffer, ttlSeconds) {
+  try {
+    await kv.set(key, buffer.toString('base64'), { ex: ttlSeconds });
+  } catch (err) {
+    console.warn(`KV set buffer failed for ${key}:`, err);
   }
 }

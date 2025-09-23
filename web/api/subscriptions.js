@@ -1,24 +1,13 @@
-import { kv } from '@vercel/kv';
-
-async function getFromKV(key) {
-  try {
-    const data = await kv.get(key);
-    return data ? data : [];
-  } catch (error) {
-    console.error(`Error fetching ${key} from KV:`, error);
-    return [];
-  }
-}
-
-async function saveToKV(key, data) {
-  try {
-    await kv.set(key, data);
-  } catch (error) {
-    console.error(`Error saving ${key} to KV:`, error);
-    throw new Error(`Could not save ${key} to KV.`);
-  }
-}
-
+import {
+  findSubscriptionByRecipientAndProduct,
+  listRecipients,
+  listProducts,
+  listSubscriptions,
+  listSubscriptionsByProduct,
+  listSubscriptionsByRecipient,
+  saveSubscription,
+  deleteSubscription,
+} from './data-store.js';
 
 async function handlePost(req, res) {
   try {
@@ -31,30 +20,26 @@ async function handlePost(req, res) {
     const start = timeRegex.test(start_time) ? start_time : '00:00';
     const end = timeRegex.test(end_time) ? end_time : '23:59';
 
-    const recipients = await getFromKV('recipients');
+    const recipients = await listRecipients();
     if (!recipients.some(r => r.id === recipient_id)) {
       return res.status(404).json({ message: 'Recipient not found' });
     }
 
-    const products = await getFromKV('products');
+    const products = await listProducts();
     if (!products.some(p => p.id === product_id)) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    let subs = await getFromKV('subscriptions');
-    subs = subs.map(s => ({
-      ...s,
-      start_time: s.start_time || '00:00',
-      end_time: s.end_time || '23:59',
-      paused: !!s.paused
-    }));
-    const existing = subs.find(s => s.recipient_id === recipient_id && s.product_id === product_id);
+    const existing = await findSubscriptionByRecipientAndProduct(recipient_id, product_id);
     if (existing) {
-      existing.start_time = start;
-      existing.end_time = end;
-      existing.paused = !!paused;
-      await saveToKV('subscriptions', subs);
-      return res.status(200).json(existing);
+      const updated = {
+        ...existing,
+        start_time: start,
+        end_time: end,
+        paused: !!paused
+      };
+      await saveSubscription(updated);
+      return res.status(200).json(updated);
     }
 
     const newSub = {
@@ -65,8 +50,7 @@ async function handlePost(req, res) {
       end_time: end,
       paused: !!paused
     };
-    subs.push(newSub);
-    await saveToKV('subscriptions', subs);
+    await saveSubscription(newSub);
     res.status(201).json(newSub);
   } catch (error) {
     console.error('Error in POST /api/subscriptions:', error);
@@ -81,19 +65,12 @@ async function handleDelete(req, res) {
       return res.status(400).json({ message: 'Recipient ID and Product ID are required in the request body' });
     }
 
-    let subs = await getFromKV('subscriptions');
-    subs = subs.map(s => ({
-      ...s,
-      start_time: s.start_time || '00:00',
-      end_time: s.end_time || '23:59',
-      paused: !!s.paused
-    }));
-    const updated = subs.filter(s => !(s.recipient_id === recipient_id && s.product_id === product_id));
-    if (updated.length === subs.length) {
+    const existing = await findSubscriptionByRecipientAndProduct(recipient_id, product_id);
+    if (!existing) {
       return res.status(404).json({ message: 'Subscription not found' });
     }
 
-    await saveToKV('subscriptions', updated);
+    await deleteSubscription(existing.id);
     res.status(200).json({ message: 'Subscription deleted successfully' });
   } catch (error) {
     console.error('Error in DELETE /api/subscriptions:', error);
@@ -104,23 +81,20 @@ async function handleDelete(req, res) {
 async function handleGet(req, res) {
   try {
     const { recipient_id, product_id } = req.query;
-    let subs = await getFromKV('subscriptions');
-    subs = subs.map(s => ({
-      ...s,
-      start_time: s.start_time || '00:00',
-      end_time: s.end_time || '23:59',
-      paused: !!s.paused
-    }));
+    let subs;
 
     if (recipient_id && product_id) {
       return res.status(400).json({ message: 'Provide either recipient_id OR product_id, not both.' });
     }
 
     if (recipient_id) {
-      res.status(200).json(subs.filter(s => s.recipient_id === recipient_id));
+      subs = await listSubscriptionsByRecipient(recipient_id);
+      res.status(200).json(subs);
     } else if (product_id) {
-      res.status(200).json(subs.filter(s => s.product_id === product_id));
+      subs = await listSubscriptionsByProduct(product_id);
+      res.status(200).json(subs);
     } else {
+      subs = await listSubscriptions();
       res.status(200).json(subs);
     }
   } catch (error) {

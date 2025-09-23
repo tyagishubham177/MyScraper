@@ -626,15 +626,13 @@ async def test_notify_users_mixed_subscriptions(monkeypatch):
 @pytest.mark.asyncio
 async def test_main_load_recipients_empty(monkeypatch):
     """Test main when load_recipients returns an empty map."""
-    async def mock_load_recipients(session):
-        return {}
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients)
-    
+    async def mock_load_configuration(session):
+        return ({}, [{"id": 1, "name": "Prod", "url": "url"}], {1: []}, {})
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
+
     monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
     # Mock other dependencies to prevent actual calls
-    async def mock_load_products_generic(session): return [{"id": 1, "name": "Prod", "url": "url"}]
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products_generic)
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (None, 0, False)  # Ensure this is async
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_generic)
@@ -670,12 +668,14 @@ async def test_main_load_recipients_empty(monkeypatch):
 @pytest.mark.asyncio
 async def test_main_load_products_none(monkeypatch):
     """Test main when load_products returns None."""
-    async def mock_load_products(session):
-        return None
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products)
-    async def mock_load_recipients_for_main(session):
-        return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
+    async def mock_load_configuration(session):
+        return (
+            {1: {"email": "test@example.com", "pincode": "201305"}},
+            None,
+            {},
+            {},
+        )
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
     monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
@@ -694,12 +694,14 @@ async def test_main_load_products_none(monkeypatch):
 @pytest.mark.asyncio
 async def test_main_load_products_empty_list(monkeypatch):
     """Test main when load_products returns an empty list."""
-    async def mock_load_products(session):
-        return []
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products)
-    async def mock_load_recipients_for_main(session):
-        return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
+    async def mock_load_configuration(session):
+        return (
+            {1: {"email": "test@example.com", "pincode": "201305"}},
+            [],
+            {},
+            {},
+        )
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
     monkeypatch.setattr(check_stock.config, "APP_BASE_URL", "http://fakeapi")
 
     from io import StringIO
@@ -725,14 +727,14 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
         sent_summary_args["recipients_val"] = recipients # Store actual recipients
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary)
 
-    async def mock_load_recipients_for_main(session):
-        return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
-    async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products_for_main)
-    async def mock_load_subscriptions_for_main(session):
-        return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
-    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions_for_main)
+    async def mock_load_configuration(session):
+        return (
+            {1: {"email": "test@example.com", "pincode": "201305"}},
+            [{"id": 1, "name": "Test Product", "url": "http://example.com"}],
+            {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]},
+            {},
+        )
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
     # Simulate process_product returning one sent notification
     async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):
         return {
@@ -784,11 +786,14 @@ async def test_main_summary_email_total_sent_zero(monkeypatch):
         mock_send_email_called = True
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary)
 
-    async def mock_load_recipients_for_main(session):
-        return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
-    async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}] # Ensure async mock
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products_for_main)
+    async def mock_load_configuration(session):
+        return (
+            {1: {"email": "test@example.com", "pincode": "201305"}},
+            [{"id": 1, "name": "Test Product", "url": "http://example.com"}],
+            {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59", "paused": False}]},
+            {},
+        )
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
     async def mock_process_product_summary(session, page, product_info, recipients_map, current_time, skip_pincode, subs, pin):  # Ensure async mock
         return {
             "product_id": product_info["id"],
@@ -844,14 +849,14 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
         mock_send_email_called = True
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary)
 
-    async def mock_load_recipients_for_main(session):
-        return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
-    async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products_for_main)
-    async def mock_load_subscriptions_for_main(session):
-        return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
-    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions_for_main)
+    async def mock_load_configuration(session):
+        return (
+            {1: {"email": "test@example.com", "pincode": "201305"}},
+            [{"id": 1, "name": "Test Product", "url": "http://example.com"}],
+            {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]},
+            {},
+        )
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
     # Ensure total_sent > 0 so summary sending is attempted
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (
@@ -905,14 +910,14 @@ async def test_main_summary_email_exception(monkeypatch):
         raise Exception("SMTP Summary Error")
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary_raises_exception)
 
-    async def mock_load_recipients_for_main(session):
-        return {1: {"email": "test@example.com", "pincode": "201305"}}
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients_for_main)
-    async def mock_load_products_for_main(session): return [{"id": 1, "name": "Test Product", "url": "http://example.com"}]
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products_for_main)
-    async def mock_load_subscriptions_for_main(session):
-        return {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]}
-    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions_for_main)
+    async def mock_load_configuration(session):
+        return (
+            {1: {"email": "test@example.com", "pincode": "201305"}},
+            [{"id": 1, "name": "Test Product", "url": "http://example.com"}],
+            {1: [{"recipient_id": 1, "start_time": "00:00", "end_time": "23:59"}]},
+            {},
+        )
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
     # Ensure total_sent > 0 for exception path to be tested
     async def mock_process_product_generic(s, p, pi, rm, ct, sp, subs, pin):
         return (
@@ -1171,26 +1176,23 @@ async def test_main_parallel_page_checks(monkeypatch):
     monkeypatch.setattr(check_stock.config, "EMAIL_HOST_PASSWORD", "pass")
     monkeypatch.setattr(check_stock.config, "ADMIN_TOKEN", "tok")
 
-    async def mock_load_recipients(session):
-        return {1: {"email": "test@example.com", "pincode": "201305"}}
+    async def mock_load_configuration(session):
+        return (
+            {1: {"email": "test@example.com", "pincode": "201305"}},
+            [
+                {"id": 1, "name": "P1", "url": "http://p1"},
+                {"id": 2, "name": "P2", "url": "http://p2"},
+                {"id": 3, "name": "P3", "url": "http://p3"},
+            ],
+            {
+                1: [{"recipient_id": 1}],
+                2: [{"recipient_id": 1}],
+                3: [{"recipient_id": 1}],
+            },
+            {},
+        )
 
-    async def mock_load_products(session):
-        return [
-            {"id": 1, "name": "P1", "url": "http://p1"},
-            {"id": 2, "name": "P2", "url": "http://p2"},
-            {"id": 3, "name": "P3", "url": "http://p3"},
-        ]
-
-    async def mock_load_subscriptions(session):
-        return {
-            1: [{"recipient_id": 1}],
-            2: [{"recipient_id": 1}],
-            3: [{"recipient_id": 1}],
-        }
-
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients)
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products)
-    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions)
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
     async def mock_load_stock_counters(session):
         return {}
 
@@ -1275,33 +1277,26 @@ async def test_auto_pause_after_streak(monkeypatch):
 
     recipients = {1: {"email": "u@example.com", "pincode": "111"}}
 
-    async def mock_load_recipients(session):
-        return recipients
-
-    async def mock_load_products(session):
-        return [{"id": 1, "name": "Prod", "url": "http://p"}]
-
     subs_map = {
         1: [
             {"recipient_id": 1, "start_time": "00:00", "end_time": "23:59", "paused": False}
         ]
     }
 
-    async def mock_load_subscriptions(session):
-        return subs_map
-
-    async def mock_load_stock_counters(session):
-        return {"1|111": 20}
+    async def mock_load_configuration(session):
+        return (
+            recipients,
+            [{"id": 1, "name": "Prod", "url": "http://p"}],
+            subs_map,
+            {"1|111": 20},
+        )
 
     saved = {}
 
     async def mock_save_stock_counters(session, counters):
         saved.update(counters)
 
-    monkeypatch.setattr(api_utils, "load_recipients", mock_load_recipients)
-    monkeypatch.setattr(api_utils, "load_products", mock_load_products)
-    monkeypatch.setattr(api_utils, "load_subscriptions", mock_load_subscriptions)
-    monkeypatch.setattr(api_utils, "load_stock_counters", mock_load_stock_counters)
+    monkeypatch.setattr(api_utils, "load_configuration", mock_load_configuration)
     monkeypatch.setattr(api_utils, "save_stock_counters", mock_save_stock_counters)
 
     called = {}

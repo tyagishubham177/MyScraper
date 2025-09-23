@@ -2,6 +2,24 @@
 import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from '../config/config.js';
 import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog, fetchAPI} from '../utils/utils.js';
 
+const logCache = new Map();
+
+async function fetchRunLogBlob(runId) {
+  if (logCache.has(runId)) {
+    return logCache.get(runId);
+  }
+  const token = localStorage.getItem('authToken');
+  const response = await fetch(`${API_LOGS}?id=${runId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch logs: ${response.status}`);
+  }
+  const blob = await response.blob();
+  logCache.set(runId, blob);
+  return blob;
+}
+
 function parseScraperDecisionsFromLog(logText) {
   if (!logText) return [];
   const lines = logText.split('\n');
@@ -79,14 +97,7 @@ function createAccordionItem(r, idx) {
 }
 
 async function fetchScraperDecisions(runId) {
-  const token = localStorage.getItem('authToken');
-  const logRes = await fetch(`${API_LOGS}?id=${runId}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  if (!logRes.ok) {
-    throw new Error(`Failed to fetch logs for summary: ${logRes.status}`);
-  }
-  const blob = await logRes.blob();
+  const blob = await fetchRunLogBlob(runId);
   const zip = await JSZip.loadAsync(blob);
   let rawLogText = '';
   let foundLogFile = false;
@@ -190,10 +201,7 @@ async function loadLogs(col, idx) {
   logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">Loading logs...`;
   const runIdForLog = col.dataset.runId;
   try {
-    const token = localStorage.getItem('authToken');
-    const logRes = await fetch(`${API_LOGS}?id=${runIdForLog}`, { headers: { 'Authorization': `Bearer ${token}` } });
-    if (!logRes.ok) throw new Error(`Failed to fetch logs: ${logRes.status}`);
-    const blob = await logRes.blob();
+    const blob = await fetchRunLogBlob(runIdForLog);
     const zip = await JSZip.loadAsync(blob);
     let rawLogText = 'No relevant log file found.';
     let foundLog = false;
