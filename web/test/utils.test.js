@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'assert';
-import { escapeHTML, formatRunDate, cleanLogText, sanitizeUrl, extractCheckStockLog, getStatusBadge } from '../components/utils/utils.js';
+import { escapeHTML, formatRunDate, cleanLogText, sanitizeUrl, extractCheckStockLog, getStatusBadge, normalizeEmail } from '../components/utils/utils.js';
 
 global.window = { location: { origin: 'http://example.com' } };
 
@@ -33,4 +33,9 @@ test('getStatusBadge renders badge html', () => {
   const html = getStatusBadge('queued', '');
   assert(html.includes('loader-2'));
   assert(html.includes('queued'.charAt(0).toUpperCase() + 'queued'.slice(1))); // 'Queued'
+});
+
+test('normalizeEmail lowercases and trims addresses', () => {
+  assert.equal(normalizeEmail(' User@Example.Com '), 'user@example.com');
+  assert.equal(normalizeEmail(null), '');
 });

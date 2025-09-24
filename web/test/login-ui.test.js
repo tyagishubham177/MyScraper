@@ -140,6 +140,18 @@ test('admin login shows countdown on lockout', async () => {
   assert.ok(env.elements['admin-login-btn'].disabled);
 });
 
+test('admin login stores normalized and display email', async () => {
+  const env = setupEnv();
+  global.fetch = async (_url, opts) => ({ ok: true, json: async () => ({ token: 't' }) });
+  const mod = await loadModule();
+  await mod.initLogin();
+  env.elements['admin-email'].value = 'Admin@Example.com ';
+  env.elements['admin-password'].value = 'secret';
+  await env.elements['admin-login-btn'].events.click();
+  assert.equal(env.storage.adminEmail, 'admin@example.com');
+  assert.equal(env.storage.adminEmailDisplay, 'Admin@Example.com');
+});
+
 test('user login blank email shows error', async () => {
   const env = setupEnv();
   const mod = await loadModule();
@@ -158,6 +170,22 @@ test('user login success redirects', async () => {
   env.elements['user-email'].value = 'u@e';
   await env.elements['user-login-btn'].events.click();
   assert.equal(global.window.location.href, 'components/user-main/user.html');
+});
+
+test('user login stores normalized and display email', async () => {
+  const env = setupEnv();
+  let body;
+  global.fetch = async (_url, opts) => {
+    body = opts ? JSON.parse(opts.body) : null;
+    return { ok: true, json: async () => ({ token: 't' }) };
+  };
+  const mod = await loadModule();
+  await mod.initLogin();
+  env.elements['user-email'].value = 'User@Example.COM ';
+  await env.elements['user-login-btn'].events.click();
+  assert.equal(env.storage.userEmail, 'user@example.com');
+  assert.equal(env.storage.userEmailDisplay, 'User@Example.COM');
+  assert.equal(body.email, 'user@example.com');
 });
 
 test('user mail button opens gmail on desktop', async () => {

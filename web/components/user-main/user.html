@@ -95,17 +95,41 @@
     import { initIcons } from "../icons/icons.js";
     import { initBackground } from "../ui/ui.js";
     import { initUserSubscriptionsUI } from "../user-subscriptions/user-subscriptions.js";
-    import { showGlobalLoader, hideGlobalLoader, escapeHTML, fetchAPI } from "../utils/utils.js";
+    import { showGlobalLoader, hideGlobalLoader, escapeHTML, fetchAPI, normalizeEmail } from "../utils/utils.js";
     import { showToastNotification } from "../subscription/subscription-helpers.js";
 
     document.addEventListener("DOMContentLoaded", async () => {
       showGlobalLoader();
 
-      const email = localStorage.getItem('userEmail');
+      const storedEmail = localStorage.getItem('userEmail');
+      const displayEmail = localStorage.getItem('userEmailDisplay') || storedEmail;
+      const email = normalizeEmail(storedEmail);
       if (!email) {
         window.location.href = '../../index.html';
         return;
       }
+      if (storedEmail !== email) {
+        localStorage.setItem('userEmail', email);
+      }
+      if (displayEmail && displayEmail !== storedEmail) {
+        localStorage.setItem('userEmailDisplay', displayEmail);
+      }
+
+      const legacySuffix = displayEmail && displayEmail !== email ? displayEmail : null;
+      const migrateKey = (prefix) => {
+        if (!legacySuffix) return null;
+        const legacyValue = localStorage.getItem(`${prefix}_${legacySuffix}`);
+        const normalizedKey = `${prefix}_${email}`;
+        if (legacyValue && !localStorage.getItem(normalizedKey)) {
+          localStorage.setItem(normalizedKey, legacyValue);
+          localStorage.removeItem(`${prefix}_${legacySuffix}`);
+        }
+        return legacyValue;
+      };
+
+      migrateKey('recipientId');
+      migrateKey('pincode');
+      let legacyUsername = migrateKey('username');
 
       const welcomeEl = document.getElementById('welcome-msg');
       function getGreeting() {
@@ -116,9 +140,9 @@
       }
 
       function updateWelcome() {
-        const username = localStorage.getItem(`username_${email}`) || '';
+        const username = localStorage.getItem(`username_${email}`) || legacyUsername || '';
         const safeName = escapeHTML(username);
-        const safeEmail = escapeHTML(email);
+        const safeEmail = escapeHTML(displayEmail || email);
 
         welcomeEl.innerHTML = '';
 
@@ -173,7 +197,7 @@
       welcomeEl.addEventListener('click', (e) => {
         if (e.target.closest('#edit-username')) {
           const input = document.getElementById('username-input');
-          input.value = localStorage.getItem(`username_${email}`) || '';
+          input.value = localStorage.getItem(`username_${email}`) || legacyUsername || '';
           const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('usernameModal'));
           modal.show();
         }
@@ -183,8 +207,16 @@
         const name = document.getElementById('username-input').value.trim();
         if (name) {
           localStorage.setItem(`username_${email}`, name);
+          if (legacySuffix) {
+            localStorage.removeItem(`username_${legacySuffix}`);
+          }
+          legacyUsername = null;
         } else {
           localStorage.removeItem(`username_${email}`);
+          if (legacySuffix) {
+            localStorage.removeItem(`username_${legacySuffix}`);
+          }
+          legacyUsername = null;
         }
         const modal = bootstrap.Modal.getInstance(document.getElementById('usernameModal'));
         if (modal) modal.hide();
@@ -193,7 +225,7 @@
 
       document.getElementById('change-username-btn').addEventListener('click', () => {
         const input = document.getElementById('username-input');
-        input.value = localStorage.getItem(`username_${email}`) || '';
+        input.value = localStorage.getItem(`username_${email}`) || legacyUsername || '';
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('usernameModal'));
         modal.show();
       });
@@ -213,8 +245,10 @@
 
       document.getElementById('logout-btn').addEventListener('click', () => {
         localStorage.removeItem('userEmail');
+        localStorage.removeItem('userEmailDisplay');
         localStorage.removeItem('authToken');
         localStorage.removeItem('adminEmail');
+        localStorage.removeItem('adminEmailDisplay');
         localStorage.removeItem('switchedFromAdmin');
         window.location.href = '../../index.html';
       });
@@ -223,6 +257,7 @@
       if (backBtn) {
         backBtn.addEventListener('click', () => {
           localStorage.removeItem('userEmail');
+          localStorage.removeItem('userEmailDisplay');
           window.location.href = '../admin-main/admin.html';
         });
       }
@@ -241,7 +276,10 @@
       const pincodeInput = document.getElementById('pincode-input');
       const savePinBtn = document.getElementById('save-pincode-btn');
       if (pincodeInput) {
-        const storedPin = localStorage.getItem(`pincode_${email}`) || '201305';
+        const storedPin = localStorage.getItem(`pincode_${email}`) || (legacySuffix ? localStorage.getItem(`pincode_${legacySuffix}`) : null) || '201305';
+        if (legacySuffix && localStorage.getItem(`pincode_${legacySuffix}`) && !localStorage.getItem(`pincode_${email}`)) {
+          localStorage.setItem(`pincode_${email}`, localStorage.getItem(`pincode_${legacySuffix}`));
+        }
         pincodeInput.value = storedPin;
       }
       if (savePinBtn && pincodeInput) {
@@ -251,7 +289,7 @@
             alert('Enter valid pincode');
             return;
           }
-          const rid = localStorage.getItem(`recipientId_${email}`);
+          const rid = localStorage.getItem(`recipientId_${email}`) || (legacySuffix ? localStorage.getItem(`recipientId_${legacySuffix}`) : null);
           if (!rid) return;
           showGlobalLoader();
           try {
@@ -261,6 +299,9 @@
               body: JSON.stringify({ pincode: pin })
             });
             localStorage.setItem(`pincode_${email}`, pin);
+            if (legacySuffix) {
+              localStorage.removeItem(`pincode_${legacySuffix}`);
+            }
             const offcanvasEl = document.getElementById('settingsPane');
             const off = offcanvasEl ? bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl) : null;
             if (off) off.hide();
@@ -277,7 +318,7 @@
       const gmailLink = document.getElementById('feedbackGmail');
       const to = 'linktracker03@gmail.com';
       const subject = encodeURIComponent('Product Request / Feedback');
-      const body = encodeURIComponent(`Hey there! I would like to request a new product or send feedback. My email: ${email}`);
+      const body = encodeURIComponent(`Hey there! I would like to request a new product or send feedback. My email: ${displayEmail || email}`);
       if (gmailLink) {
         gmailLink.addEventListener('click', (e) => {
           e.preventDefault();
