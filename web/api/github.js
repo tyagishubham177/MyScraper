@@ -38,11 +38,17 @@ function applyCacheHeaders(res, ttl = CACHE_TTL_SECONDS) {
 }
 
 function isKvUsable() {
-  if (!kvClient || typeof kvClient.get !== 'function' || typeof kvClient.set !== 'function') {
+  if (!kvClient) {
     return false;
   }
-  if (kvClient === kv) {
-    return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  const usingDefaultClient = kvClient === kv;
+  if (usingDefaultClient && !(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)) {
+    return false;
+  }
+  const getFn = kvClient.get;
+  const setFn = kvClient.set;
+  if (typeof getFn !== 'function' || typeof setFn !== 'function') {
+    return false;
   }
   return true;
 }
