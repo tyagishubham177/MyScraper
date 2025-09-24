@@ -1,4 +1,11 @@
 import { kv } from '@vercel/kv';
+import {
+  listSubscriptions as listSubscriptionsFromKV,
+  saveSubscription as saveSubscriptionToKV,
+  deleteSubscription as deleteSubscriptionFromKV,
+  getRecipient as getRecipientFromKV,
+  getProduct as getProductFromKV
+} from './_kv-helpers.js';
 
 let kvClient = kv;
 
@@ -9,26 +16,6 @@ export function __setKv(mock) {
 export function __resetKv() {
   kvClient = kv;
 }
-
-async function getFromKV(key) {
-  try {
-    const data = await kvClient.get(key);
-    return data ? data : [];
-  } catch (error) {
-    console.error(`Error fetching ${key} from KV:`, error);
-    throw error;
-  }
-}
-
-async function saveToKV(key, data) {
-  try {
-    await kvClient.set(key, data);
-  } catch (error) {
-    console.error(`Error saving ${key} to KV:`, error);
-    throw new Error(`Could not save ${key} to KV.`);
-  }
-}
-
 
 async function handlePost(req, res) {
   try {
@@ -41,18 +28,17 @@ async function handlePost(req, res) {
     const start = timeRegex.test(start_time) ? start_time : '00:00';
     const end = timeRegex.test(end_time) ? end_time : '23:59';
 
-    const recipients = await getFromKV('recipients');
-    if (!recipients.some(r => r.id === recipient_id)) {
+    const recipient = await getRecipientFromKV(kvClient, recipient_id);
+    if (!recipient) {
       return res.status(404).json({ message: 'Recipient not found' });
     }
 
-    const products = await getFromKV('products');
-    if (!products.some(p => p.id === product_id)) {
+    const product = await getProductFromKV(kvClient, product_id);
+    if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    let subs = await getFromKV('subscriptions');
-    subs = subs.map(s => ({
+    const subs = (await listSubscriptionsFromKV(kvClient)).map(s => ({
       ...s,
       start_time: s.start_time || '00:00',
       end_time: s.end_time || '23:59',
@@ -63,7 +49,7 @@ async function handlePost(req, res) {
       existing.start_time = start;
       existing.end_time = end;
       existing.paused = !!paused;
-      await saveToKV('subscriptions', subs);
+      await saveSubscriptionToKV(kvClient, existing);
       return res.status(200).json(existing);
     }
 
@@ -75,8 +61,7 @@ async function handlePost(req, res) {
       end_time: end,
       paused: !!paused
     };
-    subs.push(newSub);
-    await saveToKV('subscriptions', subs);
+    await saveSubscriptionToKV(kvClient, newSub);
     res.status(201).json(newSub);
   } catch (error) {
     console.error('Error in POST /api/subscriptions:', error);
@@ -91,19 +76,18 @@ async function handleDelete(req, res) {
       return res.status(400).json({ message: 'Recipient ID and Product ID are required in the request body' });
     }
 
-    let subs = await getFromKV('subscriptions');
-    subs = subs.map(s => ({
+    const subs = (await listSubscriptionsFromKV(kvClient)).map(s => ({
       ...s,
       start_time: s.start_time || '00:00',
       end_time: s.end_time || '23:59',
       paused: !!s.paused
     }));
-    const updated = subs.filter(s => !(s.recipient_id === recipient_id && s.product_id === product_id));
-    if (updated.length === subs.length) {
+    const match = subs.find(s => s.recipient_id === recipient_id && s.product_id === product_id);
+    if (!match) {
       return res.status(404).json({ message: 'Subscription not found' });
     }
 
-    await saveToKV('subscriptions', updated);
+    await deleteSubscriptionFromKV(kvClient, match.id);
     res.status(200).json({ message: 'Subscription deleted successfully' });
   } catch (error) {
     console.error('Error in DELETE /api/subscriptions:', error);
@@ -114,8 +98,7 @@ async function handleDelete(req, res) {
 async function handleGet(req, res) {
   try {
     const { recipient_id, product_id } = req.query;
-    let subs = await getFromKV('subscriptions');
-    subs = subs.map(s => ({
+    const subs = (await listSubscriptionsFromKV(kvClient)).map(s => ({
       ...s,
       start_time: s.start_time || '00:00',
       end_time: s.end_time || '23:59',
