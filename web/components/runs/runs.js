@@ -2,6 +2,36 @@
 import {API_RUNS, API_RUN, API_LOGS, API_ARTIFACT} from '../config/config.js';
 import {cleanLogText, formatRunDate, getStatusBadge, extractCheckStockLog, fetchAPI} from '../utils/utils.js';
 
+const logArchiveCache = new Map();
+
+async function fetchLogArchiveBuffer(runId) {
+  if (!runId) throw new Error('Missing run id');
+  const cached = logArchiveCache.get(runId);
+  if (cached) {
+    return cached instanceof Promise ? cached : cached;
+  }
+  const token = localStorage.getItem('authToken');
+  const fetchPromise = fetch(`${API_LOGS}?id=${runId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(resp => {
+      if (!resp.ok) {
+        throw new Error(`Failed to fetch logs: ${resp.status}`);
+      }
+      return resp.arrayBuffer();
+    })
+    .then(buffer => {
+      logArchiveCache.set(runId, buffer);
+      return buffer;
+    })
+    .catch(err => {
+      logArchiveCache.delete(runId);
+      throw err;
+    });
+  logArchiveCache.set(runId, fetchPromise);
+  return fetchPromise;
+}
+
 function parseScraperDecisionsFromLog(logText) {
   if (!logText) return [];
   const lines = logText.split('\n');
@@ -79,15 +109,8 @@ function createAccordionItem(r, idx) {
 }
 
 async function fetchScraperDecisions(runId) {
-  const token = localStorage.getItem('authToken');
-  const logRes = await fetch(`${API_LOGS}?id=${runId}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  if (!logRes.ok) {
-    throw new Error(`Failed to fetch logs for summary: ${logRes.status}`);
-  }
-  const blob = await logRes.blob();
-  const zip = await JSZip.loadAsync(blob);
+  const buffer = await fetchLogArchiveBuffer(runId);
+  const zip = await JSZip.loadAsync(buffer);
   let rawLogText = '';
   let foundLogFile = false;
   const normalizedStepName = 'runstockchecker';
@@ -190,11 +213,8 @@ async function loadLogs(col, idx) {
   logsTabPane.innerHTML = `<input type="text" class="form-control form-control-sm my-2" placeholder="Search logs...">Loading logs...`;
   const runIdForLog = col.dataset.runId;
   try {
-    const token = localStorage.getItem('authToken');
-    const logRes = await fetch(`${API_LOGS}?id=${runIdForLog}`, { headers: { 'Authorization': `Bearer ${token}` } });
-    if (!logRes.ok) throw new Error(`Failed to fetch logs: ${logRes.status}`);
-    const blob = await logRes.blob();
-    const zip = await JSZip.loadAsync(blob);
+    const buffer = await fetchLogArchiveBuffer(runIdForLog);
+    const zip = await JSZip.loadAsync(buffer);
     let rawLogText = 'No relevant log file found.';
     let foundLog = false;
     const normalizedStepName = 'runstockchecker';

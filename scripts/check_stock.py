@@ -82,22 +82,33 @@ async def main():
         else:
             stock_utils._add_timing("Admin login", 0.0, timings)
 
-        recipients_map = await stock_utils._timed(
-            "Load recipients", api_utils.load_recipients(session), timings
+        bundle = await stock_utils._timed(
+            "Load configuration", api_utils.load_configuration_bundle(session), timings
         )
+
+        if bundle:
+            recipients_map, all_products, subs_map, stock_counters = bundle
+        else:
+            recipients_map = await stock_utils._timed(
+                "Load recipients", api_utils.load_recipients(session), timings
+            )
+            all_products = await stock_utils._timed(
+                "Load products", api_utils.load_products(session), timings
+            )
+            subs_map = await stock_utils._timed(
+                "Load subscriptions", api_utils.load_subscriptions(session), timings
+            )
+            stock_counters = await stock_utils._timed(
+                "Load stock counters", api_utils.load_stock_counters(session), timings
+            )
+
         if not recipients_map:
             print("No recipients found. Notifications may not be sent.")
 
-        all_products = await stock_utils._timed(
-            "Load products", api_utils.load_products(session), timings
-        )
         if not all_products:
             print("No products fetched from API. Exiting.")
             return
 
-        subs_map = await stock_utils._timed(
-            "Load subscriptions", api_utils.load_subscriptions(session), timings
-        )
         subs_by_pin = stock_utils.build_subs_by_pincode(recipients_map, subs_map)
         product_map = {p.get("id"): p for p in all_products if p.get("id")}
         subscribed_rids = {
@@ -107,9 +118,6 @@ async def main():
             if sub.get("recipient_id") is not None
         }
 
-        stock_counters = await stock_utils._timed(
-            "Load stock counters", api_utils.load_stock_counters(session), timings
-        )
         if not isinstance(stock_counters, dict):
             stock_counters = {}
 

@@ -1,5 +1,12 @@
 import { kv } from '@vercel/kv';
 import { requireAdmin as defaultRequireAdmin } from '../utils/auth.js';
+import {
+  listRecipients as listRecipientsFromKV,
+  saveRecipient as saveRecipientToKV,
+  deleteRecipient as deleteRecipientFromKV,
+  listSubscriptions as listSubscriptionsFromKV,
+  deleteSubscriptionsByIds
+} from './_kv-helpers.js';
 
 let kvClient = kv;
 let requireAdmin = defaultRequireAdmin;
@@ -20,46 +27,6 @@ export function __resetRequireAdmin() {
   requireAdmin = defaultRequireAdmin;
 }
 
-// KV Helper functions for Recipients
-async function getRecipientsFromKV() {
-  try {
-    const recipientsData = await kvClient.get('recipients');
-    return recipientsData ? recipientsData : []; // KV returns the object directly if stored as such
-  } catch (error) {
-    console.error('Error fetching recipients from KV:', error);
-    throw error;
-  }
-}
-
-async function saveRecipientsToKV(recipientsArray) {
-  try {
-    await kvClient.set('recipients', recipientsArray);
-  } catch (error) {
-    console.error('Error saving recipients to KV:', error);
-    throw new Error('Could not save recipients to KV.');
-  }
-}
-
-// KV Helper functions for Subscriptions (needed for cascading delete)
-async function getSubscriptionsFromKV() {
-  try {
-    const subscriptionsData = await kvClient.get('subscriptions');
-    return subscriptionsData ? subscriptionsData : [];
-  } catch (error) {
-    console.error('Error fetching subscriptions from KV:', error);
-    throw error;
-  }
-}
-
-async function saveSubscriptionsToKV(subscriptionsArray) {
-  try {
-    await kvClient.set('subscriptions', subscriptionsArray);
-  } catch (error) {
-    console.error('Error saving subscriptions to KV:', error);
-    throw new Error('Could not save subscriptions to KV.');
-  }
-}
-
 function normalizeEmail(email) {
   if (typeof email !== 'string') return '';
   return email.trim().toLowerCase();
@@ -72,7 +39,7 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const recipients = await getRecipientsFromKV();
+        const recipients = await listRecipientsFromKV(kvClient);
         res.status(200).json(recipients);
       } catch (error) {
         console.error("Error in GET /api/recipients:", error);
@@ -91,7 +58,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ message: 'Invalid email address' });
         }
 
-        const currentRecipients = await getRecipientsFromKV();
+        const currentRecipients = await listRecipientsFromKV(kvClient);
         if (currentRecipients.some(r => normalizeEmail(r.email) === normalizedEmail)) {
           return res.status(409).json({ message: 'Email already exists' });
         }
@@ -102,8 +69,7 @@ export default async function handler(req, res) {
           pincode: typeof pincode === 'string' && pincode.trim() ? pincode.trim() : '201305'
         };
 
-        currentRecipients.push(newRecipient);
-        await saveRecipientsToKV(currentRecipients);
+        await saveRecipientToKV(kvClient, newRecipient);
         res.status(201).json(newRecipient);
       } catch (error) {
         console.error("Error in POST /api/recipients:", error);
@@ -121,14 +87,14 @@ export default async function handler(req, res) {
         if (!pincode || typeof pincode !== 'string') {
           return res.status(400).json({ message: 'Invalid pincode' });
         }
-        const recips = await getRecipientsFromKV();
+        const recips = await listRecipientsFromKV(kvClient);
         const idx = recips.findIndex(r => r.id === id);
         if (idx === -1) {
           return res.status(404).json({ message: 'Recipient not found' });
         }
-        recips[idx] = { ...recips[idx], pincode: pincode.trim() };
-        await saveRecipientsToKV(recips);
-        res.status(200).json(recips[idx]);
+        const updated = { ...recips[idx], pincode: pincode.trim() };
+        await saveRecipientToKV(kvClient, updated);
+        res.status(200).json(updated);
       } catch (error) {
         console.error('Error in PUT /api/recipients:', error);
         res.status(500).json({ message: 'Error updating recipient in KV', error: error.message });
@@ -144,24 +110,22 @@ export default async function handler(req, res) {
           return res.status(400).json({ message: 'Recipient ID is required' });
         }
 
-        let currentRecipients = await getRecipientsFromKV();
+        const currentRecipients = await listRecipientsFromKV(kvClient);
         const recipientIndex = currentRecipients.findIndex(r => r.id === recipientIdToDelete);
 
         if (recipientIndex === -1) {
           return res.status(404).json({ message: 'Recipient not found' });
         }
 
-        // Filter out the recipient
-        const updatedRecipients = currentRecipients.filter(r => r.id !== recipientIdToDelete);
-        await saveRecipientsToKV(updatedRecipients);
+        // Remove the recipient record and cascade delete subscriptions
+        await deleteRecipientFromKV(kvClient, recipientIdToDelete);
 
-        // Remove associated subscriptions
-        let currentSubscriptions = await getSubscriptionsFromKV();
-        const updatedSubscriptions = currentSubscriptions.filter(s => s.recipient_id !== recipientIdToDelete);
-
-        // Save subscriptions only if they changed
-        if (updatedSubscriptions.length < currentSubscriptions.length) {
-            await saveSubscriptionsToKV(updatedSubscriptions);
+        const subscriptions = await listSubscriptionsFromKV(kvClient);
+        const subsToDelete = subscriptions
+          .filter(s => s.recipient_id === recipientIdToDelete)
+          .map(s => s.id);
+        if (subsToDelete.length > 0) {
+          await deleteSubscriptionsByIds(kvClient, subsToDelete);
         }
 
         res.status(200).json({ message: 'Recipient and associated subscriptions deleted successfully' });
