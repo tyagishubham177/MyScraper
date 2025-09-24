@@ -19,9 +19,9 @@ idna==3.10
 multidict==6.6.3
 propcache==0.3.2
 pyee==11.0.1
+pytest-asyncio==1.1.0
 six==1.17.0
 soupsieve==2.7
 typing-extensions==4.14.1
 urllib3==2.5.0
 yarl==1.20.1
-pytest-asyncio==1.1.0
