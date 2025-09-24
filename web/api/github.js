@@ -11,7 +11,7 @@ export function __setKv(mock){kvClient = mock;}
 export function __resetKv(){kvClient = kv;}
 
 async function getCachedValue(key) {
-  if (!kvClient || typeof kvClient.get !== 'function') return null;
+  if (!isKvUsable()) return null;
   try {
     return await kvClient.get(key);
   } catch (error) {
@@ -21,7 +21,7 @@ async function getCachedValue(key) {
 }
 
 async function setCachedValue(key, value, ttl) {
-  if (!kvClient || typeof kvClient.set !== 'function') return;
+  if (!isKvUsable()) return;
   try {
     if (ttl) {
       await kvClient.set(key, value, { ex: ttl });
@@ -35,6 +35,16 @@ async function setCachedValue(key, value, ttl) {
 
 function applyCacheHeaders(res, ttl = CACHE_TTL_SECONDS) {
   res.setHeader('Cache-Control', `public, max-age=0, s-maxage=${ttl}`);
+}
+
+function isKvUsable() {
+  if (!kvClient || typeof kvClient.get !== 'function' || typeof kvClient.set !== 'function') {
+    return false;
+  }
+  if (kvClient === kv) {
+    return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  }
+  return true;
 }
 
 export default async function handler(req, res) {

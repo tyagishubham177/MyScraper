@@ -18,7 +18,13 @@ async function fetchLogArchiveBuffer(runId) {
       if (!resp.ok) {
         throw new Error(`Failed to fetch logs: ${resp.status}`);
       }
-      return resp.arrayBuffer();
+      if (typeof resp.arrayBuffer === 'function') {
+        return resp.arrayBuffer();
+      }
+      if (typeof resp.blob === 'function') {
+        return resp.blob();
+      }
+      throw new Error('Response does not support arrayBuffer or blob');
     })
     .then(buffer => {
       logArchiveCache.set(runId, buffer);

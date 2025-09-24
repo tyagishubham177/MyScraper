@@ -112,6 +112,7 @@ async function migrateArrayToHash(kvClient, legacyKey, hashKey, serialiser) {
     }
   } catch (error) {
     console.error(`Error migrating ${legacyKey} to hash storage:`, error);
+    throw error;
   }
 }
 
@@ -126,6 +127,7 @@ export async function listRecipients(kvClient = kv) {
       }
     } catch (error) {
       console.error('Error fetching recipients hash from KV:', error);
+      throw error;
     }
   }
   await migrateArrayToHash(kvClient, LEGACY_RECIPIENTS_KEY, RECIPIENTS_HASH_KEY, serialiseRecipient);
@@ -142,7 +144,7 @@ export async function listRecipients(kvClient = kv) {
     return Array.isArray(legacy) ? legacy : [];
   } catch (error) {
     console.error('Error fetching legacy recipients from KV:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -154,6 +156,7 @@ export async function getRecipient(kvClient = kv, id) {
       if (raw) return buildRecipientRecord(id, raw);
     } catch (error) {
       console.error('Error fetching recipient from hash KV:', error);
+      throw error;
     }
   }
   const list = await listRecipients(kvClient);
@@ -195,6 +198,7 @@ export async function listProducts(kvClient = kv) {
       }
     } catch (error) {
       console.error('Error fetching products hash from KV:', error);
+      throw error;
     }
   }
   await migrateArrayToHash(kvClient, LEGACY_PRODUCTS_KEY, PRODUCTS_HASH_KEY, serialiseProduct);
@@ -211,7 +215,7 @@ export async function listProducts(kvClient = kv) {
     return Array.isArray(legacy) ? legacy : [];
   } catch (error) {
     console.error('Error fetching legacy products from KV:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -223,6 +227,7 @@ export async function getProduct(kvClient = kv, id) {
       if (raw) return buildProductRecord(id, raw);
     } catch (error) {
       console.error('Error fetching product from hash KV:', error);
+      throw error;
     }
   }
   const list = await listProducts(kvClient);
@@ -262,6 +267,7 @@ export async function listSubscriptions(kvClient = kv) {
       }
     } catch (error) {
       console.error('Error fetching subscriptions hash from KV:', error);
+      throw error;
     }
   }
   await migrateArrayToHash(kvClient, LEGACY_SUBSCRIPTIONS_KEY, SUBSCRIPTIONS_HASH_KEY, serialiseSubscription);
@@ -276,7 +282,7 @@ export async function listSubscriptions(kvClient = kv) {
     return Array.isArray(legacy) ? legacy : [];
   } catch (error) {
     console.error('Error fetching legacy subscriptions from KV:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -288,6 +294,7 @@ export async function getSubscription(kvClient = kv, id) {
       if (raw) return buildSubscriptionRecord(id, raw);
     } catch (error) {
       console.error('Error fetching subscription from hash KV:', error);
+      throw error;
     }
   }
   const list = await listSubscriptions(kvClient);
@@ -339,6 +346,7 @@ export async function getStockCounters(kvClient = kv) {
       }
     } catch (error) {
       console.error('Error fetching stock counters hash from KV:', error);
+      throw error;
     }
   }
   try {
@@ -354,6 +362,7 @@ export async function getStockCounters(kvClient = kv) {
     }
   } catch (error) {
     console.error('Error fetching legacy stock counters from KV:', error);
+    throw error;
   }
   return {};
 }
