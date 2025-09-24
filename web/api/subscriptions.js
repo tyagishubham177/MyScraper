@@ -1,18 +1,28 @@
 import { kv } from '@vercel/kv';
 
+let kvClient = kv;
+
+export function __setKv(mock) {
+  kvClient = mock;
+}
+
+export function __resetKv() {
+  kvClient = kv;
+}
+
 async function getFromKV(key) {
   try {
-    const data = await kv.get(key);
+    const data = await kvClient.get(key);
     return data ? data : [];
   } catch (error) {
     console.error(`Error fetching ${key} from KV:`, error);
-    return [];
+    throw error;
   }
 }
 
 async function saveToKV(key, data) {
   try {
-    await kv.set(key, data);
+    await kvClient.set(key, data);
   } catch (error) {
     console.error(`Error saving ${key} to KV:`, error);
     throw new Error(`Could not save ${key} to KV.`);

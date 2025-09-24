@@ -1,22 +1,39 @@
 import { kv } from '@vercel/kv';
-import { requireAdmin } from '../utils/auth.js';
+import { requireAdmin as defaultRequireAdmin } from '../utils/auth.js';
+
+let kvClient = kv;
+let requireAdmin = defaultRequireAdmin;
+
+export function __setKv(mock) {
+  kvClient = mock;
+}
+
+export function __resetKv() {
+  kvClient = kv;
+}
+
+export function __setRequireAdmin(fn) {
+  requireAdmin = fn;
+}
+
+export function __resetRequireAdmin() {
+  requireAdmin = defaultRequireAdmin;
+}
 
 // KV Helper functions for Recipients
 async function getRecipientsFromKV() {
   try {
-    const recipientsData = await kv.get('recipients');
+    const recipientsData = await kvClient.get('recipients');
     return recipientsData ? recipientsData : []; // KV returns the object directly if stored as such
   } catch (error) {
     console.error('Error fetching recipients from KV:', error);
-    // Fallback to empty array or throw, depending on desired error handling
-    // For this API, returning empty array and letting handler decide on 500 is fine
-    return [];
+    throw error;
   }
 }
 
 async function saveRecipientsToKV(recipientsArray) {
   try {
-    await kv.set('recipients', recipientsArray);
+    await kvClient.set('recipients', recipientsArray);
   } catch (error) {
     console.error('Error saving recipients to KV:', error);
     throw new Error('Could not save recipients to KV.');
@@ -26,17 +43,17 @@ async function saveRecipientsToKV(recipientsArray) {
 // KV Helper functions for Subscriptions (needed for cascading delete)
 async function getSubscriptionsFromKV() {
   try {
-    const subscriptionsData = await kv.get('subscriptions');
+    const subscriptionsData = await kvClient.get('subscriptions');
     return subscriptionsData ? subscriptionsData : [];
   } catch (error) {
     console.error('Error fetching subscriptions from KV:', error);
-    return [];
+    throw error;
   }
 }
 
 async function saveSubscriptionsToKV(subscriptionsArray) {
   try {
-    await kv.set('subscriptions', subscriptionsArray);
+    await kvClient.set('subscriptions', subscriptionsArray);
   } catch (error) {
     console.error('Error saving subscriptions to KV:', error);
     throw new Error('Could not save subscriptions to KV.');
