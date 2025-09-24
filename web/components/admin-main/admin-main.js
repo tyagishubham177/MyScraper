@@ -4,6 +4,7 @@ import {initParticles} from '../particles-config/particles-config.js';
 import {initIcons} from '../icons/icons.js';
 import {initRecipientsUI} from '../recipients-ui/recipients-ui.js';
 import {initProductsUI} from '../products-ui/products-ui.js';
+import { normalizeEmail } from '../utils/utils.js';
 import '../subscription/subscriptions-ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -21,9 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchUserBtn = document.getElementById('switch-user-btn');
   if (switchUserBtn) {
     switchUserBtn.addEventListener('click', () => {
-      const email = localStorage.getItem('adminEmail');
-      if (email) {
-        localStorage.setItem('userEmail', email);
+      const adminEmail = localStorage.getItem('adminEmail');
+      const adminEmailDisplay = localStorage.getItem('adminEmailDisplay') || adminEmail;
+      const normalized = normalizeEmail(adminEmail);
+      if (normalized) {
+        localStorage.setItem('userEmail', normalized);
+        if (adminEmailDisplay && adminEmailDisplay !== normalized) {
+          localStorage.setItem('userEmailDisplay', adminEmailDisplay);
+        } else {
+          localStorage.removeItem('userEmailDisplay');
+        }
         localStorage.setItem('switchedFromAdmin', 'true');
         window.location.href = '../user-main/user.html';
       }
@@ -35,7 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('authToken');
       localStorage.removeItem('adminEmail');
+      localStorage.removeItem('adminEmailDisplay');
       localStorage.removeItem('userEmail');
+      localStorage.removeItem('userEmailDisplay');
       localStorage.removeItem('switchedFromAdmin');
       window.location.href = '../../index.html';
     });
@@ -93,8 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const rb = document.querySelector('input[name="recipientType"]:checked');
       const type = rb ? rb.value : 'self';
       const adminEmail = localStorage.getItem('adminEmail');
+      const adminEmailDisplay = localStorage.getItem('adminEmailDisplay') || adminEmail;
       if (type === 'self') {
-        baseRecipients = adminEmail ? [adminEmail] : [];
+        baseRecipients = adminEmailDisplay ? [adminEmailDisplay] : [];
         renderRecipients();
         return;
       }

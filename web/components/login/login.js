@@ -1,5 +1,5 @@
 import { API_LOGIN, API_USER_LOGIN } from '../config/config.js';
-import { showGlobalLoader, hideGlobalLoader } from '../utils/utils.js';
+import { showGlobalLoader, hideGlobalLoader, normalizeEmail } from '../utils/utils.js';
 
 export async function initLogin() {
   showGlobalLoader();
@@ -308,9 +308,10 @@ export async function initLogin() {
   }
 
   async function handleAdminLogin() {
-    const email = adminEmailInput ? adminEmailInput.value.trim() : '';
+    const typedEmail = adminEmailInput ? adminEmailInput.value.trim() : '';
+    const email = normalizeEmail(typedEmail);
     const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
-    if (!email || !password) {
+    if (!typedEmail || !password) {
       showError(adminErrorMessage, 'Please enter both email and password.');
       return;
     }
@@ -325,6 +326,11 @@ export async function initLogin() {
         const data = await res.json();
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('adminEmail', email);
+        if (typedEmail && typedEmail !== email) {
+          localStorage.setItem('adminEmailDisplay', typedEmail);
+        } else {
+          localStorage.removeItem('adminEmailDisplay');
+        }
         adminCountdownTimer = clearCountdown(adminCountdownTimer, 'adminLockUntil', adminErrorMessage);
         window.location.href = "components/admin-main/admin.html";
       } else {
@@ -344,8 +350,9 @@ export async function initLogin() {
 
   // New User Login Logic
   async function handleUserLogin() {
-    const email = userEmailInput ? userEmailInput.value.trim() : '';
-    if (email === '') {
+    const typedEmail = userEmailInput ? userEmailInput.value.trim() : '';
+    const email = normalizeEmail(typedEmail);
+    if (typedEmail === '') {
       showError(userErrorMessage, 'Please enter your email.');
       if (userContactLinks) hideElem(userContactLinks);
       return;
@@ -360,6 +367,11 @@ export async function initLogin() {
       if (res.ok) {
         userCountdownTimer = clearCountdown(userCountdownTimer, 'userLockUntil', userErrorMessage, userContactLinks);
         localStorage.setItem('userEmail', email);
+        if (typedEmail && typedEmail !== email) {
+          localStorage.setItem('userEmailDisplay', typedEmail);
+        } else {
+          localStorage.removeItem('userEmailDisplay');
+        }
         window.location.href = 'components/user-main/user.html';
         return;
       }

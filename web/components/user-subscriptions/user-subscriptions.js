@@ -1,11 +1,31 @@
-import { fetchAPI, showGlobalLoader, hideGlobalLoader, sanitizeUrl } from '../utils/utils.js';
+import { fetchAPI, showGlobalLoader, hideGlobalLoader, sanitizeUrl, normalizeEmail } from '../utils/utils.js';
 
 export async function initUserSubscriptionsUI() {
   showGlobalLoader();
-  const email = localStorage.getItem('userEmail');
+  const storedEmail = localStorage.getItem('userEmail');
+  const displayEmail = localStorage.getItem('userEmailDisplay') || storedEmail;
+  const email = normalizeEmail(storedEmail);
   if (!email) {
     window.location.href = '../../index.html';
     return;
+  }
+  if (storedEmail !== email) {
+    localStorage.setItem('userEmail', email);
+  }
+  if (displayEmail && displayEmail !== storedEmail) {
+    localStorage.setItem('userEmailDisplay', displayEmail);
+  }
+
+  const legacySuffix = displayEmail && displayEmail !== email ? displayEmail : null;
+  if (legacySuffix) {
+    const legacyRecipient = localStorage.getItem(`recipientId_${legacySuffix}`);
+    if (legacyRecipient && !localStorage.getItem(`recipientId_${email}`)) {
+      localStorage.setItem(`recipientId_${email}`, legacyRecipient);
+    }
+    const legacyPin = localStorage.getItem(`pincode_${legacySuffix}`);
+    if (legacyPin && !localStorage.getItem(`pincode_${email}`)) {
+      localStorage.setItem(`pincode_${email}`, legacyPin);
+    }
   }
 
   let [recipients, products] = await Promise.all([
@@ -18,14 +38,20 @@ export async function initUserSubscriptionsUI() {
     return;
   }
 
-  const recipient = recipients.find(r => r.email === email);
+  const recipient = recipients.find(r => normalizeEmail(r.email) === email);
   if (!recipient) {
     console.error('Recipient not found');
     return;
   }
   localStorage.setItem(`recipientId_${email}`, recipient.id);
+  if (legacySuffix) {
+    localStorage.removeItem(`recipientId_${legacySuffix}`);
+  }
   if (recipient.pincode) {
     localStorage.setItem(`pincode_${email}`, recipient.pincode);
+    if (legacySuffix) {
+      localStorage.removeItem(`pincode_${legacySuffix}`);
+    }
   }
 
   let subscriptions = await fetchAPI(`/api/subscriptions?recipient_id=${recipient.id}`).catch(() => []);
@@ -35,25 +61,61 @@ export async function initUserSubscriptionsUI() {
   const subscribedList = document.getElementById('user-subscribed-list');
   const allList = document.getElementById('all-products-list');
   const searchInput = document.getElementById('product-search');
-  const productsCollapse = document.getElementById('allProductsListCollapse');
+  const productsCollapse = document.getElementById('availableProductsPanel');
+  const subscribedCollapse = document.getElementById('userSubscribedPanel');
 
-  if (productsCollapse && searchInput) {
-    const showSearch = () => {
-      searchInput.classList.remove('d-none');
-      searchInput.classList.add('fade-in-content');
-      setTimeout(() => searchInput.classList.remove('fade-in-content'), 500);
-    };
-    const hideSearch = () => {
-      searchInput.classList.add('d-none');
-    };
-    productsCollapse.addEventListener('show.bs.collapse', showSearch);
-    productsCollapse.addEventListener('hide.bs.collapse', hideSearch);
-    if (productsCollapse.classList.contains('show')) {
-      showSearch();
-    } else {
-      hideSearch();
-    }
+  const collapsibleSections = [productsCollapse, subscribedCollapse].filter(Boolean);
+  const collapseToggleMap = new Map();
+
+  const toggleButtons = typeof document?.querySelectorAll === 'function'
+    ? Array.from(document.querySelectorAll('.panel-toggle[data-collapsible-target]'))
+    : [];
+
+  toggleButtons.forEach(btn => {
+    collapseToggleMap.set(btn.dataset.collapsibleTarget, btn);
+  });
+
+  function updateCollapseMode() {
+    if (typeof bootstrap === 'undefined' || !bootstrap.Collapse) return;
+    const viewportWidth = typeof window !== 'undefined' && typeof window.innerWidth === 'number'
+      ? window.innerWidth
+      : 1200;
+    const isMobile = viewportWidth < 1200;
+
+    collapsibleSections.forEach(section => {
+      const selector = `#${section.id}`;
+      const toggle = collapseToggleMap.get(selector);
+      if (!toggle) return;
+
+      const collapseInstance = bootstrap.Collapse.getOrCreateInstance(section, { toggle: false });
+
+      if (isMobile) {
+        toggle.setAttribute('data-bs-target', selector);
+        toggle.setAttribute('data-bs-toggle', 'collapse');
+        toggle.classList.remove('desktop-static');
+        toggle.setAttribute('aria-expanded', section.classList.contains('show') ? 'true' : 'false');
+      } else {
+        toggle.removeAttribute('data-bs-target');
+        toggle.removeAttribute('data-bs-toggle');
+        toggle.classList.add('desktop-static');
+        collapseInstance.show();
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+    });
   }
+
+  collapsibleSections.forEach(section => {
+    const selector = `#${section.id}`;
+    const toggle = collapseToggleMap.get(selector);
+    if (!toggle) return;
+    section.addEventListener('show.bs.collapse', () => toggle.setAttribute('aria-expanded', 'true'));
+    section.addEventListener('hide.bs.collapse', () => toggle.setAttribute('aria-expanded', 'false'));
+  });
+
+  if (typeof window?.addEventListener === 'function') {
+    window.addEventListener('resize', updateCollapseMode);
+  }
+  updateCollapseMode();
 
   function createSubscribedItem(product, sub, paused = false) {
     const li = document.createElement('li');
@@ -63,9 +125,14 @@ export async function initUserSubscriptionsUI() {
 
     const details = document.createElement('div');
     details.className = 'product-details mb-2';
+    const headingRow = document.createElement('div');
+    headingRow.className = 'product-heading-row';
     const nameEl = document.createElement('h5');
     nameEl.className = 'product-name mb-0';
     nameEl.textContent = product.name;
+    const statusPill = document.createElement('span');
+    statusPill.className = 'subscription-status ' + (paused ? 'is-paused' : 'is-active');
+    statusPill.textContent = paused ? 'Paused' : 'Active';
     const linkEl = document.createElement('a');
     const safeUrl = sanitizeUrl(product.url);
     linkEl.href = safeUrl || '#';
@@ -78,7 +145,9 @@ export async function initUserSubscriptionsUI() {
     icon.setAttribute('data-lucide', 'external-link');
     icon.className = 'lucide-xs';
     linkEl.appendChild(icon);
-    details.appendChild(nameEl);
+    headingRow.appendChild(nameEl);
+    headingRow.appendChild(statusPill);
+    details.appendChild(headingRow);
     details.appendChild(linkEl);
 
     const controls = document.createElement('div');
@@ -90,8 +159,10 @@ export async function initUserSubscriptionsUI() {
       <div class="time-slot-group me-2">
         <input type="time" class="form-control form-control-sm sub-end" value="${sub.end_time || '23:59'}">
       </div>
-      <button class="btn btn-sm btn-outline-secondary pause-btn me-1 btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}"></i></button>
-      <button class="btn btn-sm btn-outline-danger unsub-btn btn-icon"><i data-lucide="x"></i></button>`;
+      <div class="control-actions">
+        <button class="btn btn-sm btn-outline-secondary pause-btn btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}"></i></button>
+        <button class="btn btn-sm btn-outline-danger unsub-btn btn-icon"><i data-lucide="x"></i></button>
+      </div>`;
 
     li.appendChild(details);
     li.appendChild(controls);
@@ -163,7 +234,9 @@ export async function initUserSubscriptionsUI() {
       if (!subscribedMap.has(p.id)) allList.appendChild(createAllProductItem(p));
     });
     if (window.lucide) window.lucide.createIcons();
-    filterProducts(searchInput.value || '');
+    if (searchInput) {
+      filterProducts(searchInput.value || '');
+    }
   }
 
   async function subscribe(productId) {

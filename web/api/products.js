@@ -1,53 +1,36 @@
 import { kv } from '@vercel/kv';
-import { requireAdmin } from '../utils/auth.js';
+import { requireAdmin as defaultRequireAdmin } from '../utils/auth.js';
+import {
+  listProducts as listProductsFromKV,
+  saveProduct as saveProductToKV,
+  deleteProduct as deleteProductFromKV,
+  listSubscriptions as listSubscriptionsFromKV,
+  deleteSubscriptionsByIds
+} from './_kv-helpers.js';
 
-// KV Helper functions for Products
-async function getProductsFromKV() {
-  try {
-    const productsData = await kv.get('products');
-    if (productsData) {
-      productsData.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return productsData ? productsData : [];
-  } catch (error) {
-    console.error('Error fetching products from KV:', error);
-    return [];
-  }
+let kvClient = kv;
+let requireAdmin = defaultRequireAdmin;
+
+export function __setKv(mock) {
+  kvClient = mock;
 }
 
-async function saveProductsToKV(productsArray) {
-  try {
-    await kv.set('products', productsArray);
-  } catch (error) {
-    console.error('Error saving products to KV:', error);
-    throw new Error('Could not save products to KV.');
-  }
+export function __resetKv() {
+  kvClient = kv;
 }
 
-// KV Helper functions for Subscriptions (needed for cascading delete)
-async function getSubscriptionsFromKV() {
-  try {
-    const subscriptionsData = await kv.get('subscriptions');
-    return subscriptionsData ? subscriptionsData : [];
-  } catch (error) {
-    console.error('Error fetching subscriptions from KV:', error);
-    return [];
-  }
+export function __setRequireAdmin(fn) {
+  requireAdmin = fn;
 }
 
-async function saveSubscriptionsToKV(subscriptionsArray) {
-  try {
-    await kv.set('subscriptions', subscriptionsArray);
-  } catch (error) {
-    console.error('Error saving subscriptions to KV:', error);
-    throw new Error('Could not save subscriptions to KV.');
-  }
+export function __resetRequireAdmin() {
+  requireAdmin = defaultRequireAdmin;
 }
 
 // Main request handler
 async function handleGet(req, res) {
   try {
-    const products = await getProductsFromKV();
+    const products = await listProductsFromKV(kvClient);
     res.status(200).json(products);
   } catch (error) {
     console.error("Error in GET /api/products:", error);
@@ -75,7 +58,7 @@ async function handlePost(req, res) {
       return res.status(400).json({ message: 'Invalid product name' });
     }
 
-    const currentProducts = await getProductsFromKV();
+    const currentProducts = await listProductsFromKV(kvClient);
     if (currentProducts.find(p => p.url === url)) {
       return res.status(409).json({ message: 'Product with this URL already exists' });
     }
@@ -86,8 +69,7 @@ async function handlePost(req, res) {
       name: name.trim()
     };
 
-    currentProducts.push(newProduct);
-    await saveProductsToKV(currentProducts);
+    await saveProductToKV(kvClient, newProduct);
     res.status(201).json(newProduct);
   } catch (error) {
     console.error("Error in POST /api/products:", error);
@@ -119,18 +101,18 @@ async function handlePut(req, res) {
       return res.status(400).json({ message: 'Invalid product name' });
     }
 
-    let currentProducts = await getProductsFromKV();
+    const currentProducts = await listProductsFromKV(kvClient);
     const productIndex = currentProducts.findIndex(p => p.id === id);
     if (productIndex === -1) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    currentProducts[productIndex] = {
+    const updated = {
       ...currentProducts[productIndex],
       url,
       name: name.trim()
     };
-    await saveProductsToKV(currentProducts);
-    res.status(200).json(currentProducts[productIndex]);
+    await saveProductToKV(kvClient, updated);
+    res.status(200).json(updated);
   } catch (error) {
     console.error('Error in PUT /api/products:', error);
     res.status(500).json({ message: 'Error updating product in KV', error: error.message });
@@ -146,21 +128,22 @@ async function handleDelete(req, res) {
       return res.status(400).json({ message: 'Product ID is required' });
     }
 
-    let currentProducts = await getProductsFromKV();
+    const currentProducts = await listProductsFromKV(kvClient);
     const productIndex = currentProducts.findIndex(p => p.id === productIdToDelete);
 
     if (productIndex === -1) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const updatedProducts = currentProducts.filter(p => p.id !== productIdToDelete);
-    await saveProductsToKV(updatedProducts);
+    await deleteProductFromKV(kvClient, productIdToDelete);
 
-    let currentSubscriptions = await getSubscriptionsFromKV();
-    const updatedSubscriptions = currentSubscriptions.filter(s => s.product_id !== productIdToDelete);
+    const currentSubscriptions = await listSubscriptionsFromKV(kvClient);
+    const subsToDelete = currentSubscriptions
+      .filter(s => s.product_id === productIdToDelete)
+      .map(s => s.id);
 
-    if (updatedSubscriptions.length < currentSubscriptions.length) {
-      await saveSubscriptionsToKV(updatedSubscriptions);
+    if (subsToDelete.length > 0) {
+      await deleteSubscriptionsByIds(kvClient, subsToDelete);
     }
 
     res.status(200).json({ message: 'Product and associated subscriptions deleted successfully' });

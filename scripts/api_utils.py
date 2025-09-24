@@ -127,6 +127,47 @@ async def load_stock_counters(session):
     return {}
 
 
+async def load_configuration_bundle(session):
+    url = f"{config.APP_BASE_URL}/api/configuration"
+    if session is None:
+        return None
+    data = await fetch_api_data(session, url)
+    if not data or not isinstance(data, dict):
+        return None
+
+    recipients_raw = data.get("recipients") or []
+    products = data.get("products") or []
+    subscriptions = data.get("subscriptions") or []
+    counters = data.get("stock_counters") or {}
+
+    recipients_map = {
+        r.get("id"): {
+            "email": r.get("email"),
+            "pincode": r.get("pincode", config.PINCODE),
+        }
+        for r in recipients_raw
+        if r and r.get("id") and r.get("email")
+    }
+
+    subs_by_product = {}
+    for sub in subscriptions or []:
+        pid = sub.get("product_id")
+        if pid is None:
+            continue
+        normalized = {
+            **sub,
+            "start_time": sub.get("start_time", "00:00"),
+            "end_time": sub.get("end_time", "23:59"),
+            "paused": bool(sub.get("paused")),
+        }
+        subs_by_product.setdefault(pid, []).append(normalized)
+
+    if not isinstance(counters, dict):
+        counters = {}
+
+    return recipients_map, products, subs_by_product, counters
+
+
 async def save_stock_counters(session, counters):
     url = f"{config.APP_BASE_URL}/api/stock-counters"
     headers = (

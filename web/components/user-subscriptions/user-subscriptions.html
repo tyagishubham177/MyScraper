@@ -1,50 +1,61 @@
-<div class="row" id="subscriptions-ui">
-  <div class="col-md-6 mb-4">
-    <h4 class="d-flex align-items-center">
-      <a href="#" class="d-sm-none collapse-toggle me-2" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">
-        <i data-lucide="chevron-down"></i>
-      </a>
-      <span class="collapse-title" role="button" data-bs-toggle="collapse" data-bs-target="#userSubscribedListCollapse" aria-expanded="true" aria-controls="userSubscribedListCollapse">Your Subscriptions</span>
-    </h4>
-    <div class="modal fade" id="subscriptionsInfoModal" tabindex="-1" aria-labelledby="subscriptionsInfoModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="subscriptionsInfoModalLabel">Subscription Controls</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <ul class="list-unstyled small mb-0">
-              <li>➕ Add products from the available product list</li>
-              <li>🔎 Use search to filter products</li>
-              <li>💬 Reach out to admin from the settings pane to add products</li>
-              <li>❌ Remove a subscription with the X button</li>
-              <li>🔗 Links open the product page</li>
-              <li>⏯ Pause or resume your subscriptions when you don't want to be notified</li>
-              <li>⏰ Set start/end times to set a window in which you want email notifications</li>
-            </ul>
+<div class="row g-4" id="subscriptions-ui">
+  <div class="col-12 col-xl-6">
+    <section class="dashboard-panel">
+      <header class="panel-header">
+        <button type="button" class="panel-toggle" data-collapsible-target="#userSubscribedPanel" aria-expanded="true">
+          <span class="panel-title">Your Subscriptions</span>
+          <i data-lucide="chevron-down" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="modal fade" id="subscriptionsInfoModal" tabindex="-1" aria-labelledby="subscriptionsInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="subscriptionsInfoModalLabel">Subscription Controls</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <ul class="list-unstyled small mb-0">
+                <li>➕ Add products from the available product list</li>
+                <li>🔎 Use search to filter products</li>
+                <li>💬 Reach out to admin from the settings pane to add products</li>
+                <li>❌ Remove a subscription with the X button</li>
+                <li>🔗 Links open the product page</li>
+                <li>⏯ Pause or resume your subscriptions when you don't want to be notified</li>
+                <li>⏰ Set start/end times to set a window in which you want email notifications</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="collapse fade-collapse show" id="userSubscribedListCollapse">
-      <div class="list-wrapper">
-        <ul id="user-subscribed-list" class="list-group"></ul>
+      <div class="collapse collapse-panel show" id="userSubscribedPanel">
+        <div class="panel-body">
+          <div class="list-wrapper">
+            <ul id="user-subscribed-list" class="list-group"></ul>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   </div>
-  <div class="col-md-6 mb-4">
-    <div class="d-flex align-items-center mb-2">
-      <a href="#" class="d-sm-none collapse-toggle me-2" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">
-        <i data-lucide="chevron-down"></i>
-      </a>
-        <h4 class="mb-0 collapse-title" role="button" data-bs-toggle="collapse" data-bs-target="#allProductsListCollapse" aria-expanded="true" aria-controls="allProductsListCollapse">Available Products</h4>
-    </div>
-    <input type="text" id="product-search" class="form-control mb-2" placeholder="Search products">
-    <div class="collapse fade-collapse show" id="allProductsListCollapse">
-      <div class="list-wrapper">
-        <ul id="all-products-list" class="list-group"></ul>
+  <div class="col-12 col-xl-6">
+    <section class="dashboard-panel">
+      <header class="panel-header">
+        <button type="button" class="panel-toggle" data-collapsible-target="#availableProductsPanel" aria-expanded="true">
+          <span class="panel-title mb-0">Available Products</span>
+          <i data-lucide="chevron-down" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="collapse collapse-panel show" id="availableProductsPanel">
+        <div class="panel-body">
+          <div class="search-bar">
+            <i data-lucide="search"></i>
+            <input type="text" id="product-search" class="form-control" placeholder="Search products">
+          </div>
+          <div class="list-wrapper">
+            <ul id="all-products-list" class="list-group"></ul>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   </div>
 </div>
