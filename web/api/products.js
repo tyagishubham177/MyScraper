@@ -1,23 +1,42 @@
 import { kv } from '@vercel/kv';
-import { requireAdmin } from '../utils/auth.js';
+import { requireAdmin as defaultRequireAdmin } from '../utils/auth.js';
+
+let kvClient = kv;
+let requireAdmin = defaultRequireAdmin;
+
+export function __setKv(mock) {
+  kvClient = mock;
+}
+
+export function __resetKv() {
+  kvClient = kv;
+}
+
+export function __setRequireAdmin(fn) {
+  requireAdmin = fn;
+}
+
+export function __resetRequireAdmin() {
+  requireAdmin = defaultRequireAdmin;
+}
 
 // KV Helper functions for Products
 async function getProductsFromKV() {
   try {
-    const productsData = await kv.get('products');
+    const productsData = await kvClient.get('products');
     if (productsData) {
       productsData.sort((a, b) => a.name.localeCompare(b.name));
     }
     return productsData ? productsData : [];
   } catch (error) {
     console.error('Error fetching products from KV:', error);
-    return [];
+    throw error;
   }
 }
 
 async function saveProductsToKV(productsArray) {
   try {
-    await kv.set('products', productsArray);
+    await kvClient.set('products', productsArray);
   } catch (error) {
     console.error('Error saving products to KV:', error);
     throw new Error('Could not save products to KV.');
@@ -27,17 +46,17 @@ async function saveProductsToKV(productsArray) {
 // KV Helper functions for Subscriptions (needed for cascading delete)
 async function getSubscriptionsFromKV() {
   try {
-    const subscriptionsData = await kv.get('subscriptions');
+    const subscriptionsData = await kvClient.get('subscriptions');
     return subscriptionsData ? subscriptionsData : [];
   } catch (error) {
     console.error('Error fetching subscriptions from KV:', error);
-    return [];
+    throw error;
   }
 }
 
 async function saveSubscriptionsToKV(subscriptionsArray) {
   try {
-    await kv.set('subscriptions', subscriptionsArray);
+    await kvClient.set('subscriptions', subscriptionsArray);
   } catch (error) {
     console.error('Error saving subscriptions to KV:', error);
     throw new Error('Could not save subscriptions to KV.');
