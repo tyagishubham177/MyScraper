@@ -1,11 +1,31 @@
-import { fetchAPI, showGlobalLoader, hideGlobalLoader, sanitizeUrl } from '../utils/utils.js';
+import { fetchAPI, showGlobalLoader, hideGlobalLoader, sanitizeUrl, normalizeEmail } from '../utils/utils.js';
 
 export async function initUserSubscriptionsUI() {
   showGlobalLoader();
-  const email = localStorage.getItem('userEmail');
+  const storedEmail = localStorage.getItem('userEmail');
+  const displayEmail = localStorage.getItem('userEmailDisplay') || storedEmail;
+  const email = normalizeEmail(storedEmail);
   if (!email) {
     window.location.href = '../../index.html';
     return;
+  }
+  if (storedEmail !== email) {
+    localStorage.setItem('userEmail', email);
+  }
+  if (displayEmail && displayEmail !== storedEmail) {
+    localStorage.setItem('userEmailDisplay', displayEmail);
+  }
+
+  const legacySuffix = displayEmail && displayEmail !== email ? displayEmail : null;
+  if (legacySuffix) {
+    const legacyRecipient = localStorage.getItem(`recipientId_${legacySuffix}`);
+    if (legacyRecipient && !localStorage.getItem(`recipientId_${email}`)) {
+      localStorage.setItem(`recipientId_${email}`, legacyRecipient);
+    }
+    const legacyPin = localStorage.getItem(`pincode_${legacySuffix}`);
+    if (legacyPin && !localStorage.getItem(`pincode_${email}`)) {
+      localStorage.setItem(`pincode_${email}`, legacyPin);
+    }
   }
 
   let [recipients, products] = await Promise.all([
@@ -18,14 +38,20 @@ export async function initUserSubscriptionsUI() {
     return;
   }
 
-  const recipient = recipients.find(r => r.email === email);
+  const recipient = recipients.find(r => normalizeEmail(r.email) === email);
   if (!recipient) {
     console.error('Recipient not found');
     return;
   }
   localStorage.setItem(`recipientId_${email}`, recipient.id);
+  if (legacySuffix) {
+    localStorage.removeItem(`recipientId_${legacySuffix}`);
+  }
   if (recipient.pincode) {
     localStorage.setItem(`pincode_${email}`, recipient.pincode);
+    if (legacySuffix) {
+      localStorage.removeItem(`pincode_${legacySuffix}`);
+    }
   }
 
   let subscriptions = await fetchAPI(`/api/subscriptions?recipient_id=${recipient.id}`).catch(() => []);

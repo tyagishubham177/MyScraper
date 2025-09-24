@@ -60,6 +60,11 @@ async function saveSubscriptionsToKV(subscriptionsArray) {
   }
 }
 
+function normalizeEmail(email) {
+  if (typeof email !== 'string') return '';
+  return email.trim().toLowerCase();
+}
+
 // Main request handler
 export default async function handler(req, res) {
   const { method } = req;
@@ -79,19 +84,21 @@ export default async function handler(req, res) {
       if (!requireAdmin(req, res)) return;
       try {
         const { email, pincode } = req.body || {};
+        const trimmedEmail = typeof email === 'string' ? email.trim() : '';
+        const normalizedEmail = normalizeEmail(trimmedEmail);
 
-        if (!email || !/\S+@\S+\.\S+/.test(email)) {
+        if (!trimmedEmail || !/\S+@\S+\.\S+/.test(trimmedEmail)) {
           return res.status(400).json({ message: 'Invalid email address' });
         }
 
         const currentRecipients = await getRecipientsFromKV();
-        if (currentRecipients.find(r => r.email === email)) {
+        if (currentRecipients.some(r => normalizeEmail(r.email) === normalizedEmail)) {
           return res.status(409).json({ message: 'Email already exists' });
         }
 
         const newRecipient = {
           id: String(Date.now()), // Simple ID generation
-          email,
+          email: trimmedEmail,
           pincode: typeof pincode === 'string' && pincode.trim() ? pincode.trim() : '201305'
         };
 

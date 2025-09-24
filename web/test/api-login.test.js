@@ -12,19 +12,39 @@ function makeRes() {
   };
 }
 
-async function load(compareResult = true, attemptData) {
+async function load(compareResult = true, attemptData, options = {}) {
   const bcrypt = await import('bcryptjs');
   bcrypt.default.compare = async () => compareResult;
   const jwt = await import('jsonwebtoken');
   jwt.default.sign = () => 'tok';
   const mod = await import('../api/login.js?' + Date.now());
   const data = attemptData || { count: 0, delay: 0, lockUntil: 0 };
+  const attemptKey = options.attemptKey || 'admin_login_attempts';
+  const store = new Map();
+  store.set(attemptKey, data);
+  if (options.recipients) {
+    store.set('recipients', options.recipients);
+  }
+
   mod.__setKv({
-    get: async () => data,
-    set: async (_k, v) => Object.assign(data, v),
-    del: async () => { data.count = 0; data.delay = 0; data.lockUntil = 0; }
+    get: async key => store.get(key),
+    set: async (key, value) => {
+      store.set(key, value);
+      if (key === attemptKey) {
+        Object.assign(data, value);
+      }
+    },
+    del: async key => {
+      store.delete(key);
+      if (key === attemptKey) {
+        data.count = 0;
+        data.delay = 0;
+        data.lockUntil = 0;
+        store.set(key, data);
+      }
+    }
   });
-  return { handler: mod.default, data };
+  return { handler: mod.default, data, store };
 }
 
 test('rejects non POST', async () => {
@@ -58,6 +78,17 @@ test('successful login', async () => {
   process.env.JWT_SECRET = 's';
   const res = makeRes();
   await handler({ method: 'POST', body:{ email:'a@a', password:'p' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { token: 'tok' });
+});
+
+test('admin login ignores email casing', async () => {
+  const { handler } = await load(true);
+  process.env.ADMIN_EMAIL = 'Admin@Example.com';
+  process.env.ADMIN_PASSWORD_HASH = 'h';
+  process.env.JWT_SECRET = 's';
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'admin@example.COM', password:'p' } }, res);
   assert.equal(res.code, 200);
   assert.deepEqual(res.data, { token: 'tok' });
 });
@@ -96,4 +127,16 @@ test('locked account returns wait time', async () => {
   await handler({ method: 'POST', body:{ email:'a@a', password:'bad' } }, res);
   assert.equal(res.code, 429);
   assert.ok(res.data.wait > 0);
+});
+
+test('user login matches email case-insensitively', async () => {
+  const attemptKey = 'user_login_attempt_user@example.com';
+  const { handler } = await load(true, undefined, {
+    attemptKey,
+    recipients: [{ email: 'User@Example.com' }]
+  });
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'USER@example.COM' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { message: 'ok' });
 });

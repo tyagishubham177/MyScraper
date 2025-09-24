@@ -13,6 +13,11 @@ export function createRipple(event) {
   button.appendChild(circle);
 }
 
+export function normalizeEmail(email) {
+  if (typeof email !== 'string') return '';
+  return email.trim().toLowerCase();
+}
+
 export function sanitizeUrl(url) {
   try {
     const parsed = new URL(url, window.location.origin);

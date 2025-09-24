@@ -21,6 +21,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Email required' });
   }
 
+  const normalizedEmail = String(email).trim().toLowerCase();
+  if (!normalizedEmail) {
+    return res.status(400).json({ message: 'Email required' });
+  }
+
   // Admin login if password provided
   if (typeof password !== 'undefined') {
     if (!password) {
@@ -57,7 +62,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ message: 'Server configuration missing' });
     }
 
-    if (email !== adminEmail) {
+    const adminEmailLower = adminEmail.trim().toLowerCase();
+
+    if (normalizedEmail !== adminEmailLower) {
       const lockRes = await recordAttempt();
       if (lockRes) return lockRes;
       return res.status(401).json({ message: 'Invalid credentials', attempt: attemptData.count });
@@ -77,7 +84,7 @@ export default async function handler(req, res) {
   }
 
   // User login path
-  const ATTEMPT_KEY = `user_login_attempt_${email}`;
+  const ATTEMPT_KEY = `user_login_attempt_${normalizedEmail}`;
   const now = Date.now();
   let attemptData = await kv.get(ATTEMPT_KEY) || { count: 0, delay: 0, lockUntil: 0 };
 
@@ -88,7 +95,9 @@ export default async function handler(req, res) {
 
   try {
     const recipients = await kv.get('recipients');
-    const exists = Array.isArray(recipients) && recipients.some(r => r.email === email);
+    const exists =
+      Array.isArray(recipients) &&
+      recipients.some(r => typeof r.email === 'string' && r.email.trim().toLowerCase() === normalizedEmail);
     if (exists) {
       await kv.del(ATTEMPT_KEY);
       return res.status(200).json({ message: 'ok' });

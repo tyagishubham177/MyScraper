@@ -91,3 +91,31 @@ test('POST /api/subscriptions reports kv failure without persisting data', async
   assert.equal(setCalled, false);
   mod.__resetKv();
 });
+
+test('POST /api/recipients rejects case-insensitive duplicates without writing data', async () => {
+  const modulePath = '../api/recipients.js?' + Date.now();
+  const mod = await import(modulePath);
+  let setCalled = false;
+  mod.__setKv({
+    async get(key) {
+      if (key === 'recipients') {
+        return [{ id: '1', email: 'user@example.com' }];
+      }
+      throw new Error('unexpected key ' + key);
+    },
+    async set() { setCalled = true; }
+  });
+  mod.__setRequireAdmin(() => true);
+
+  const req = {
+    method: 'POST',
+    body: { email: 'User@Example.com', pincode: '201305' }
+  };
+  const res = makeRes();
+  await mod.default(req, res);
+  assert.equal(res.code, 409);
+  assert.equal(res.data?.message, 'Email already exists');
+  assert.equal(setCalled, false);
+  mod.__resetKv();
+  mod.__resetRequireAdmin();
+});
