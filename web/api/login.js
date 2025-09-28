@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { kv as defaultKv } from '@vercel/kv';
+import { listRecipients as listRecipientsFromKV } from './_kv-helpers.js';
 
 let kv = defaultKv;
 export function __setKv(obj) {
@@ -94,7 +95,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const recipients = await kv.get('recipients');
+    const recipients = await listRecipientsFromKV(kv);
     const exists =
       Array.isArray(recipients) &&
       recipients.some(r => typeof r.email === 'string' && r.email.trim().toLowerCase() === normalizedEmail);
