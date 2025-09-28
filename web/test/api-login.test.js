@@ -26,7 +26,7 @@ async function load(compareResult = true, attemptData, options = {}) {
     store.set('recipients', options.recipients);
   }
 
-  mod.__setKv({
+  const kvMock = {
     get: async key => store.get(key),
     set: async (key, value) => {
       store.set(key, value);
@@ -43,7 +43,13 @@ async function load(compareResult = true, attemptData, options = {}) {
         store.set(key, data);
       }
     }
-  });
+  };
+
+  if (options.kvOverrides) {
+    Object.assign(kvMock, options.kvOverrides);
+  }
+
+  mod.__setKv(kvMock);
   return { handler: mod.default, data, store };
 }
 
@@ -137,6 +143,26 @@ test('user login matches email case-insensitively', async () => {
   });
   const res = makeRes();
   await handler({ method: 'POST', body:{ email:'USER@example.COM' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { message: 'ok' });
+});
+
+test('user login succeeds when recipients stored in hash', async () => {
+  const { handler } = await load(true, undefined, {
+    attemptKey: 'user_login_attempt_hash@example.com',
+    kvOverrides: {
+      async hgetall(key) {
+        if (key === 'recipients:data') {
+          return {
+            r1: JSON.stringify({ email: 'hash@example.com', pincode: '110001' })
+          };
+        }
+        return null;
+      }
+    }
+  });
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'hash@example.com' } }, res);
   assert.equal(res.code, 200);
   assert.deepEqual(res.data, { message: 'ok' });
 });
