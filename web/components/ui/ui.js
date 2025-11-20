@@ -23,11 +23,11 @@ export function initBackground() {
   }
 
   const gradients = [
-    'linear-gradient(135deg, #89f7fe, #66a6ff)',
-    'linear-gradient(135deg, #66a6ff, #ffb3ba)',
-    'linear-gradient(135deg, #ffb3ba, #ffdf7e)',
-    'linear-gradient(135deg, #ffdf7e, #b4f8c8)',
-    'linear-gradient(135deg, #b4f8c8, #89f7fe)'
+    'linear-gradient(145deg, #0b1024, #1d293f)',
+    'linear-gradient(145deg, #0b1024, #1e3a5f)',
+    'linear-gradient(145deg, #0b1024, #2b1a3a)',
+    'linear-gradient(145deg, #0b1024, #0f3b46)',
+    'radial-gradient(circle at 30% 20%, rgba(245, 158, 11, 0.25), transparent 45%), linear-gradient(160deg, #050816, #111827)'
   ];
 
   const selected = gradients[Math.floor(Math.random() * gradients.length)];
