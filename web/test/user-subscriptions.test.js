@@ -306,7 +306,7 @@ test('pause and resume toggle subscription state', async () => {
   const pauseCall = calls.find(c => c.opts && c.opts.method === 'POST' && JSON.parse(c.opts.body).paused === true);
   assert(pauseCall, 'pause POST made');
   li = subsList.children[0];
-  assert(li.className.includes('paused'));
+  assert(li.className.includes('opacity-50'));
   li.querySelector = sel => sel === '.sub-start' ? startInput : sel === '.sub-end' ? endInput : null;
 
   // Resume
@@ -323,7 +323,7 @@ test('pause and resume toggle subscription state', async () => {
 
   const resumeCall = calls.find(c => c.opts && c.opts.method === 'POST' && JSON.parse(c.opts.body).paused === false && c !== pauseCall);
   assert(resumeCall, 'resume POST made');
-  assert(!subsList.children[0].className.includes('paused'));
+  assert(!subsList.children[0].className.includes('opacity-50'));
 });
 
 test('changing time inputs updates subscription', async () => {
