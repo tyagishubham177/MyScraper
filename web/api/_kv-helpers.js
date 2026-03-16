@@ -12,6 +12,75 @@ const LEGACY_SUBSCRIPTIONS_KEY = 'subscriptions';
 const STOCK_COUNTERS_HASH_KEY = 'stock_counters:data';
 const LEGACY_STOCK_COUNTERS_KEY = 'stock_counters';
 
+function normalizeEmail(email) {
+  if (typeof email !== 'string') return '';
+  return email.trim().toLowerCase();
+}
+
+function isKvClientUsable(kvClient = kv, methods = []) {
+  if (!kvClient) return false;
+  if (kvClient === kv && !(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)) {
+    return false;
+  }
+  return methods.every(method => typeof kvClient[method] === 'function');
+}
+
+function parseEmailList(rawValue) {
+  if (typeof rawValue !== 'string' || !rawValue.trim()) return [];
+  return rawValue
+    .split(',')
+    .map(value => value.trim())
+    .filter(value => /\S+@\S+\.\S+/.test(value));
+}
+
+function getFallbackRecipients() {
+  const fallbackPincode = process.env.PINCODE || '201305';
+  const byEmail = new Map();
+  const fallbackSources = [
+    process.env.EMAIL_RECIPIENTS,
+    process.env.ADMIN_EMAIL,
+    process.env.ADMIN_MAIL,
+    process.env.EMAIL_SENDER,
+    process.env.EMAIL_HOST_USER
+  ];
+
+  for (const source of fallbackSources) {
+    for (const email of parseEmailList(source)) {
+      const normalized = normalizeEmail(email);
+      if (!normalized || byEmail.has(normalized)) continue;
+      byEmail.set(normalized, {
+        id: `env:${normalized}`,
+        email: normalized,
+        pincode: fallbackPincode
+      });
+    }
+  }
+
+  return Array.from(byEmail.values());
+}
+
+function mergeRecipientsWithFallback(recipients = []) {
+  const merged = new Map();
+
+  for (const recipient of recipients) {
+    const normalized = normalizeEmail(recipient?.email);
+    if (!normalized || merged.has(normalized)) continue;
+    merged.set(normalized, {
+      id: recipient.id || `env:${normalized}`,
+      email: typeof recipient.email === 'string' ? recipient.email.trim() : normalized,
+      pincode: recipient.pincode || '201305'
+    });
+  }
+
+  for (const recipient of getFallbackRecipients()) {
+    const normalized = normalizeEmail(recipient.email);
+    if (!normalized || merged.has(normalized)) continue;
+    merged.set(normalized, recipient);
+  }
+
+  return Array.from(merged.values()).sort((a, b) => a.email.localeCompare(b.email));
+}
+
 function parseJSON(value, fallback = {}) {
   if (value == null) return { ...fallback };
   if (typeof value === 'object') return { ...fallback, ...value };
@@ -94,7 +163,7 @@ function parseCounters(hash) {
 }
 
 async function migrateArrayToHash(kvClient, legacyKey, hashKey, serialiser) {
-  if (typeof kvClient.hset !== 'function') return;
+  if (!isKvClientUsable(kvClient, ['get', 'hset'])) return;
   try {
     const legacyData = await kvClient.get(legacyKey);
     if (Array.isArray(legacyData) && legacyData.length > 0) {
@@ -117,13 +186,13 @@ async function migrateArrayToHash(kvClient, legacyKey, hashKey, serialiser) {
 }
 
 export async function listRecipients(kvClient = kv) {
-  if (typeof kvClient.hgetall === 'function') {
+  if (isKvClientUsable(kvClient, ['hgetall'])) {
     try {
       const data = await kvClient.hgetall(RECIPIENTS_HASH_KEY);
       if (data && Object.keys(data).length > 0) {
-        return Object.entries(data)
+        return mergeRecipientsWithFallback(Object.entries(data)
           .map(([id, raw]) => buildRecipientRecord(id, raw))
-          .sort((a, b) => a.email.localeCompare(b.email));
+        );
       }
     } catch (error) {
       console.error('Error fetching recipients hash from KV:', error);
@@ -131,26 +200,29 @@ export async function listRecipients(kvClient = kv) {
     }
   }
   await migrateArrayToHash(kvClient, LEGACY_RECIPIENTS_KEY, RECIPIENTS_HASH_KEY, serialiseRecipient);
-  if (typeof kvClient.hgetall === 'function') {
+  if (isKvClientUsable(kvClient, ['hgetall'])) {
     const data = await kvClient.hgetall(RECIPIENTS_HASH_KEY);
     if (data && Object.keys(data).length > 0) {
-      return Object.entries(data)
+      return mergeRecipientsWithFallback(Object.entries(data)
         .map(([id, raw]) => buildRecipientRecord(id, raw))
-        .sort((a, b) => a.email.localeCompare(b.email));
+      );
     }
   }
-  try {
-    const legacy = await kvClient.get(LEGACY_RECIPIENTS_KEY);
-    return Array.isArray(legacy) ? legacy : [];
-  } catch (error) {
-    console.error('Error fetching legacy recipients from KV:', error);
-    throw error;
+  if (isKvClientUsable(kvClient, ['get'])) {
+    try {
+      const legacy = await kvClient.get(LEGACY_RECIPIENTS_KEY);
+      return mergeRecipientsWithFallback(Array.isArray(legacy) ? legacy : []);
+    } catch (error) {
+      console.error('Error fetching legacy recipients from KV:', error);
+      throw error;
+    }
   }
+  return mergeRecipientsWithFallback([]);
 }
 
 export async function getRecipient(kvClient = kv, id) {
   if (!id) return null;
-  if (typeof kvClient.hget === 'function') {
+  if (isKvClientUsable(kvClient, ['hget'])) {
     try {
       const raw = await kvClient.hget(RECIPIENTS_HASH_KEY, id);
       if (raw) return buildRecipientRecord(id, raw);
@@ -166,9 +238,12 @@ export async function getRecipient(kvClient = kv, id) {
 export async function saveRecipient(kvClient = kv, recipient) {
   if (!recipient || !recipient.id) throw new Error('Recipient with id is required');
   const payload = serialiseRecipient(recipient);
-  if (typeof kvClient.hset === 'function') {
+  if (isKvClientUsable(kvClient, ['hset'])) {
     await kvClient.hset(RECIPIENTS_HASH_KEY, { [recipient.id]: payload });
     return;
+  }
+  if (!isKvClientUsable(kvClient, ['get', 'set'])) {
+    throw new Error('KV storage unavailable');
   }
   const existing = await listRecipients(kvClient);
   const updated = existing.filter(item => item.id !== recipient.id);
@@ -178,9 +253,12 @@ export async function saveRecipient(kvClient = kv, recipient) {
 
 export async function deleteRecipient(kvClient = kv, id) {
   if (!id) return;
-  if (typeof kvClient.hdel === 'function') {
+  if (isKvClientUsable(kvClient, ['hdel'])) {
     await kvClient.hdel(RECIPIENTS_HASH_KEY, id);
     return;
+  }
+  if (!isKvClientUsable(kvClient, ['get', 'set'])) {
+    throw new Error('KV storage unavailable');
   }
   const existing = await listRecipients(kvClient);
   const filtered = existing.filter(item => item.id !== id);
@@ -188,7 +266,7 @@ export async function deleteRecipient(kvClient = kv, id) {
 }
 
 export async function listProducts(kvClient = kv) {
-  if (typeof kvClient.hgetall === 'function') {
+  if (isKvClientUsable(kvClient, ['hgetall'])) {
     try {
       const data = await kvClient.hgetall(PRODUCTS_HASH_KEY);
       if (data && Object.keys(data).length > 0) {
@@ -202,7 +280,7 @@ export async function listProducts(kvClient = kv) {
     }
   }
   await migrateArrayToHash(kvClient, LEGACY_PRODUCTS_KEY, PRODUCTS_HASH_KEY, serialiseProduct);
-  if (typeof kvClient.hgetall === 'function') {
+  if (isKvClientUsable(kvClient, ['hgetall'])) {
     const data = await kvClient.hgetall(PRODUCTS_HASH_KEY);
     if (data && Object.keys(data).length > 0) {
       return Object.entries(data)
@@ -210,18 +288,21 @@ export async function listProducts(kvClient = kv) {
         .sort((a, b) => a.name.localeCompare(b.name));
     }
   }
-  try {
-    const legacy = await kvClient.get(LEGACY_PRODUCTS_KEY);
-    return Array.isArray(legacy) ? legacy : [];
-  } catch (error) {
-    console.error('Error fetching legacy products from KV:', error);
-    throw error;
+  if (isKvClientUsable(kvClient, ['get'])) {
+    try {
+      const legacy = await kvClient.get(LEGACY_PRODUCTS_KEY);
+      return Array.isArray(legacy) ? legacy : [];
+    } catch (error) {
+      console.error('Error fetching legacy products from KV:', error);
+      throw error;
+    }
   }
+  return [];
 }
 
 export async function getProduct(kvClient = kv, id) {
   if (!id) return null;
-  if (typeof kvClient.hget === 'function') {
+  if (isKvClientUsable(kvClient, ['hget'])) {
     try {
       const raw = await kvClient.hget(PRODUCTS_HASH_KEY, id);
       if (raw) return buildProductRecord(id, raw);
@@ -237,9 +318,12 @@ export async function getProduct(kvClient = kv, id) {
 export async function saveProduct(kvClient = kv, product) {
   if (!product || !product.id) throw new Error('Product with id is required');
   const payload = serialiseProduct(product);
-  if (typeof kvClient.hset === 'function') {
+  if (isKvClientUsable(kvClient, ['hset'])) {
     await kvClient.hset(PRODUCTS_HASH_KEY, { [product.id]: payload });
     return;
+  }
+  if (!isKvClientUsable(kvClient, ['get', 'set'])) {
+    throw new Error('KV storage unavailable');
   }
   const existing = await listProducts(kvClient);
   const updated = existing.filter(item => item.id !== product.id);
@@ -249,9 +333,12 @@ export async function saveProduct(kvClient = kv, product) {
 
 export async function deleteProduct(kvClient = kv, id) {
   if (!id) return;
-  if (typeof kvClient.hdel === 'function') {
+  if (isKvClientUsable(kvClient, ['hdel'])) {
     await kvClient.hdel(PRODUCTS_HASH_KEY, id);
     return;
+  }
+  if (!isKvClientUsable(kvClient, ['get', 'set'])) {
+    throw new Error('KV storage unavailable');
   }
   const existing = await listProducts(kvClient);
   const filtered = existing.filter(item => item.id !== id);
@@ -259,7 +346,7 @@ export async function deleteProduct(kvClient = kv, id) {
 }
 
 export async function listSubscriptions(kvClient = kv) {
-  if (typeof kvClient.hgetall === 'function') {
+  if (isKvClientUsable(kvClient, ['hgetall'])) {
     try {
       const data = await kvClient.hgetall(SUBSCRIPTIONS_HASH_KEY);
       if (data && Object.keys(data).length > 0) {
@@ -271,24 +358,27 @@ export async function listSubscriptions(kvClient = kv) {
     }
   }
   await migrateArrayToHash(kvClient, LEGACY_SUBSCRIPTIONS_KEY, SUBSCRIPTIONS_HASH_KEY, serialiseSubscription);
-  if (typeof kvClient.hgetall === 'function') {
+  if (isKvClientUsable(kvClient, ['hgetall'])) {
     const data = await kvClient.hgetall(SUBSCRIPTIONS_HASH_KEY);
     if (data && Object.keys(data).length > 0) {
       return Object.entries(data).map(([id, raw]) => buildSubscriptionRecord(id, raw));
     }
   }
-  try {
-    const legacy = await kvClient.get(LEGACY_SUBSCRIPTIONS_KEY);
-    return Array.isArray(legacy) ? legacy : [];
-  } catch (error) {
-    console.error('Error fetching legacy subscriptions from KV:', error);
-    throw error;
+  if (isKvClientUsable(kvClient, ['get'])) {
+    try {
+      const legacy = await kvClient.get(LEGACY_SUBSCRIPTIONS_KEY);
+      return Array.isArray(legacy) ? legacy : [];
+    } catch (error) {
+      console.error('Error fetching legacy subscriptions from KV:', error);
+      throw error;
+    }
   }
+  return [];
 }
 
 export async function getSubscription(kvClient = kv, id) {
   if (!id) return null;
-  if (typeof kvClient.hget === 'function') {
+  if (isKvClientUsable(kvClient, ['hget'])) {
     try {
       const raw = await kvClient.hget(SUBSCRIPTIONS_HASH_KEY, id);
       if (raw) return buildSubscriptionRecord(id, raw);
@@ -304,9 +394,12 @@ export async function getSubscription(kvClient = kv, id) {
 export async function saveSubscription(kvClient = kv, subscription) {
   if (!subscription || !subscription.id) throw new Error('Subscription with id is required');
   const payload = serialiseSubscription(subscription);
-  if (typeof kvClient.hset === 'function') {
+  if (isKvClientUsable(kvClient, ['hset'])) {
     await kvClient.hset(SUBSCRIPTIONS_HASH_KEY, { [subscription.id]: payload });
     return;
+  }
+  if (!isKvClientUsable(kvClient, ['get', 'set'])) {
+    throw new Error('KV storage unavailable');
   }
   const existing = await listSubscriptions(kvClient);
   const updated = existing.filter(item => item.id !== subscription.id);
@@ -316,9 +409,12 @@ export async function saveSubscription(kvClient = kv, subscription) {
 
 export async function deleteSubscription(kvClient = kv, id) {
   if (!id) return;
-  if (typeof kvClient.hdel === 'function') {
+  if (isKvClientUsable(kvClient, ['hdel'])) {
     await kvClient.hdel(SUBSCRIPTIONS_HASH_KEY, id);
     return;
+  }
+  if (!isKvClientUsable(kvClient, ['get', 'set'])) {
+    throw new Error('KV storage unavailable');
   }
   const existing = await listSubscriptions(kvClient);
   const filtered = existing.filter(item => item.id !== id);
@@ -327,9 +423,12 @@ export async function deleteSubscription(kvClient = kv, id) {
 
 export async function deleteSubscriptionsByIds(kvClient = kv, ids = []) {
   if (!ids || ids.length === 0) return;
-  if (typeof kvClient.hdel === 'function') {
+  if (isKvClientUsable(kvClient, ['hdel'])) {
     await kvClient.hdel(SUBSCRIPTIONS_HASH_KEY, ...ids);
     return;
+  }
+  if (!isKvClientUsable(kvClient, ['get', 'set'])) {
+    throw new Error('KV storage unavailable');
   }
   const existing = await listSubscriptions(kvClient);
   const idSet = new Set(ids);
@@ -338,7 +437,7 @@ export async function deleteSubscriptionsByIds(kvClient = kv, ids = []) {
 }
 
 export async function getStockCounters(kvClient = kv) {
-  if (typeof kvClient.hgetall === 'function') {
+  if (isKvClientUsable(kvClient, ['hgetall'])) {
     try {
       const data = await kvClient.hgetall(STOCK_COUNTERS_HASH_KEY);
       if (data && Object.keys(data).length > 0) {
@@ -349,20 +448,22 @@ export async function getStockCounters(kvClient = kv) {
       throw error;
     }
   }
-  try {
-    const legacy = await kvClient.get(LEGACY_STOCK_COUNTERS_KEY);
-    if (legacy && typeof legacy === 'object') {
-      if (typeof kvClient.hset === 'function') {
-        await kvClient.hset(STOCK_COUNTERS_HASH_KEY, serialiseCounters(legacy));
-        if (typeof kvClient.del === 'function') {
-          await kvClient.del(LEGACY_STOCK_COUNTERS_KEY);
+  if (isKvClientUsable(kvClient, ['get'])) {
+    try {
+      const legacy = await kvClient.get(LEGACY_STOCK_COUNTERS_KEY);
+      if (legacy && typeof legacy === 'object') {
+        if (isKvClientUsable(kvClient, ['hset'])) {
+          await kvClient.hset(STOCK_COUNTERS_HASH_KEY, serialiseCounters(legacy));
+          if (isKvClientUsable(kvClient, ['del'])) {
+            await kvClient.del(LEGACY_STOCK_COUNTERS_KEY);
+          }
         }
+        return { ...legacy };
       }
-      return { ...legacy };
+    } catch (error) {
+      console.error('Error fetching legacy stock counters from KV:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('Error fetching legacy stock counters from KV:', error);
-    throw error;
   }
   return {};
 }
@@ -371,9 +472,9 @@ export async function saveStockCounters(kvClient = kv, counters) {
   if (!counters || typeof counters !== 'object') {
     throw new Error('Counters object is required');
   }
-  if (typeof kvClient.hset === 'function') {
+  if (isKvClientUsable(kvClient, ['hset'])) {
     const existing = await kvClient.hgetall?.(STOCK_COUNTERS_HASH_KEY);
-    if (existing && typeof kvClient.hdel === 'function') {
+    if (existing && isKvClientUsable(kvClient, ['hdel'])) {
       const toRemove = Object.keys(existing).filter(key => !(key in counters));
       if (toRemove.length > 0) {
         await kvClient.hdel(STOCK_COUNTERS_HASH_KEY, ...toRemove);
@@ -381,6 +482,9 @@ export async function saveStockCounters(kvClient = kv, counters) {
     }
     await kvClient.hset(STOCK_COUNTERS_HASH_KEY, serialiseCounters(counters));
     return;
+  }
+  if (!isKvClientUsable(kvClient, ['set'])) {
+    throw new Error('KV storage unavailable');
   }
   await kvClient.set(LEGACY_STOCK_COUNTERS_KEY, counters);
 }

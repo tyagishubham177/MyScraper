@@ -23,6 +23,36 @@ function isKvUsable(client = kv) {
   return typeof client.get === 'function' && typeof client.set === 'function';
 }
 
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function getConfiguredAdminEmail() {
+  return normalizeEmail(process.env.ADMIN_EMAIL || process.env.ADMIN_MAIL);
+}
+
+async function matchesConfiguredAdminPassword(password) {
+  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+  const plainPassword = process.env.ADMIN_PASSWORD;
+
+  if (typeof plainPassword === 'string' && plainPassword && password === plainPassword) {
+    return true;
+  }
+
+  if (typeof passwordHash === 'string' && passwordHash) {
+    if (password === passwordHash) {
+      return password === passwordHash;
+    }
+    try {
+      return await bcrypt.compare(password, passwordHash);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -34,7 +64,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Email required' });
   }
 
-  const normalizedEmail = String(email).trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) {
     return res.status(400).json({ message: 'Email required' });
   }
@@ -73,23 +103,21 @@ export default async function handler(req, res) {
       return res.status(429).json({ message: `Too many attempts. Try again in ${wait}s`, wait, attempt: attemptData.count });
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+    const adminEmail = getConfiguredAdminEmail();
     const jwtSecret = process.env.JWT_SECRET;
+    const hasPasswordConfig = !!(process.env.ADMIN_PASSWORD_HASH || process.env.ADMIN_PASSWORD);
 
-    if (!adminEmail || !passwordHash || !jwtSecret) {
+    if (!adminEmail || !hasPasswordConfig || !jwtSecret) {
       return res.status(500).json({ message: 'Server configuration missing' });
     }
 
-    const adminEmailLower = adminEmail.trim().toLowerCase();
-
-    if (normalizedEmail !== adminEmailLower) {
+    if (normalizedEmail !== adminEmail) {
       const lockRes = await recordAttempt();
       if (lockRes) return lockRes;
       return res.status(401).json({ message: 'Invalid credentials', attempt: attemptData.count });
     }
 
-    const match = await bcrypt.compare(password, passwordHash);
+    const match = await matchesConfiguredAdminPassword(password);
     if (!match) {
       const lockRes = await recordAttempt();
       if (lockRes) return lockRes;
@@ -105,13 +133,12 @@ export default async function handler(req, res) {
   }
 
   // User login path
-  if (!isKvUsable()) {
-    return res.status(503).json({ message: 'User login unavailable: recipient store is not configured' });
-  }
-
   const ATTEMPT_KEY = `user_login_attempt_${normalizedEmail}`;
   const now = Date.now();
-  let attemptData = await kv.get(ATTEMPT_KEY) || { count: 0, delay: 0, lockUntil: 0 };
+  const canUseKv = isKvUsable();
+  let attemptData = canUseKv
+    ? (await kv.get(ATTEMPT_KEY)) || { count: 0, delay: 0, lockUntil: 0 }
+    : { count: 0, delay: 0, lockUntil: 0 };
 
   if (attemptData.lockUntil && now < attemptData.lockUntil) {
     const wait = Math.ceil((attemptData.lockUntil - now) / 1000);
@@ -124,7 +151,9 @@ export default async function handler(req, res) {
       Array.isArray(recipients) &&
       recipients.some(r => typeof r.email === 'string' && r.email.trim().toLowerCase() === normalizedEmail);
     if (exists) {
-      await kv.del(ATTEMPT_KEY);
+      if (canUseKv && typeof kv.del === 'function') {
+        await kv.del(ATTEMPT_KEY);
+      }
       return res.status(200).json({ message: 'ok' });
     }
 
@@ -133,7 +162,9 @@ export default async function handler(req, res) {
       attemptData.delay = attemptData.delay ? attemptData.delay * 2 : 60;
       attemptData.lockUntil = now + attemptData.delay * 1000;
     }
-    await kv.set(ATTEMPT_KEY, attemptData);
+    if (canUseKv && typeof kv.set === 'function') {
+      await kv.set(ATTEMPT_KEY, attemptData);
+    }
 
     if (attemptData.count >= 3) {
       return res.status(429).json({ message: `Too many attempts. Try again in ${attemptData.delay}s`, wait: attemptData.delay, attempt: attemptData.count });

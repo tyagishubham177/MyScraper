@@ -119,3 +119,28 @@ test('POST /api/recipients rejects case-insensitive duplicates without writing d
   mod.__resetKv();
   mod.__resetRequireAdmin();
 });
+
+test('GET /api/recipients returns env-backed fallback recipients when kv is unavailable', async () => {
+  const modulePath = '../api/recipients.js?' + Date.now();
+  const mod = await import(modulePath);
+  delete process.env.KV_REST_API_URL;
+  delete process.env.KV_REST_API_TOKEN;
+  process.env.ADMIN_EMAIL = 'admin@example.com';
+  process.env.EMAIL_RECIPIENTS = 'guest@example.com';
+  mod.__setKv({
+    get: undefined,
+    hgetall: undefined
+  });
+
+  const req = {
+    method: 'GET'
+  };
+  const res = makeRes();
+  await mod.default(req, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(
+    res.data.map(item => item.email),
+    ['admin@example.com', 'guest@example.com']
+  );
+  mod.__resetKv();
+});
