@@ -99,6 +99,22 @@ test('admin login ignores email casing', async () => {
   assert.deepEqual(res.data, { token: 'tok' });
 });
 
+test('admin login still works when kv is unavailable', async () => {
+  const { handler } = await load(true, undefined, {
+    kvOverrides: { get: undefined, set: undefined, del: undefined }
+  });
+  process.env.ADMIN_EMAIL = 'admin@example.com';
+  process.env.ADMIN_PASSWORD_HASH = 'h';
+  process.env.JWT_SECRET = 's';
+  delete process.env.KV_REST_API_URL;
+  delete process.env.KV_REST_API_TOKEN;
+
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'admin@example.com', password:'p' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { token: 'tok' });
+});
+
 test('missing server config returns 500', async () => {
   const { handler } = await load(true);
   process.env.ADMIN_EMAIL = '';
@@ -165,4 +181,19 @@ test('user login succeeds when recipients stored in hash', async () => {
   await handler({ method: 'POST', body:{ email:'hash@example.com' } }, res);
   assert.equal(res.code, 200);
   assert.deepEqual(res.data, { message: 'ok' });
+});
+
+test('user login returns 503 when kv is unavailable', async () => {
+  const { handler } = await load(true, undefined, {
+    kvOverrides: { get: undefined, set: undefined, del: undefined }
+  });
+  delete process.env.KV_REST_API_URL;
+  delete process.env.KV_REST_API_TOKEN;
+
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'user@example.com' } }, res);
+  assert.equal(res.code, 503);
+  assert.deepEqual(res.data, {
+    message: 'User login unavailable: recipient store is not configured'
+  });
 });

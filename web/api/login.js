@@ -11,6 +11,18 @@ export function __resetKv() {
   kv = defaultKv;
 }
 
+function isKvUsable(client = kv) {
+  if (!client) {
+    return false;
+  }
+
+  if (client === defaultKv) {
+    return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  }
+
+  return typeof client.get === 'function' && typeof client.set === 'function';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -35,13 +47,19 @@ export default async function handler(req, res) {
 
     const ATTEMPT_KEY = 'admin_login_attempts';
     const now = Date.now();
-    let attemptData = await kv.get(ATTEMPT_KEY) || { count: 0, delay: 0, lockUntil: 0 };
+    const canUseKv = isKvUsable();
+    let attemptData = canUseKv
+      ? (await kv.get(ATTEMPT_KEY)) || { count: 0, delay: 0, lockUntil: 0 }
+      : { count: 0, delay: 0, lockUntil: 0 };
 
     async function recordAttempt() {
       attemptData.count = (attemptData.count || 0) + 1;
       if (attemptData.count >= 3) {
         attemptData.delay = attemptData.delay ? attemptData.delay * 2 : 60;
         attemptData.lockUntil = now + attemptData.delay * 1000;
+      }
+      if (!canUseKv) {
+        return null;
       }
       await kv.set(ATTEMPT_KEY, attemptData);
       if (attemptData.count >= 3) {
@@ -78,13 +96,19 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: 'Invalid credentials', attempt: attemptData.count });
     }
 
-    await kv.del(ATTEMPT_KEY);
+    if (canUseKv && typeof kv.del === 'function') {
+      await kv.del(ATTEMPT_KEY);
+    }
     const token = jwt.sign({ email: adminEmail, role: 'admin' }, jwtSecret, { expiresIn: '7d' });
     res.status(200).json({ token });
     return;
   }
 
   // User login path
+  if (!isKvUsable()) {
+    return res.status(503).json({ message: 'User login unavailable: recipient store is not configured' });
+  }
+
   const ATTEMPT_KEY = `user_login_attempt_${normalizedEmail}`;
   const now = Date.now();
   let attemptData = await kv.get(ATTEMPT_KEY) || { count: 0, delay: 0, lockUntil: 0 };
