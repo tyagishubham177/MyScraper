@@ -195,7 +195,7 @@ test('user mail button opens gmail on desktop', async () => {
   let opened = '';
   global.window.open = (url) => { opened = url; };
   global.window.navigator = { userAgent: 'desktop' };
-  global.navigator = global.window.navigator;
+  Object.defineProperty(global, 'navigator', { value: global.window.navigator, configurable: true });
   env.elements['user-email'].value = 'me@example.com';
   env.elements['user-mail-btn'].events.click({ preventDefault(){} });
   const mailUrl = new URL(opened);
