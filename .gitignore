@@ -32,3 +32,5 @@ coverage.xml
 # Scraper artifacts
 artifacts/
 web/coverage/
+web/node_modules/
+web/test-output*.txt

@@ -99,10 +99,55 @@ test('admin login ignores email casing', async () => {
   assert.deepEqual(res.data, { token: 'tok' });
 });
 
+test('admin login still works when kv is unavailable', async () => {
+  const { handler } = await load(true, undefined, {
+    kvOverrides: { get: undefined, set: undefined, del: undefined }
+  });
+  process.env.ADMIN_EMAIL = 'admin@example.com';
+  process.env.ADMIN_PASSWORD_HASH = 'h';
+  process.env.JWT_SECRET = 's';
+  delete process.env.KV_REST_API_URL;
+  delete process.env.KV_REST_API_TOKEN;
+
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'admin@example.com', password:'p' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { token: 'tok' });
+});
+
+test('admin login supports legacy admin env names and plain password', async () => {
+  const { handler } = await load(true);
+  delete process.env.ADMIN_EMAIL;
+  delete process.env.ADMIN_PASSWORD_HASH;
+  process.env.ADMIN_MAIL = 'legacy@example.com';
+  process.env.ADMIN_PASSWORD = 'plain-secret';
+  process.env.JWT_SECRET = 's';
+
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'legacy@example.com', password:'plain-secret' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { token: 'tok' });
+});
+
+test('admin login accepts plain password mistakenly stored in ADMIN_PASSWORD_HASH', async () => {
+  const { handler } = await load(true);
+  process.env.ADMIN_EMAIL = 'admin@example.com';
+  process.env.ADMIN_PASSWORD_HASH = 'plain-secret';
+  delete process.env.ADMIN_PASSWORD;
+  process.env.JWT_SECRET = 's';
+
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'admin@example.com', password:'plain-secret' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { token: 'tok' });
+});
+
 test('missing server config returns 500', async () => {
   const { handler } = await load(true);
   process.env.ADMIN_EMAIL = '';
   process.env.ADMIN_PASSWORD_HASH = '';
+  process.env.ADMIN_PASSWORD = '';
+  process.env.ADMIN_MAIL = '';
   process.env.JWT_SECRET = '';
   const res = makeRes();
   await handler({ method: 'POST', body:{ email:'a@a', password:'p' } }, res);
@@ -163,6 +208,41 @@ test('user login succeeds when recipients stored in hash', async () => {
   });
   const res = makeRes();
   await handler({ method: 'POST', body:{ email:'hash@example.com' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { message: 'ok' });
+});
+
+test('user login succeeds from EMAIL_RECIPIENTS fallback when kv is unavailable', async () => {
+  const { handler } = await load(true, undefined, {
+    kvOverrides: { get: undefined, set: undefined, del: undefined }
+  });
+  delete process.env.KV_REST_API_URL;
+  delete process.env.KV_REST_API_TOKEN;
+  process.env.EMAIL_RECIPIENTS = 'user@example.com';
+
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'user@example.com' } }, res);
+  assert.equal(res.code, 200);
+  assert.deepEqual(res.data, { message: 'ok' });
+});
+
+test('user login succeeds from admin email fallback when recipient store is empty', async () => {
+  const { handler } = await load(true, undefined, {
+    kvOverrides: {
+      async hgetall() {
+        return null;
+      },
+      async get() {
+        return [];
+      }
+    }
+  });
+  process.env.ADMIN_EMAIL = 'admin@example.com';
+  process.env.ADMIN_PASSWORD_HASH = 'h';
+  process.env.JWT_SECRET = 's';
+
+  const res = makeRes();
+  await handler({ method: 'POST', body:{ email:'admin@example.com' } }, res);
   assert.equal(res.code, 200);
   assert.deepEqual(res.data, { message: 'ok' });
 });
