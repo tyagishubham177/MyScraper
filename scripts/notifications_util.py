@@ -25,7 +25,8 @@ async def notify_users(
         elif not stock_utils.within_time_window(start_t, end_t, current_time):
             status = "Skipped - Subscription Not Due"
         elif email:
-            valid_emails.append(email)
+            if email not in valid_emails:
+                valid_emails.append(email)
             status = "Sent"
         else:
             status = "Not Sent - Recipient Email Missing"
@@ -35,7 +36,7 @@ async def notify_users(
     sent_count = 0
     if valid_emails and config.EMAIL_HOST and config.EMAIL_SENDER:
         try:
-            await notifications.send_email_notification(
+            delivery = await notifications.send_email_notification(
                 subject=f"{effective_name.strip()} In Stock Alert!",
                 body=notifications.format_long_message(effective_name, product_url),
                 sender=config.EMAIL_SENDER,
@@ -45,8 +46,14 @@ async def notify_users(
                 username=config.EMAIL_HOST_USER,
                 password=config.EMAIL_HOST_PASSWORD,
             )
-            print(f"📨 Email notifications sent for '{effective_name}'.")
-            sent_count = len(valid_emails)
+            if not isinstance(delivery, dict):
+                raise RuntimeError("SMTP returned no delivery result")
+            accepted = {email for email in valid_emails if delivery.get(email) is True}
+            sent_count = len(accepted)
+            print(f"SMTP accepted {sent_count}/{len(valid_emails)} recipients for {effective_name}.")
+            for summary in current_summary:
+                if summary["status"] == "Sent" and summary["user_email"] not in accepted:
+                    summary["status"] = "Not Sent - Email Refused"
         except Exception as e:
             print(f"Error sending email for '{effective_name}': {e}")
             for summary in current_summary:

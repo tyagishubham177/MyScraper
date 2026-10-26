@@ -41,7 +41,7 @@ async def fetch_api_data(session, url, headers=None):
             return await response.json()
     except Exception as e:
         print(f"API request to {url} failed: {e}")
-        return None
+        raise RuntimeError("Configuration API request failed") from e
 
 
 async def load_recipients(session):
@@ -198,7 +198,7 @@ async def save_stock_counters(session, counters):
                 text = await resp.text()
                 raise Exception(f"{resp.status}: {text}")
     except Exception as e:
-        print(f"Failed to update stock counters: {e}")
+        raise RuntimeError("Failed to persist stock counters") from e
 
 
 async def update_subscription(

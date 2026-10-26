@@ -13,6 +13,7 @@ sys.modules.setdefault("playwright.async_api", async_api)
 
 import pytest
 from scripts import scraper
+from scripts.validation import CheckError
 
 # --- Mocks for Playwright objects ---
 
@@ -80,7 +81,7 @@ class MockPage:
         self.keyboard = MockKeyboard()
         self.screenshot_path = None
         self._screenshot_raises = screenshot_raises
-        self.url = "http://testurl.com/product-page" # For screenshot path
+        self.url = "https://shop.amul.com/en/product/test-product/product-page" # For screenshot path
         self.clicked_selectors = []
         self.waited_for_load_state = None
         self.goto_url = None
@@ -88,6 +89,7 @@ class MockPage:
 
     async def goto(self, url, timeout=None):
         self.goto_url = url
+        self.url = url
         # print(f"MockPage: Navigated to {url}")
 
     async def wait_for_load_state(self, state="load", timeout=None):
@@ -95,10 +97,12 @@ class MockPage:
         # print(f"MockPage: Waited for load state '{state}'")
 
     async def wait_for_timeout(self, timeout):
-        await asyncio.sleep(timeout / 1000)
+        pass  # Virtual browser clock; these tests never need wall-clock delays.
 
     async def query_selector(self, selector):
         # print(f"MockPage: Querying selector '{selector}'")
+        if selector == "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span" and selector not in self.selectors_config:
+            return MockElementHandle(text_content_val="Delivery 000000")
         config = self.selectors_config.get(selector)
 
         if config is None and selector not in self.selectors_config: # Not configured at all
@@ -180,7 +184,8 @@ async def test_pincode_modal_appears_and_skipped(mock_page, monkeypatch, capsys)
         "div.modal-content.bg-transparent": {"visible": True},
     }
 
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "123456", skip_pincode=True)
+    with pytest.raises(CheckError, match="Pincode verification failed"):
+        await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "123456", skip_pincode=True)
 
     captured = capsys.readouterr()
     assert "Pincode modal shown but skipping entry" in captured.out # Exact log message
@@ -203,7 +208,7 @@ async def test_pincode_modal_not_present(mock_page, monkeypatch, capsys):
         "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span": {"visible": True, "text_content": "mumbai-br, 123456"},
     })
 
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "123456", skip_pincode=False)
+    in_stock, name = await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "123456", skip_pincode=False)
 
     captured = capsys.readouterr()
     assert "Pincode modal not found" in captured.out # Exact log message
@@ -264,7 +269,7 @@ async def test_pincode_modal_appears_input_success_dropdown(mock_page, monkeypat
         "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span": {"visible": True, "text_content": "mumbai-br, 123456"},
     })
 
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", pincode, skip_pincode=False)
+    in_stock, name = await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", pincode, skip_pincode=False)
 
     assert pincode_search_el.filled_value == pincode
     assert suggestion_el.clicked_count > 0
@@ -315,7 +320,7 @@ async def test_pincode_modal_input_no_dropdown_use_keyboard(mock_page, monkeypat
         "div.d-flex.flex-column.loc_area.overflow-hidden.text-turncate span": {"visible": True, "text_content": "mumbai-br, 123456"},
     })
 
-    await scraper._check_availability_on_page(mock_page, "http://testurl.com", pincode, skip_pincode=False) # Added URL
+    await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", pincode, skip_pincode=False) # Added URL
 
     assert pincode_search_el.filled_value == pincode
     assert "Enter" in mock_page.keyboard.pressed_keys
@@ -335,12 +340,12 @@ async def test_pincode_modal_input_field_not_found(mock_page, monkeypatch, capsy
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"text_content": "Test Product Name"},
     })
 
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "123456", skip_pincode=False)
+    with pytest.raises(CheckError, match="Pincode verification failed"):
+        await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "123456", skip_pincode=False)
 
     captured = capsys.readouterr()
     assert "Pincode input not found in modal" in captured.out # Exact log message
-    assert not in_stock
-    assert name == "Test Product Name" # Name scraping happens after pincode handling
+
 
 
 # --- Tests for Stock Availability Logic ---
@@ -372,7 +377,13 @@ async def test_stock_availability_logic(
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"text_content": "Stock Test Product"},
     }
 
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "000000", skip_pincode=True) # Added URL
+    conflicts = add_to_cart_enabled_config['visible'] and (sold_out_visible or add_to_cart_disabled_visible or notify_me_visible)
+    missing = not (sold_out_visible or add_to_cart_disabled_visible or notify_me_visible or add_to_cart_enabled_config['visible'])
+    if conflicts or missing:
+        with pytest.raises(CheckError):
+            await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "000000", skip_pincode=True)
+        return
+    in_stock, name = await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "000000", skip_pincode=True)
     assert in_stock == expected_in_stock
     assert name == "Stock Test Product"
 
@@ -386,7 +397,7 @@ async def test_product_name_extraction_success(mock_page, monkeypatch):
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"visible": True, "text_content": "Specific Product Name"},
         "a.btn.btn-primary.add-to-cart:not(.disabled)": {"visible": True, "enabled": True},
     }
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "000000", skip_pincode=True) # Added URL
+    in_stock, name = await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "000000", skip_pincode=True) # Added URL
     assert name == "Specific Product Name"
     assert in_stock
 
@@ -397,11 +408,10 @@ async def test_product_name_extraction_not_found(mock_page, monkeypatch, capsys)
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": None,
         "a.btn.btn-primary.add-to-cart:not(.disabled)": {"visible": True, "enabled": True},
     }
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "000000", skip_pincode=True) # Added URL
-    assert name == "The Product"
+    with pytest.raises(CheckError):
+        await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "000000", skip_pincode=True) # Added URL
     captured = capsys.readouterr()
     assert "Product name element not found. Using default." in captured.out # Exact log
-    assert in_stock
 
 @pytest.mark.asyncio
 async def test_product_name_extraction_no_text_content(mock_page, monkeypatch, capsys):
@@ -410,11 +420,10 @@ async def test_product_name_extraction_no_text_content(mock_page, monkeypatch, c
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"visible": True, "text_content": None},
         "a.btn.btn-primary.add-to-cart:not(.disabled)": {"visible": True, "enabled": True},
     }
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "000000", skip_pincode=True)
-    assert name == "The Product"
+    with pytest.raises(CheckError):
+        await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "000000", skip_pincode=True)
     captured = capsys.readouterr()
     assert "Extracted product name: The Product" in captured.out # Logic implies it uses default
-    assert in_stock
 
 @pytest.mark.asyncio
 async def test_product_name_extraction_text_content_raises_exception(mock_page, monkeypatch, capsys):
@@ -438,34 +447,33 @@ async def test_product_name_extraction_text_content_raises_exception(mock_page, 
             return None
     monkeypatch.setattr(mock_page, "query_selector", custom_page_qs)
 
-    in_stock, name = await scraper._check_availability_on_page(mock_page, "http://testurl.com", "000000", skip_pincode=True)
-    assert name == "The Product"
+    with pytest.raises(CheckError):
+        await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "000000", skip_pincode=True)
     captured = capsys.readouterr()
     assert "Error fetching product name text: Content error. Using default." in captured.out
-    assert in_stock # This should now be True
 
 
 # --- Tests for Screenshotting ---
 
 @pytest.mark.asyncio
 async def test_screenshot_called_with_correct_path(mock_page, monkeypatch):
-    mock_page.url = "http://testurl.com/category/product-slug-123.html"
+    mock_page.url = "https://shop.amul.com/en/product/test-product/category/product-slug-123.html"
     mock_page.selectors_config = {
         "div.modal-content.bg-transparent": {"visible": False}, # Corrected selector
         "a.btn.btn-primary.add-to-cart:not(.disabled)": {"visible": True, "enabled": True},
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"text_content": "Screenshot Product"},
     }
 
-    await scraper._check_availability_on_page(mock_page, "http://testurl.com", "000000", skip_pincode=True) # URL used for screenshot name
+    await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "000000", skip_pincode=True) # URL used for screenshot name
 
     assert mock_page.screenshot_path is not None
-    expected_filename_part = "testurl_com.png" # Based on URL "http://testurl.com"
+    expected_filename_part = "000000_shop_amul_com_en_product_test-product_" # Based on URL "https://shop.amul.com/en/product/test-product"
     assert expected_filename_part in mock_page.screenshot_path
     assert "artifacts" in mock_page.screenshot_path
 
 @pytest.mark.asyncio
 async def test_screenshot_exception_handled(mock_page, monkeypatch, capsys):
-    mock_page.url = "http://testurl.com/product-error.html"
+    mock_page.url = "https://shop.amul.com/en/product/test-product/product-error.html"
     mock_page._screenshot_raises = Exception("Disk full")
     mock_page.selectors_config = {
         "div.modal-content.bg-transparent": {"visible": False},
@@ -473,10 +481,10 @@ async def test_screenshot_exception_handled(mock_page, monkeypatch, capsys):
         "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4": {"text_content": "Screenshot Fail Product"},
     }
 
-    await scraper._check_availability_on_page(mock_page, "http://testurl.com", "000000", skip_pincode=True)
+    await scraper._check_availability_on_page(mock_page, "https://shop.amul.com/en/product/test-product", "000000", skip_pincode=True)
 
     captured = capsys.readouterr()
-    assert "Error taking single screenshot for http://testurl.com: Disk full" in captured.out # Exact log
+    assert "Error taking single screenshot for https://shop.amul.com/en/product/test-product: Disk full" in captured.out # Exact log
 
 
 # Original tests, can be refactored or removed if functionality is fully covered by new tests

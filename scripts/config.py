@@ -7,7 +7,7 @@ PINCODE = os.getenv("PINCODE", "201305")
 # F2S_KEY   = os.getenv("F2S_API_KEY")             # Fast2SMS auth key
 # F2S_TO    = os.getenv("F2S_NUMBERS")             # Comma-separated numbers (e.g. 91xxxxxxxxxx)
 EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+EMAIL_PORT = int(os.getenv("EMAIL_PORT") or 587)
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
@@ -22,5 +22,5 @@ RUN_OFFSET_MINUTES = 15
 # Base URL for the application itself, used for constructing absolute URLs if needed
 APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:3000")
 # Maximum number of product pages to check in parallel
-MAX_PARALLEL_PAGE_CHECKS = int(os.getenv("MAX_PARALLEL_PAGE_CHECKS", "5"))
+MAX_PARALLEL_PAGE_CHECKS = max(1, min(10, int(os.getenv("MAX_PARALLEL_PAGE_CHECKS") or "5")))
 # ——————————————————————————————————————————

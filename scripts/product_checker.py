@@ -23,11 +23,15 @@ async def process_product(
         return None, 0, pincode_entered
 
     subs = subs_map.get(product_id)
-    if not subs or not isinstance(subs, list):
+    if subs == []:
+        return None, 0, pincode_entered
+    if not isinstance(subs, list):
         print(f"Could not fetch subscriptions for product ID {product_id}.")
         return (
             {
                 "product_id": product_id,
+                "pincode": pincode,
+                "state": "ERROR",
                 "product_name": effective_name,
                 "product_url": product_url,
                 "subscriptions": [
@@ -56,6 +60,8 @@ async def process_product(
         return (
             {
                 "product_id": product_id,
+                "pincode": pincode,
+                "state": "ERROR",
                 "product_name": effective_name,
                 "product_url": product_url,
                 "subscriptions": [
@@ -99,6 +105,7 @@ async def process_product(
             "pincode": pincode,
             "subscriptions": current_summary,
             "in_stock": bool(in_stock),
+            "state": "IN_STOCK" if in_stock else "OUT_OF_STOCK",
         },
         sent_count,
         pincode_entered,

@@ -1,5 +1,6 @@
 import smtplib
 import asyncio
+import pytest
 from scripts import notifications
 
 
@@ -15,178 +16,78 @@ def test_format_auto_pause_message():
     assert "Auto-Paused" in html
 
 
-def test_send_email_notification(monkeypatch):
-    sent = {}
-
-    class DummySMTP:
-        def __init__(self, host, port):
-            sent["host"] = host
-            sent["port"] = port
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            pass
-
-        def starttls(self):
-            sent["starttls"] = True
-
-        def login(self, user, pwd):
-            sent["login"] = (user, pwd)
-
-        def sendmail(self, sender, recipients, msg):
-            sent["message"] = msg
-            sent["recipients"] = recipients
-            sent["sender"] = sender
-
-    monkeypatch.setattr(smtplib, "SMTP", DummySMTP)
-    asyncio.run(notifications.send_email_notification(
-        subject="sub",
-        body="body",
-        sender="s@example.com",
-        recipients=["r@example.com"],
-        host="smtp.example.com",
-        port=587,
-        username="u",
-        password="p",
-    ))
-    assert sent["host"] == "smtp.example.com"
-    assert sent["recipients"] == ["r@example.com"]
-    assert sent["starttls"] is True # Ensure login path was taken
-    assert sent["login"] == ("u", "p")
-
-
-def test_send_email_no_auth(monkeypatch):
-    """Test send_email_notification without username/password (no auth)."""
-    sent_args = {}
-
-    class MockSMTPNoAuth:
-        def __init__(self, host, port):
-            sent_args["host"] = host
-            sent_args["port"] = port
-            sent_args["login_called"] = False
-            sent_args["starttls_called"] = False
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            pass
-
-        def starttls(self):
-            sent_args["starttls_called"] = True # Should not be called if no user/pass
-
-        def login(self, user, pwd):
-            sent_args["login_called"] = True # Should not be called
-
-        def sendmail(self, sender, recipients, msg):
-            sent_args["sendmail_called"] = True
-            sent_args["sender"] = sender
-            sent_args["recipients"] = recipients
-
-    monkeypatch.setattr(smtplib, "SMTP", MockSMTPNoAuth)
-    asyncio.run(notifications.send_email_notification(
-        subject="sub_no_auth",
-        body="body_no_auth",
-        sender="s_noauth@example.com",
-        recipients=["r_noauth@example.com"],
-        host="smtp.noauth.com",
-        port=25,
-        username=None,  # No username
-        password=None   # No password
-    ))
-    assert sent_args["host"] == "smtp.noauth.com"
-    assert not sent_args["login_called"]
-    assert not sent_args["starttls_called"] # starttls should only be called if login is attempted
-    assert sent_args["sendmail_called"]
-    assert sent_args["recipients"] == ["r_noauth@example.com"]
-
-
-def test_send_email_smtp_connect_exception(monkeypatch, capsys):
-    """Test send_email_notification when smtplib.SMTP() raises an exception."""
-    def mock_smtp_connect_fails(host, port):
-        raise smtplib.SMTPException("Connection failed")
-
-    monkeypatch.setattr(smtplib, "SMTP", mock_smtp_connect_fails)
-
-    asyncio.run(notifications.send_email_notification(
-        subject="sub_fail",
-        body="body_fail",
-        sender="s@example.com",
-        recipients=["r@example.com"],
-        host="smtp.fail.com",
-        port=587
-    ))
-    captured = capsys.readouterr()
-    assert "SMTP error occurred: Connection failed" in captured.out
-
-
-def test_send_email_smtp_sendmail_exception(monkeypatch, capsys):
-    """Test send_email_notification when server.sendmail() raises an exception."""
-    sendmail_args = {}
-    class MockSMTPSendFail:
-        def __init__(self, host, port):
-            pass
-        def __enter__(self):
-            return self
-        def __exit__(self, exc_type, exc, tb):
-            pass
-        def starttls(self): # Assume auth happens for this test
-            pass
-        def login(self, user, pwd):
-            pass
-        def sendmail(self, sender, recipients, msg):
-            raise smtplib.SMTPException("Sendmail failed")
-
-    monkeypatch.setattr(smtplib, "SMTP", MockSMTPSendFail)
-    asyncio.run(notifications.send_email_notification(
-        subject="sub_sendfail",
-        body="body_sendfail",
-        sender="s@example.com",
-        recipients=["r@example.com"],
-        host="smtp.sendfail.com",
-        port=587,
-        username="u", # Provide credentials to go through login path
-        password="p"
-    ))
-    captured = capsys.readouterr()
-    assert "SMTP error occurred: Sendmail failed" in captured.out
-
-
-def test_send_email_missing_config(monkeypatch, capsys):
-    smtp_called = False
-
-    class DummySMTPNoCall: # Renamed to avoid confusion
-        def __init__(self, *a, **k):
-            nonlocal smtp_called
-            smtp_called = True # This constructor itself being called means an attempt was made
+@pytest.fixture
+def smtp_transport(monkeypatch):
+    events = {}
+    class SMTP:
+        def __init__(self, host, port, **kwargs):
+            events.update(host=host, port=port, **kwargs)
         def __enter__(self): return self
-        def __exit__(self, exc_type, exc, tb): pass
-        def starttls(self): pass
-        def login(self, u, p): pass
-        def sendmail(self, *a, **k): pass
+        def __exit__(self, *args): events['closed'] = True
+        def starttls(self, **kwargs): events['tls'] = kwargs['context']
+        def login(self, user, password): events['login'] = (user, password)
+        def sendmail(self, sender, recipients, message):
+            events['sent'] = (sender, recipients, message)
+            return events.get('refused', {})
+    monkeypatch.setattr(smtplib, 'SMTP', SMTP)
+    monkeypatch.setattr(smtplib, 'SMTP_SSL', SMTP)
+    return events
 
-    monkeypatch.setattr(smtplib, "SMTP", DummySMTPNoCall)
 
-    test_cases = [
-        {"sender": "", "recipients": ["r@example.com"], "host": "h", "port": 587, "desc": "Empty sender"},
-        {"sender": "s", "recipients": [], "host": "h", "port": 587, "desc": "Empty recipients list"},
-        {"sender": "s", "recipients": None, "host": "h", "port": 587, "desc": "None recipients"},
-        {"sender": "s", "recipients": [""], "host": "h", "port": 587, "desc": "Recipients list with empty string"},
-        {"sender": "s", "recipients": ["r@example.com"], "host": "", "port": 587, "desc": "Empty host"},
-        {"sender": "s", "recipients": ["r@example.com"], "host": None, "port": 587, "desc": "None host"},
-    ]
+def send(**overrides):
+    args = dict(subject='Stock', body='Body', sender='sender@example.invalid',
+                recipients=['a@example.invalid', 'b@example.invalid'],
+                host='smtp.example.invalid', port=587, username='user', password='password')
+    args.update(overrides)
+    return asyncio.run(notifications.send_email_notification(**args))
 
-    for case in test_cases:
-        smtp_called = False # Reset for each case
-        asyncio.run(notifications.send_email_notification(
-            subject="sub", body="body", sender=case["sender"], recipients=case["recipients"],
-            host=case["host"], port=case["port"]
-        ))
-        assert not smtp_called, f"SMTP should not be called for: {case['desc']}"
-        captured = capsys.readouterr()
-        assert "Essential email configuration or recipient list is missing or invalid." in captured.out
+
+@pytest.mark.parametrize('port', [25, 465, 587])
+def test_send_email_notification(smtp_transport, port):
+    result = send(port=port)
+    assert result == {'a@example.invalid': True, 'b@example.invalid': True}
+    assert smtp_transport['timeout'] == 20
+    assert smtp_transport['closed']
+    assert smtp_transport['login'] == ('user', 'password')
+    assert (('context' in smtp_transport) if port == 465 else ('tls' in smtp_transport))
+    assert smtp_transport.get('tls', smtp_transport.get('context')).check_hostname
+
+
+def test_send_email_no_auth_still_encrypts(smtp_transport):
+    send(username=None, password=None)
+    assert 'tls' in smtp_transport and 'login' not in smtp_transport
+
+
+@pytest.mark.parametrize('error', [smtplib.SMTPConnectError(421, 'unavailable'), TimeoutError('deadline')])
+def test_send_email_connect_failure_propagates(monkeypatch, error):
+    def fail(*args, **kwargs): raise error
+    monkeypatch.setattr(smtplib, 'SMTP', fail)
+    with pytest.raises(type(error)):
+        send()
+
+
+def test_send_email_partial_refusal(smtp_transport):
+    smtp_transport['refused'] = {'b@example.invalid': (550, 'rejected')}
+    assert send() == {'a@example.invalid': True, 'b@example.invalid': False}
+
+
+def test_send_email_sendmail_exception(monkeypatch, smtp_transport):
+    class FailingSMTP:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def starttls(self, **kwargs): pass
+        def login(self, *args): pass
+        def sendmail(self, *args): raise smtplib.SMTPRecipientsRefused({'a': (550, 'rejected')})
+    monkeypatch.setattr(smtplib, 'SMTP', lambda *args, **kwargs: FailingSMTP())
+    with pytest.raises(smtplib.SMTPRecipientsRefused): send()
+
+
+@pytest.mark.parametrize('override', [{'sender':''}, {'recipients':[]}, {'recipients':None},
+                                     {'recipients':['']}, {'host':''}, {'host':None}])
+def test_send_email_missing_config(monkeypatch, override):
+    def unexpected(*args, **kwargs): pytest.fail('Invalid configuration opened a connection')
+    monkeypatch.setattr(smtplib, 'SMTP', unexpected)
+    with pytest.raises(ValueError, match='Missing email configuration'): send(**override)
 
 
 def test_format_summary_email_body():
