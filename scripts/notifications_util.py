@@ -35,7 +35,7 @@ async def notify_users(
     sent_count = 0
     if valid_emails and config.EMAIL_HOST and config.EMAIL_SENDER:
         try:
-            await notifications.send_email_notification(
+            delivery = await notifications.send_email_notification(
                 subject=f"{effective_name.strip()} In Stock Alert!",
                 body=notifications.format_long_message(effective_name, product_url),
                 sender=config.EMAIL_SENDER,
@@ -46,7 +46,11 @@ async def notify_users(
                 password=config.EMAIL_HOST_PASSWORD,
             )
             print(f"📨 Email notifications sent for '{effective_name}'.")
-            sent_count = len(valid_emails)
+            accepted = {email for email, ok in (delivery or {}).items() if ok}
+            sent_count = len(accepted)
+            for summary in current_summary:
+                if summary["status"] == "Sent" and summary["user_email"] not in accepted:
+                    summary["status"] = "Not Sent - Email Refused"
         except Exception as e:
             print(f"Error sending email for '{effective_name}': {e}")
             for summary in current_summary:

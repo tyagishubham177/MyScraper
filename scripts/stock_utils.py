@@ -49,8 +49,8 @@ def within_time_window(start_str: str, end_str: str, now: dt_time) -> bool:
     try:
         start = datetime.strptime(start_str, fmt).time()
         end = datetime.strptime(end_str, fmt).time()
-    except Exception:
-        return True
+    except (ValueError, TypeError):
+        return False
     if start <= end:
         return start <= now <= end
     return now >= start or now <= end

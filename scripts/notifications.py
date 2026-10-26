@@ -1,5 +1,7 @@
 import smtplib
 import asyncio
+import ssl
+from html import escape
 from email.mime.text import MIMEText
 
 # ——————————————————————————————————————————
@@ -10,6 +12,8 @@ from email.mime.text import MIMEText
 
 
 def format_long_message(product_name: str, url: str) -> str:
+    url = escape(url, quote=True)
+    product_name = escape(product_name)
     html_body = f"""
     <html>
         <head>
@@ -289,10 +293,12 @@ def format_summary_email_body(run_timestamp_str: str, summary_data_list: list, t
         if not product_name or product_name == "N/A":
             continue  # Skip entries with no meaningful product name
 
-        product_url = product_data.get("product_url", "#")
+        product_name = escape(str(product_name))
+        product_url = escape(str(product_data.get("product_url", "#")), quote=True)
         subscriptions = product_data.get("subscriptions", [])
 
         subscribed_emails_csv, _ = summarize_subscriptions(subscriptions)
+        subscribed_emails_csv = escape(subscribed_emails_csv)
         if subscribed_emails_csv == "N/A":
             continue  # Skip rows without any subscriber emails
         streak = product_data.get("consecutive_in_stock", 0)
@@ -324,6 +330,7 @@ def format_short_message(product_name: str) -> str:
 
 def format_auto_pause_message(product_name: str) -> str:
     """Return HTML body for auto pause notifications."""
+    product_name = escape(product_name)
     html_body = f"""
     <html>
     <head>
@@ -469,27 +476,26 @@ async def send_email_notification(
 
     if not (host and sender and recipients and all(recipients)):
         print("⚠️ Essential email configuration or recipient list is missing or invalid.")
-        return
+        raise ValueError("Missing email configuration")
 
-    def _send() -> None:
-        try:
-            msg = MIMEText(body, "html")
-            msg["Subject"] = subject
-            msg["From"] = sender
-            msg["To"] = sender  # Display sender in the "To" field
+    def _send():
+        msg = MIMEText(body, "html")
+        msg["Subject"] = subject
+        msg["From"] = sender
+        msg["To"] = sender
+        transport = smtplib.SMTP_SSL if port == 465 else smtplib.SMTP
+        options = {"timeout": 20}
+        if port == 465:
+            options["context"] = ssl.create_default_context()
+        with transport(host, port, **options) as server:
+            if port != 465:
+                server.starttls(context=ssl.create_default_context())
+            if username and password:
+                server.login(username, password)
+            refused = server.sendmail(sender, recipients, msg.as_string()) or {}
+        return {email: email not in refused for email in recipients}
 
-            with smtplib.SMTP(host, port) as server:
-                if username and password:
-                    server.starttls()
-                    server.login(username, password)
-                server.sendmail(sender, recipients, msg.as_string())
-            print("Email notification sent successfully.")
-        except smtplib.SMTPException as e:
-            print(f"SMTP error occurred: {e}")
-        except Exception as e:
-            print(f"An error occurred while sending email: {e}")
-
-    await asyncio.to_thread(_send)
+    return await asyncio.to_thread(_send)
 
 # def send_fast2sms(msg: str):
 #     """POST a Quick SMS via Fast2SMS API."""

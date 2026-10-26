@@ -1,6 +1,8 @@
 import asyncio
 import os
 import re
+from uuid import uuid4
+from scripts.validation import product_url, pincode as validate_pincode, CheckError
 from playwright.async_api import async_playwright, Page
 
 
@@ -11,6 +13,8 @@ async def _check_availability_on_page(
     skip_pincode: bool,
     log_prefix: str = "",
 ) -> tuple[bool, str]:
+    url = product_url(url)
+    validate_pincode(pincode)
     os.makedirs("artifacts", exist_ok=True)
 
     async def log(*msgs: object) -> None:
@@ -20,7 +24,11 @@ async def _check_availability_on_page(
         print(text)
 
     await log("Navigating to", url)
-    await page.goto(url, timeout=60000)
+    response = await page.goto(url, timeout=30000)
+    if response is not None and response.status >= 400:
+        raise CheckError(f"HTTP {response.status}")
+    if getattr(page, "url", url) and product_url(page.url) != url:
+        raise CheckError("Unexpected product redirect")
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(500)
     await log("Page loaded")
@@ -91,7 +99,7 @@ async def _check_availability_on_page(
     await handle_pincode_modal()
 
     pincode_confirmed = True
-    if not skip_pincode:
+    if True:  # Shared cookies are not evidence that this page has the right location.
         pincode_confirmed = await confirm_pincode(pincode)
         if not pincode_confirmed:
             await log("Pincode verification failed")
@@ -176,7 +184,7 @@ async def _check_availability_on_page(
 
     safe_url_part = re.sub(r"^https?://", "", url)
     safe_url_part = re.sub(r"[^a-zA-Z0-9_-]", "_", safe_url_part)
-    safe_filename = f"artifacts/screenshot_{safe_url_part[:100]}.png"
+    safe_filename = f"artifacts/{pincode}_{safe_url_part[:90]}_{uuid4().hex}.png"
 
     async def capture_screenshot():
         try:
@@ -188,6 +196,12 @@ async def _check_availability_on_page(
 
     await capture_screenshot()
 
+    if not pincode_confirmed:
+        raise CheckError("Pincode verification failed")
+    if product_name == "The Product" or not (add_btn or sold_out_visible or disabled_btn or notify_visible):
+        raise CheckError("Product identity or availability indicators missing")
+    if add_btn and (sold_out_visible or disabled_btn or notify_visible):
+        raise CheckError("Conflicting availability indicators")
     return in_stock, product_name
 
 

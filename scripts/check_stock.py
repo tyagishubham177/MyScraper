@@ -107,7 +107,7 @@ async def main():
 
         if not all_products:
             print("No products fetched from API. Exiting.")
-            return
+            raise RuntimeError("No products fetched; check API/configuration")
 
         subs_by_pin = stock_utils.build_subs_by_pincode(recipients_map, subs_map)
         product_map = {p.get("id"): p for p in all_products if p.get("id")}
@@ -142,6 +142,9 @@ async def main():
             browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
             stock_utils._add_timing("Launch browser", time.perf_counter() - launch_start, timings)
 
+            global_semaphore = asyncio.Semaphore(config.MAX_PARALLEL_PAGE_CHECKS)
+            context_semaphore = asyncio.Semaphore(3)
+
             async def process_pincode(pincode, recips_subset):
                 pin_start = time.perf_counter()
                 results = []
@@ -152,11 +155,15 @@ async def main():
                     for pid, subs in subs_by_pin.get(pincode, {}).items()
                 }
 
+                subs_subset = {pid: subs for pid, subs in subs_subset.items() if subs}
+                if not subs_subset:
+                    return []
+                await context_semaphore.acquire()
                 if hasattr(browser, "new_context"):
                     context = await browser.new_context()
                 else:
                     context = browser
-                semaphore = asyncio.Semaphore(config.MAX_PARALLEL_PAGE_CHECKS)
+                semaphore = global_semaphore
 
                 async def handle_product(pid, product_subs):
                     nonlocal pincode_entered
@@ -213,6 +220,7 @@ async def main():
                     })
                     if context is not browser and hasattr(context, "close"):
                         await context.close()
+                    context_semaphore.release()
                 return results
 
             pincode_tasks = [
@@ -223,6 +231,8 @@ async def main():
 
             for results in pincode_results:
                 for product_info, summary, sent in results:
+                    if summary and "in_stock" not in summary:
+                        raise RuntimeError(f"Unreliable stock result: {summary.get('product_id')}")
                     if summary:
                         pid = product_info.get("id")
                         pin = summary.get("pincode")
@@ -241,7 +251,7 @@ async def main():
                                 )
                                 if rec_pin != pin or sub.get("paused"):
                                     continue
-                                await api_utils.update_subscription(
+                                updated = await api_utils.update_subscription(
                                     session,
                                     rid,
                                     pid,
@@ -249,6 +259,8 @@ async def main():
                                     sub.get("end_time", "23:59"),
                                     True,
                                 )
+                                if not updated:
+                                    raise RuntimeError("Auto-pause was not persisted")
                                 sub["paused"] = True
                                 email = recipients_map.get(rid, {}).get("email")
                                 if (
@@ -324,4 +336,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(asyncio.wait_for(main(), timeout=600))
