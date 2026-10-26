@@ -98,11 +98,10 @@ async def _check_availability_on_page(
 
     await handle_pincode_modal()
 
-    pincode_confirmed = True
-    if True:  # Shared cookies are not evidence that this page has the right location.
-        pincode_confirmed = await confirm_pincode(pincode)
-        if not pincode_confirmed:
-            await log("Pincode verification failed")
+    # Shared cookies do not prove the delivery location on this page.
+    pincode_confirmed = await confirm_pincode(pincode)
+    if not pincode_confirmed:
+        await log("Pincode verification failed")
 
     await log("Checking availability indicators…")
     sold_out_visible, so_status = await element_visibility(
@@ -218,12 +217,13 @@ async def check_product_availability(
         print(f"{prefix}Launching browser with Playwright (from scraper.py)...")
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
-            page = await browser.new_page()
-            result = await _check_availability_on_page(
-                page, url, pincode, skip_pincode, log_prefix
-            )
-            await browser.close()
-            return result
+            try:
+                page = await browser.new_page()
+                return await _check_availability_on_page(
+                    page, url, pincode, skip_pincode, log_prefix
+                )
+            finally:
+                await browser.close()
     else:
         return await _check_availability_on_page(
             page, url, pincode, skip_pincode, log_prefix

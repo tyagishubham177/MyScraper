@@ -58,6 +58,22 @@ from scripts import (
 )
 
 
+@pytest.fixture(autouse=True)
+def isolate_main_api(request, monkeypatch):
+    """Orchestrator unit tests must never reach a real network/API."""
+    if not (request.node.name.startswith('test_main_') or request.node.name == 'test_auto_pause_after_streak'):
+        return
+    async def no_bundle(session): return None
+    async def empty_subs(session): return {}
+    async def empty_counters(session): return {}
+    async def saved(session, counters): return None
+    monkeypatch.setattr(api_utils, 'load_configuration_bundle', no_bundle)
+    monkeypatch.setattr(api_utils, 'load_subscriptions', empty_subs)
+    monkeypatch.setattr(api_utils, 'load_stock_counters', empty_counters)
+    monkeypatch.setattr(api_utils, 'save_stock_counters', saved)
+    monkeypatch.setattr(check_stock.config, 'ADMIN_TOKEN', 'unit-test-token')
+
+
 # Mocks for aiohttp ClientSession
 class MockClientResponse:
     def __init__(self, json_data, status_code):
@@ -114,16 +130,16 @@ async def test_fetch_api_data_success():
 async def test_fetch_api_data_failure():
     """Test fetch_api_data with an API call failure (e.g., network error)."""
     session = MockClientSession(response_data=None, raise_exception=aiohttp.ClientError("Network error Mock"))
-    result = await api_utils.fetch_api_data(session, "http://fakeurl")
-    assert result is None
+    with pytest.raises(RuntimeError, match="Configuration API request failed"):
+        await api_utils.fetch_api_data(session, "http://fakeurl")
 
 
 @pytest.mark.asyncio
 async def test_fetch_api_data_non_200_status():
     """Test fetch_api_data with a non-200 status code."""
     session = MockClientSession(response_data={"error": "failed"}, status_code=404)
-    result = await api_utils.fetch_api_data(session, "http://fakeurl")
-    assert result is None
+    with pytest.raises(RuntimeError, match="Configuration API request failed"):
+        await api_utils.fetch_api_data(session, "http://fakeurl")
 
 
 @pytest.mark.asyncio
@@ -131,8 +147,8 @@ async def test_fetch_api_data_invalid_json():
     """Test fetch_api_data with an invalid JSON response."""
     # Simulate invalid JSON by having .json() raise an error
     session = MockClientSession(response_data=lambda: (_ for _ in ()).throw(ValueError("Invalid JSON")))
-    result = await api_utils.fetch_api_data(session, "http://fakeurl")
-    assert result is None
+    with pytest.raises(RuntimeError, match="Configuration API request failed"):
+        await api_utils.fetch_api_data(session, "http://fakeurl")
 
 
 @pytest.mark.asyncio
@@ -219,6 +235,8 @@ async def test_save_stock_counters_with_admin_token(monkeypatch):
     captured = {}
 
     class DummyResp:
+        status = 200
+
         async def __aenter__(self):
             return self
 
@@ -331,16 +349,9 @@ async def test_process_product_fetch_subscriptions_empty_list(monkeypatch):
         subs_map,
         "201305",
     )
-    assert summary is not None
-    assert summary["product_name"] == product_info["name"]
-    # If fetch_subscriptions returns [], it's treated as an error fetching them.
-    assert summary["product_name"] == product_info["name"]
-    assert summary["product_url"] == product_info["url"]
-    assert len(summary["subscriptions"]) == 1
-    assert summary["subscriptions"][0]["status"] == "Error fetching subscriptions"
+    assert summary is None  # No active subscribers is an expected skip.
     assert sent_count == 0
     assert not needs_pin_reset
-
 
 @pytest.mark.asyncio
 async def test_process_product_fetch_subscriptions_invalid_data(monkeypatch):
@@ -575,6 +586,7 @@ async def test_notify_users_mixed_subscriptions(monkeypatch):
         # In the actual call from notify_users, 'recipients' will be a list of emails.
         for r_email in recipients:
             mock_sent_emails.append(r_email)
+        return {email: True for email in recipients}
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_email)
     monkeypatch.setattr(config, "EMAIL_HOST", "smtp.example.com")
     monkeypatch.setattr(config, "EMAIL_SENDER", "sender@example.com") # This sender is passed to mock
@@ -657,7 +669,8 @@ async def test_main_load_recipients_empty(monkeypatch):
     from io import StringIO
     import sys
     old_stdout = sys.stdout
-    sys.stdout = captured_output = StringIO()
+    captured_output = StringIO()
+    monkeypatch.setattr(sys, "stdout", captured_output)
 
     await check_stock.main()
 
@@ -682,9 +695,11 @@ async def test_main_load_products_none(monkeypatch):
     from io import StringIO
     import sys
     old_stdout = sys.stdout
-    sys.stdout = captured_output = StringIO()
+    captured_output = StringIO()
+    monkeypatch.setattr(sys, "stdout", captured_output)
 
-    await check_stock.main()
+    with pytest.raises(RuntimeError, match="No products fetched"):
+        await check_stock.main()
 
     sys.stdout = old_stdout
     output = captured_output.getvalue()
@@ -705,9 +720,11 @@ async def test_main_load_products_empty_list(monkeypatch):
     from io import StringIO
     import sys
     old_stdout = sys.stdout
-    sys.stdout = captured_output = StringIO()
+    captured_output = StringIO()
+    monkeypatch.setattr(sys, "stdout", captured_output)
 
-    await check_stock.main()
+    with pytest.raises(RuntimeError, match="No products fetched"):
+        await check_stock.main()
 
     sys.stdout = old_stdout
     output = captured_output.getvalue()
@@ -723,6 +740,7 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
         sent_summary_args["body"] = body
         sent_summary_args["sender_val"] = sender # Store actual sender
         sent_summary_args["recipients_val"] = recipients # Store actual recipients
+        return {email: True for email in recipients}
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_summary)
 
     async def mock_load_recipients_for_main(session):
@@ -739,6 +757,8 @@ async def test_main_summary_email_total_sent_positive(monkeypatch):
             "product_id": product_info["id"],
             "product_name": "Test Product",
             "status": "In Stock",
+            "in_stock": True,
+            "pincode": "201305",
             "subscriptions": [{"user_email": "test@example.com", "status": "Sent", "pincode": "201305"}],
         }, 1, False
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_summary)
@@ -794,6 +814,8 @@ async def test_main_summary_email_total_sent_zero(monkeypatch):
             "product_id": product_info["id"],
             "product_name": "Test Product",
             "status": "Out of Stock",
+            "in_stock": False,
+            "pincode": "201305",
             "subscriptions": [{"user_email": "test@example.com", "status": "Not Sent", "pincode": "201305"}],
         }, 0, False
     monkeypatch.setattr(check_stock, "process_product", mock_process_product_summary)
@@ -823,7 +845,8 @@ async def test_main_summary_email_total_sent_zero(monkeypatch):
     from io import StringIO
     import sys
     old_stdout = sys.stdout
-    sys.stdout = captured_output = StringIO()
+    captured_output = StringIO()
+    monkeypatch.setattr(sys, "stdout", captured_output)
 
     await check_stock.main()
 
@@ -859,6 +882,8 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
                 "product_id": pi["id"],
                 "product_name": "Test Product",
                 "status": "In Stock",
+                "in_stock": True,
+                "pincode": "201305",
                 "subscriptions": [{"user_email": "x@x.com", "status": "Sent", "pincode": "201305"}],
             },
             1,
@@ -887,9 +912,11 @@ async def test_main_summary_email_sender_not_set(monkeypatch):
     from io import StringIO
     import sys
     old_stdout = sys.stdout
-    sys.stdout = captured_output = StringIO()
+    captured_output = StringIO()
+    monkeypatch.setattr(sys, "stdout", captured_output)
 
-    await check_stock.main()
+    with pytest.raises(RuntimeError, match="Summary email configuration missing"):
+        await check_stock.main()
 
     sys.stdout = old_stdout
     output = captured_output.getvalue()
@@ -920,6 +947,8 @@ async def test_main_summary_email_exception(monkeypatch):
                 "product_id": pi["id"],
                 "product_name": "Test Product",
                 "status": "In Stock",
+                "in_stock": True,
+                "pincode": "201305",
                 "subscriptions": [{"user_email": "x@x.com", "status": "Sent", "pincode": "201305"}],
             },
             1,
@@ -951,9 +980,11 @@ async def test_main_summary_email_exception(monkeypatch):
     from io import StringIO
     import sys
     old_stdout = sys.stdout
-    sys.stdout = captured_output = StringIO()
+    captured_output = StringIO()
+    monkeypatch.setattr(sys, "stdout", captured_output)
 
-    await check_stock.main()
+    with pytest.raises(RuntimeError, match="Summary notification failed"):
+        await check_stock.main()
 
     sys.stdout = old_stdout
     output = captured_output.getvalue()
@@ -1057,6 +1088,7 @@ async def _run_notify_users(monkeypatch):
 
     async def dummy_send_email(*args, **kwargs): # Made async
         sent_args["called"] = True
+        return {email: True for email in kwargs["recipients"]}
 
     monkeypatch.setattr(notifications, "send_email_notification", dummy_send_email)
     monkeypatch.setattr(config, "EMAIL_HOST", "smtp")
@@ -1081,8 +1113,8 @@ def test_notify_users(monkeypatch):
 
 def test_within_time_window_invalid():
     now = dt_time(12, 0)
-    # Invalid time strings should default to True
-    assert stock_utils.within_time_window("bad", "time", now)
+    # Invalid windows must fail closed.
+    assert not stock_utils.within_time_window("bad", "time", now)
 
 
 def test_process_product_missing_data():
@@ -1221,6 +1253,7 @@ async def test_main_parallel_page_checks(monkeypatch):
                 "product_url": product_info["url"],
                 "pincode": pincode,
                 "subscriptions": [],
+                "in_stock": False,
             },
             0,
             True,
@@ -1310,6 +1343,7 @@ async def test_auto_pause_after_streak(monkeypatch):
     async def mock_update_subscription(session, rid, pid, start, end, paused):
         called["called"] = True
         called["paused"] = paused
+        return {"paused": paused}
 
     monkeypatch.setattr(api_utils, "update_subscription", mock_update_subscription)
 
@@ -1317,6 +1351,7 @@ async def test_auto_pause_after_streak(monkeypatch):
         email_called["called"] = True
         email_called["recipients"] = recipients
         email_called["body"] = body
+        return {email: True for email in recipients}
 
     monkeypatch.setattr(notifications_module, "send_email_notification", mock_send_email)
 

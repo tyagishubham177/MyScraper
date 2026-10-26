@@ -23,7 +23,7 @@ async def process_product(
         return None, 0, pincode_entered
 
     subs = subs_map.get(product_id)
-    if not subs:
+    if subs == []:
         return None, 0, pincode_entered
     if not isinstance(subs, list):
         print(f"Could not fetch subscriptions for product ID {product_id}.")

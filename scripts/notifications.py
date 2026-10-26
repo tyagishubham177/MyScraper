@@ -471,8 +471,8 @@ async def send_email_notification(
     port: int,
     username: str | None = None,
     password: str | None = None,
-) -> None:
-    """Sends an email notification asynchronously."""
+) -> dict[str, bool]:
+    """Return SMTP acceptance per recipient; transport failures propagate."""
 
     if not (host and sender and recipients and all(recipients)):
         print("⚠️ Essential email configuration or recipient list is missing or invalid.")
