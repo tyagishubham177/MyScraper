@@ -25,6 +25,9 @@ BLUEBERRY_ID = "1758622977117"
 OLD_BLUEBERRY_URL = "https://shop.amul.com/en/product/amul-high-protein-blueberry-shake-200-ml-or-pack-of-8"
 BLUEBERRY_URL = "https://shop.amul.com/en/product/amul-high-protein-blueberry-shake-200-ml-or-pack-of-30"
 BLUEBERRY_NAME = "Amul High Protein Blueberry Shake, 200 mL | Pack of 30"
+# Public corporate address published at https://shop.amul.com/en/contact.
+# This catalogue browsing location is unrelated to any user's configuration.
+PUBLIC_CATALOG_POSTAL_CODE = "388001"
 
 
 class UnrecognizedProductURL(RuntimeError):
@@ -106,6 +109,25 @@ async def public_product_name(page, url):
             await page.wait_for_timeout(1000)
 
 
+async def initialize_public_catalog(context):
+    """Unlock the anonymous catalogue using only Amul's public office address."""
+    page = await context.new_page()
+    try:
+        await page.goto('https://shop.amul.com/', timeout=30000)
+        await page.wait_for_load_state('networkidle')
+        await page.wait_for_timeout(500)
+        modal = await page.query_selector('#locationWidgetModal')
+        if modal and await modal.is_visible():
+            await page.locator('#search:visible').fill(PUBLIC_CATALOG_POSTAL_CODE)
+            suggestion = page.locator(f"#automatic a.searchitem-name:has-text('{PUBLIC_CATALOG_POSTAL_CODE}')")
+            await suggestion.wait_for(timeout=10000)
+            await suggestion.click()
+            await page.locator('#locationWidgetModal').wait_for(state='hidden', timeout=15000)
+            await page.wait_for_load_state('networkidle')
+    finally:
+        await page.close()
+
+
 async def resolve_copied_url(product):
     candidates = copied_url_candidates(product['url'])
     names = {}
@@ -114,6 +136,7 @@ async def resolve_copied_url(product):
             browser = await pw.chromium.launch(headless=True, args=['--no-sandbox'])
             try:
                 context = await browser.new_context()
+                await initialize_public_catalog(context)
                 for url in candidates:
                     page = await context.new_page()
                     try:
@@ -171,7 +194,7 @@ async def read_products(session):
 
 
 async def verify_product_pages(products, repairs):
-    """Verify public identity only; no recipient data or delivery locations."""
+    """Verify public identity only; no recipient data or private locations."""
     replacements = {str(after['id']): after for _, after in repairs}
     unverified = set()
     with redirect_stdout(io.StringIO()):
@@ -179,6 +202,7 @@ async def verify_product_pages(products, repairs):
             browser = await pw.chromium.launch(headless=True, args=['--no-sandbox'])
             try:
                 context = await browser.new_context()
+                await initialize_public_catalog(context)
                 semaphore = asyncio.Semaphore(3)
                 async def verify(product):
                     async with semaphore:

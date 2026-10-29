@@ -2,6 +2,7 @@
 import asyncio
 import json
 from playwright.async_api import async_playwright
+from scripts.repair_product_links import initialize_public_catalog
 
 URL = 'https://shop.amul.com/en/product/amul-high-protein-blueberry-shake-200-ml-or-pack-of-30'
 
@@ -9,7 +10,9 @@ async def main():
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
         try:
-            page = await browser.new_page()
+            context = await browser.new_context()
+            await initialize_public_catalog(context)
+            page = await context.new_page()
             response = await page.goto(URL)
             await page.wait_for_timeout(2000)
             result = await page.evaluate("""() => ({
