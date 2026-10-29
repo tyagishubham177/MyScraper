@@ -8,6 +8,7 @@ import argparse
 from contextlib import redirect_stdout
 import io
 import os
+import re
 import sys
 from urllib.parse import urlsplit
 
@@ -61,6 +62,8 @@ def plan_repairs(products):
                     "fragment": bool(parsed and parsed.fragment),
                     "embedded_url": bool(parsed and 'https://' in parsed.path),
                     "embedded_count": url.count('https://') if isinstance(url, str) else 0,
+                    "named_slugs": len(re.findall(r'/product/([a-z0-9-]+)(?=/|$)', url)) if isinstance(url, str) else 0,
+                    "distinct_slugs": len(set(re.findall(r'/product/([a-z0-9-]+)(?=/|$)', url))) if isinstance(url, str) else 0,
                 }
                 raise RuntimeError(f"An unrecognized product URL requires review; shape={shape}") from None
             # Only repair the demonstrated duplicated-path corruption. Ordinary

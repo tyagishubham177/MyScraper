@@ -46,6 +46,7 @@ def test_unknown_corruption_requires_review_without_mutating_source():
     'https://shop.amul.com/en/product/demohttps://shop.amul.com/en/product/demo',
     'https://shop.amul.com/en/product/https://shop.amul.com/en/product/demo/en/product/demo',
     'https://shop.amul.com/en/product/https://shop.amul.com/enhttps://shop.amul.com/en/product/demo',
+    'https://shop.amul.com/en/product/demo/enhttps://shop.amul.com/en/product/demo',
 ])
 def test_embedded_url_correction_requires_one_unambiguous_product(broken):
     item = {'id': 'example', 'name': 'Original label', 'url': broken}
@@ -59,6 +60,8 @@ def test_embedded_url_correction_requires_one_unambiguous_product(broken):
     'https://shop.amul.com/en/product/https://evil.invalid/en/product/demo',
     'https://evil.invalid/en/product/https://shop.amul.com/en/product/demo',
     'https://shop.amul.com/en/product/https://shop.amul.com/en/product/demo/product/other',
+    'https://shop.amul.com/en/product/enhttps://shop.amul.com/en/product/demo',
+    'https://shop.amul.com/en/product/https://shop.amul.com.evil.invalid/en/product/demo',
 ])
 def test_conflicting_or_foreign_embedded_links_remain_errors(broken):
     with pytest.raises(RuntimeError, match='requires review') as exc:

@@ -26,23 +26,16 @@ def configured_product_url(value):
         origin = 'https://shop.amul.com'
         parts = value.strip().split(origin)
         if len(parts) >= 3 and parts[0] == '':
-            # Parse each copied route fragment, rather than selecting an
-            # arbitrary embedded URL. Every named product must agree.
-            final = re.fullmatch(
-                r'/en/product/(?P<slug>[a-z0-9-]+)'
-                r'(?:(?:/en)?/product/(?P=slug))*/?', parts[-1]
-            )
+            # Only route components and one product identity may occur across
+            # all copied fragments. Never select an arbitrary embedded URL.
+            final = re.match(r'/en/product/([a-z0-9-]+)(?=/|$)', parts[-1])
             if final:
-                slug = final['slug']
-                consistent = True
-                for prefix in parts[1:-1]:
-                    if prefix in ('/en', '/en/product', '/en/product/'):
-                        continue
-                    outer = re.fullmatch(r'/en/product/([a-z0-9-]+)/?', prefix)
-                    if not outer or outer[1] != slug:
-                        consistent = False
-                        break
-                if consistent:
+                slug = final[1]
+                tokens = [token for part in parts[1:] for token in part.split('/') if token]
+                named = [name for part in parts[1:]
+                         for name in re.findall(r'/product/([a-z0-9-]+)(?=/|$)', part)]
+                if (tokens and all(token in ('en', 'product', slug) for token in tokens)
+                        and named and all(name == slug for name in named)):
                     return product_url(origin + '/en/product/' + slug)
     return product_url(value)
 
