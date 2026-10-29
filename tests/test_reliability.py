@@ -95,6 +95,19 @@ async def test_location_header_precedes_product_rendering():
 
 
 @pytest.mark.asyncio
+async def test_location_refresh_cannot_change_product_identity():
+    page = page_for()
+    original_wait = page.wait_for_selector
+    async def wait(selector, **kwargs):
+        if selector == NAME_SELECTOR:
+            page.url = 'https://shop.amul.com/en/product/different-product'
+        return await original_wait(selector, **kwargs)
+    page.wait_for_selector = wait
+    with pytest.raises(CheckError, match='Unexpected product redirect'):
+        await scraper._check_availability_on_page(page, URL, '123456', False)
+
+
+@pytest.mark.asyncio
 async def test_http_error_and_cross_product_redirect_are_not_out_of_stock():
     page = page_for()
     async def http_error(*args, **kwargs): return SimpleNamespace(status=404)

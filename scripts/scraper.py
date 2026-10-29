@@ -118,11 +118,15 @@ async def _check_availability_on_page(
             "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4", timeout=15000
         )
         await page.wait_for_selector(
-            "div.alert.alert-danger.mt-3, a.btn.btn-primary.add-to-cart, "
-            "button.btn.btn-primary.product_enquiry", timeout=10000
+            "div.alert.alert-danger.mt-3:visible, a.btn.btn-primary.add-to-cart:visible, "
+            "button.btn.btn-primary.product_enquiry:visible", timeout=10000
         )
     except Exception:
         await log("Product details did not become ready; validating available evidence")
+
+    # The pincode selection may navigate after the initial URL check.
+    if product_url(page.url) != url:
+        raise CheckError("Unexpected product redirect")
 
     await log("Checking availability indicators…")
     sold_out_visible, so_status = await element_visibility(
