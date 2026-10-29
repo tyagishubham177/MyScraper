@@ -32,11 +32,6 @@ async def _check_availability_on_page(
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(500)
     await log("Page loaded")
-    error_page = await page.query_selector("section.error_page")
-    if error_page and await error_page.is_visible():
-        error_text = await error_page.text_content() or ""
-        if "not a functioning page" in error_text.lower():
-            raise CheckError("Product page does not exist")
 
     async def handle_pincode_modal():
         modal = await page.query_selector("div.modal-content.bg-transparent")
@@ -128,6 +123,14 @@ async def _check_availability_on_page(
         )
     except Exception:
         await log("Product details did not become ready; validating available evidence")
+
+    # StoreHippo can show an error-page placeholder until the location-specific
+    # product has rendered. It is an error only after that transition settles.
+    error_page = await page.query_selector("section.error_page")
+    if error_page and await error_page.is_visible():
+        error_text = await error_page.text_content() or ""
+        if "not a functioning page" in error_text.lower():
+            raise CheckError("Product page does not exist")
 
     # The pincode selection may navigate after the initial URL check.
     if product_url(page.url) != url:

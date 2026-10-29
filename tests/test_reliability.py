@@ -134,6 +134,27 @@ async def test_soft_404_is_an_error_even_when_http_status_is_success():
 
 
 @pytest.mark.asyncio
+async def test_error_placeholder_before_location_selection_does_not_hide_valid_stock():
+    page = page_for()
+    error = MockElementHandle(visible=True, text_content_val='The Web address is not a functioning page')
+    page.selectors_config.update({
+        'section.error_page': error,
+        'div.modal-content.bg-transparent': {'visible': True},
+        '#search': MockElementHandle(),
+        '#automatic': {'visible': True},
+        "#automatic a.searchitem-name:has-text('123456')": {'visible': True},
+    })
+    original_wait = page.wait_for_selector
+    async def wait(selector, **kwargs):
+        if kwargs.get('state') == 'hidden':
+            error._visible = False
+        return await original_wait(selector, **kwargs)
+    page.wait_for_selector = wait
+    assert await scraper._check_availability_on_page(page, URL, '123456', False) == (True, 'Example product')
+    assert page.goto_url == URL
+
+
+@pytest.mark.asyncio
 async def test_screenshots_do_not_overwrite_other_checks():
     page = page_for()
     await scraper._check_availability_on_page(page, URL, '123456', True)
