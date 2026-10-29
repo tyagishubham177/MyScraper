@@ -1,6 +1,12 @@
 name: Amul Watchdog
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'requirements.txt'
+      - '.github/workflows/schedule.yml'
   schedule:
     - cron: "*/10 * * * *"   # every 10 min
   workflow_dispatch:        # manual run button
