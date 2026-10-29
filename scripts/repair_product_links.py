@@ -4,6 +4,7 @@ Run before the stock checker. Once the old entries are corrected this only reads
 and validates the product list; it does not repeat browser checks or writes.
 """
 import asyncio
+import argparse
 from contextlib import redirect_stdout
 import io
 import os
@@ -130,10 +131,14 @@ async def apply_repair(session, token, before, after):
         raise RuntimeError("Product update outcome is uncertain; reconcile before retrying")
 
 
-async def main():
+async def main(check_only=False):
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
         products = await read_products(session)
         repairs = plan_repairs(products)
+        if check_only:
+            await verify_product_pages(products, repairs)
+            print(f"Verified {len(products)} product links; {len(repairs)} approved corrections planned; no writes performed.")
+            return
         if not repairs:
             print("Product link migration already applied; no configuration writes needed.")
             return
@@ -146,4 +151,6 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check-only", action="store_true", help="Verify the repair plan without authentication or writes")
+    asyncio.run(main(check_only=parser.parse_args().check_only))

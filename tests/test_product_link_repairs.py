@@ -100,3 +100,19 @@ async def test_all_page_validation_completes_before_authentication_or_writes(mon
     with pytest.raises(RuntimeError, match="Unverified page"):
         await repair.main()
     assert not session.puts
+
+
+@pytest.mark.asyncio
+async def test_check_only_verifies_plan_without_authentication_or_writes(monkeypatch, capsys):
+    session = Session([blueberry()])
+    monkeypatch.setattr(repair.aiohttp, 'ClientSession', lambda **kwargs: session)
+    verified = []
+    async def verify(products, planned): verified.append((products, planned))
+    async def unexpected_auth(*args): raise AssertionError('Read-only verification requested authentication')
+    monkeypatch.setattr(repair, 'verify_product_pages', verify)
+    monkeypatch.setattr(repair, 'admin_token', unexpected_auth)
+    await repair.main(check_only=True)
+    assert len(verified) == 1
+    assert len(verified[0][1]) == 1
+    assert not session.puts
+    assert repair.OLD_BLUEBERRY_URL not in capsys.readouterr().out
