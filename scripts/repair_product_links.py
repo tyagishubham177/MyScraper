@@ -128,6 +128,7 @@ async def read_products(session):
 
 async def verify_product_pages(products, repairs):
     replacements = {str(after["id"]): after for _, after in repairs}
+    unverified = set()
     # The existing scraper logs public-page details. Keep these transient
     # diagnostics in memory so this repair does not export selected products.
     with redirect_stdout(io.StringIO()):
@@ -146,11 +147,30 @@ async def verify_product_pages(products, repairs):
                         if url == BLUEBERRY_URL and " ".join(name.split()) != BLUEBERRY_NAME:
                             raise RuntimeError("Replacement product identity did not match")
                     except Exception:
-                        raise RuntimeError("A product link could not be reliably verified; no repairs applied") from None
+                        unverified.add(str(product['id']))
                     finally:
                         await page.close()
             finally:
                 await browser.close()
+    return unverified
+
+
+def collect_repairs(products):
+    if not isinstance(products, list):
+        raise RuntimeError('Invalid product configuration')
+    repairs, unknown, ids = [], [], set()
+    for product in products:
+        if not isinstance(product, dict) or not product.get('id'):
+            raise RuntimeError('Invalid product configuration')
+        pid = str(product['id'])
+        if pid in ids:
+            raise RuntimeError('Duplicate product identifier')
+        ids.add(pid)
+        try:
+            repairs.extend(plan_repairs([product]))
+        except UnrecognizedProductURL:
+            unknown.append(product)
+    return repairs, unknown
 
 
 async def admin_token(session):
@@ -194,28 +214,39 @@ async def apply_repair(session, token, before, after):
 async def main(check_only=False):
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
         products = await read_products(session)
-        resolved_urls = {}
-        while True:
+        repairs, unknown = collect_repairs(products)
+        if not repairs and not check_only:
+            print(f"Product link migration already applied; no configuration writes needed. {len(unknown)} unresolved links preserved for review.")
+            return
+        unresolved = set()
+        for product in unknown:
             try:
-                repairs = plan_repairs(products, resolved_urls)
-                break
-            except UnrecognizedProductURL as error:
                 # If copied fragments name different products, retain only a
                 # unique live page matching the existing full label and pack.
-                resolved_urls[str(error.product['id'])] = await resolve_copied_url(error.product)
+                url = await resolve_copied_url(product)
+                repairs.extend(plan_repairs([product], {str(product['id']): url}))
+            except RuntimeError:
+                unresolved.add(str(product['id']))
+        candidates = [p for p in products if str(p['id']) not in unresolved]
+        unverified = await verify_product_pages(candidates, repairs) or set()
+        if (BLUEBERRY_ID in unverified and any(str(before['id']) == BLUEBERRY_ID
+                                             for before, _ in repairs)):
+            raise RuntimeError('Approved blueberry replacement could not be verified; no repairs applied')
+        unresolved.update(unverified)
+        repairs = [(before, after) for before, after in repairs if str(before['id']) not in unresolved]
+        verified_count = len(products) - len(unresolved)
         if check_only:
-            await verify_product_pages(products, repairs)
-            print(f"Verified {len(products)} product links; {len(repairs)} approved corrections planned; no writes performed.")
+            print(f"Verified {verified_count} product links; {len(repairs)} approved corrections planned; {len(unresolved)} unresolved links unchanged; no writes performed.")
             return
         if not repairs:
-            print("Product link migration already applied; no configuration writes needed.")
+            print(f"No verified corrections to apply; {len(unresolved)} unresolved links unchanged.")
             return
-        # Complete validation of every configured link before the first write.
-        await verify_product_pages(products, repairs)
+        # Validate every planned correction before the first write. Unrelated
+        # ambiguous/unavailable items stay unchanged and are never stock results.
         token = await admin_token(session)
         for before, after in repairs:
             await apply_repair(session, token, before, after)
-        print(f"Verified {len(products)} product links; applied {len(repairs)} approved corrections.")
+        print(f"Verified {verified_count} product links; applied {len(repairs)} approved corrections; {len(unresolved)} unresolved links unchanged for review.")
 
 
 if __name__ == "__main__":

@@ -167,3 +167,37 @@ async def test_check_only_verifies_plan_without_authentication_or_writes(monkeyp
     assert len(verified[0][1]) == 1
     assert not session.puts
     assert repair.OLD_BLUEBERRY_URL not in capsys.readouterr().out
+
+
+@pytest.mark.asyncio
+async def test_ambiguous_unrelated_item_is_preserved_while_approved_repair_completes(monkeypatch, capsys):
+    unknown = {'id': 'unrelated', 'name': 'Custom label', 'url': 'https://shop.amul.com/en/product/outerhttps://shop.amul.com/en/product/inner'}
+    session = Session([blueberry(), unknown])
+    monkeypatch.setattr(repair.aiohttp, 'ClientSession', lambda **kwargs: session)
+    async def ambiguous(*args): raise RuntimeError('Ambiguous identity')
+    async def verified(*args): return set()
+    async def token(*args): return 'test-token'
+    monkeypatch.setattr(repair, 'resolve_copied_url', ambiguous)
+    monkeypatch.setattr(repair, 'verify_product_pages', verified)
+    monkeypatch.setattr(repair, 'admin_token', token)
+    await repair.main()
+    assert session.products[1] == unknown
+    assert session.products[0]['url'] == repair.BLUEBERRY_URL
+    assert session.products[0]['name'] == repair.BLUEBERRY_NAME
+    assert len(session.puts) == 1
+    output = capsys.readouterr().out
+    assert '1 unresolved links unchanged' in output
+    assert unknown['url'] not in output
+
+
+@pytest.mark.asyncio
+async def test_unverified_blueberry_candidate_aborts_all_writes(monkeypatch):
+    session = Session([blueberry()])
+    monkeypatch.setattr(repair.aiohttp, 'ClientSession', lambda **kwargs: session)
+    async def unverified(*args): return {repair.BLUEBERRY_ID}
+    async def unexpected_auth(*args): raise AssertionError('Authentication before validation')
+    monkeypatch.setattr(repair, 'verify_product_pages', unverified)
+    monkeypatch.setattr(repair, 'admin_token', unexpected_auth)
+    with pytest.raises(RuntimeError, match='could not be verified'):
+        await repair.main()
+    assert not session.puts
