@@ -131,6 +131,7 @@ async def initialize_public_catalog(context):
 async def resolve_copied_url(product):
     candidates = copied_url_candidates(product['url'])
     names = {}
+    unavailable_count = 0
     with redirect_stdout(io.StringIO()):
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(headless=True, args=['--no-sandbox'])
@@ -142,11 +143,13 @@ async def resolve_copied_url(product):
                     try:
                         names[url] = await public_product_name(page, url)
                     except Exception:
-                        continue
+                        unavailable_count += 1
                     finally:
                         await page.close()
             finally:
                 await browser.close()
+    if unavailable_count == len(candidates):
+        raise RuntimeError('No copied-link candidate could be verified; no repairs applied')
     return match_product_label(names, product['name'])
 
 
