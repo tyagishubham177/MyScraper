@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 import io
 import os
 import sys
+from urllib.parse import urlsplit
 
 if __package__ is None and __name__ == "__main__":
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -49,7 +50,18 @@ def plan_repairs(products):
             try:
                 canonical = configured_product_url(url)
             except ValueError:
-                raise RuntimeError("An unrecognized product URL requires review") from None
+                parsed = urlsplit(url) if isinstance(url, str) else None
+                # Describe structure only; never print configuration values.
+                shape = {
+                    "https": bool(parsed and parsed.scheme == 'https'),
+                    "http": bool(parsed and parsed.scheme == 'http'),
+                    "amul_host": bool(parsed and parsed.hostname == 'shop.amul.com'),
+                    "product_path": bool(parsed and parsed.path.startswith('/en/product/')),
+                    "query": bool(parsed and parsed.query),
+                    "fragment": bool(parsed and parsed.fragment),
+                    "embedded_url": bool(parsed and 'https://' in parsed.path),
+                }
+                raise RuntimeError(f"An unrecognized product URL requires review; shape={shape}") from None
             # Only repair the demonstrated duplicated-path corruption. Ordinary
             # canonical links and custom labels are left exactly as stored.
             if "https://shop.amul.com/enhttps://" in url:
