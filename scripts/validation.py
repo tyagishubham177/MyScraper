@@ -19,15 +19,16 @@ def product_url(value):
 def configured_product_url(value):
     """Recover the known duplicated-path data entry without guessing identity.
 
-    Both copies must name the same product on the exact allowed host. Other
-    malformed values still fail the canonical URL contract.
+    An embedded canonical URL must use the exact allowed host. Any outer or
+    trailing product slug must match it. Other malformed values still fail.
     """
     if isinstance(value, str):
         duplicate = re.fullmatch(
-            r'https://shop\.amul\.com/enhttps://shop\.amul\.com/en/product/'
-            r'(?P<slug>[a-z0-9-]+)/product/(?P=slug)', value.strip()
+            r'https://shop\.amul\.com/en(?:/product/(?:(?P<outer>[a-z0-9-]+)/?)?)?'
+            r'https://shop\.amul\.com/en/product/(?P<slug>[a-z0-9-]+)'
+            r'(?:/product/(?P=slug))?/?', value.strip()
         )
-        if duplicate:
+        if duplicate and (not duplicate['outer'] or duplicate['outer'] == duplicate['slug']):
             return product_url('https://shop.amul.com/en/product/' + duplicate['slug'])
     return product_url(value)
 

@@ -39,6 +39,31 @@ def test_unknown_corruption_requires_review_without_mutating_source():
     assert products == original
 
 
+@pytest.mark.parametrize('broken', [
+    'https://shop.amul.com/enhttps://shop.amul.com/en/product/demo/product/demo',
+    'https://shop.amul.com/en/product/https://shop.amul.com/en/product/demo',
+    'https://shop.amul.com/en/product/https://shop.amul.com/en/product/demo/product/demo',
+    'https://shop.amul.com/en/product/demohttps://shop.amul.com/en/product/demo',
+])
+def test_embedded_url_correction_requires_one_unambiguous_product(broken):
+    item = {'id': 'example', 'name': 'Original label', 'url': broken}
+    before, after = repair.plan_repairs([item])[0]
+    assert before == item
+    assert after == dict(item, url='https://shop.amul.com/en/product/demo')
+
+
+@pytest.mark.parametrize('broken', [
+    'https://shop.amul.com/en/product/otherhttps://shop.amul.com/en/product/demo',
+    'https://shop.amul.com/en/product/https://evil.invalid/en/product/demo',
+    'https://evil.invalid/en/product/https://shop.amul.com/en/product/demo',
+    'https://shop.amul.com/en/product/https://shop.amul.com/en/product/demo/product/other',
+])
+def test_conflicting_or_foreign_embedded_links_remain_errors(broken):
+    with pytest.raises(RuntimeError, match='requires review') as exc:
+        repair.plan_repairs([{'id': 'example', 'name': 'Original label', 'url': broken}])
+    assert broken not in str(exc.value)
+
+
 class Response:
     def __init__(self, data, status=200):
         self.data, self.status = data, status
