@@ -1147,7 +1147,7 @@ def test_process_product_out_of_stock(monkeypatch):
         product_checker.process_product(
             None,
             object(),
-            {"id": 1, "url": "http://x", "name": "Prod"},
+            {"id": 1, "url": "https://shop.amul.com/en/product/test-product", "name": "Prod"},
             recipients,
             dt_time(12, 0),
             False,
@@ -1178,7 +1178,7 @@ def test_process_product_in_stock(monkeypatch):
         product_checker.process_product(
             None,
             object(),
-            {"id": 1, "url": "http://x", "name": "Prod"},
+            {"id": 1, "url": "https://shop.amul.com/en/product/test-product", "name": "Prod"},
             recipients,
             dt_time(12, 0),
             False,
