@@ -56,7 +56,9 @@ jobs:
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           ADMIN_MAIL: ${{ secrets.ADMIN_MAIL }}
           ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
-        run: python scripts/check_stock.py
+        run: |
+          python scripts/repair_product_links.py
+          python scripts/check_stock.py
 
         # - name: Upload screenshots  # see how it improves time
         #   uses: actions/upload-artifact@v4

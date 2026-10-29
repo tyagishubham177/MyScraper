@@ -123,6 +123,17 @@ async def test_http_error_and_cross_product_redirect_are_not_out_of_stock():
 
 
 @pytest.mark.asyncio
+async def test_soft_404_is_an_error_even_when_http_status_is_success():
+    page = page_for()
+    page.selectors_config['section.error_page'] = {
+        'visible': True,
+        'text_content': 'We are sorry. The Web address you entered is not a functioning page on our site.',
+    }
+    with pytest.raises(CheckError, match='Product page does not exist'):
+        await scraper._check_availability_on_page(page, URL, '123456', False)
+
+
+@pytest.mark.asyncio
 async def test_screenshots_do_not_overwrite_other_checks():
     page = page_for()
     await scraper._check_availability_on_page(page, URL, '123456', True)

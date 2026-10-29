@@ -19,16 +19,24 @@ def product_url(value):
 def configured_product_url(value):
     """Recover the known duplicated-path data entry without guessing identity.
 
-    Both copies must name the same product on the exact allowed host. Other
-    malformed values still fail the canonical URL contract.
+    An embedded canonical URL must use the exact allowed host. Any outer or
+    trailing product slug must match it. Other malformed values still fail.
     """
     if isinstance(value, str):
-        duplicate = re.fullmatch(
-            r'https://shop\.amul\.com/enhttps://shop\.amul\.com/en/product/'
-            r'(?P<slug>[a-z0-9-]+)/product/(?P=slug)', value.strip()
-        )
-        if duplicate:
-            return product_url('https://shop.amul.com/en/product/' + duplicate['slug'])
+        origin = 'https://shop.amul.com'
+        parts = value.strip().split(origin)
+        if len(parts) >= 3 and parts[0] == '':
+            # Only route components and one product identity may occur across
+            # all copied fragments. Never select an arbitrary embedded URL.
+            final = re.match(r'/en/product/([a-z0-9-]+)(?=/|$)', parts[-1])
+            if final:
+                slug = final[1]
+                tokens = [token for part in parts[1:] for token in part.split('/') if token]
+                named = [name for part in parts[1:]
+                         for name in re.findall(r'/product/([a-z0-9-]+)(?=/|$)', part)]
+                if (tokens and all(token in ('en', 'product', slug) for token in tokens)
+                        and named and all(name == slug for name in named)):
+                    return product_url(origin + '/en/product/' + slug)
     return product_url(value)
 
 def pincode(value):
