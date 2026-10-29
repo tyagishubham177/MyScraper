@@ -69,6 +69,27 @@ def test_conflicting_or_foreign_embedded_links_remain_errors(broken):
     assert broken not in str(exc.value)
 
 
+def test_copied_candidates_are_same_origin_and_public_label_selects_exact_identity():
+    value = 'https://shop.amul.com/en/product/outerhttps://shop.amul.com/en/product/inner'
+    candidates = repair.copied_url_candidates(value)
+    assert candidates == ['https://shop.amul.com/en/product/inner', 'https://shop.amul.com/en/product/outer']
+    assert repair.match_product_label({candidates[0]: 'Actual product | Pack of 30', candidates[1]: 'Other product | Pack of 8'}, 'Actual product | Pack of 30') == candidates[0]
+    with pytest.raises(RuntimeError, match='ambiguous'):
+        repair.match_product_label({candidates[0]: 'Actual product | Pack of 8'}, 'Actual product | Pack of 30')
+    with pytest.raises(RuntimeError, match='ambiguous'):
+        repair.match_product_label({candidates[0]: 'Same name', candidates[1]: 'Same name'}, 'Same name')
+
+
+@pytest.mark.parametrize('value', [
+    'https://evil.invalid/en/product/outerhttps://shop.amul.com/en/product/inner',
+    'https://shop.amul.com/en/product/outerhttps://shop.amul.com.evil.invalid/en/product/inner',
+    'https://shop.amul.com/en/product/outerhttps://shop.amul.com/en/product/inner?variant=other',
+])
+def test_copied_candidates_never_follow_foreign_origins_or_variant_parameters(value):
+    with pytest.raises(RuntimeError, match='safely resolved'):
+        repair.copied_url_candidates(value)
+
+
 class Response:
     def __init__(self, data, status=200):
         self.data, self.status = data, status

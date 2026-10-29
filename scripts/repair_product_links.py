@@ -26,7 +26,64 @@ BLUEBERRY_URL = "https://shop.amul.com/en/product/amul-high-protein-blueberry-sh
 BLUEBERRY_NAME = "Amul High Protein Blueberry Shake, 200 mL | Pack of 30"
 
 
-def plan_repairs(products):
+class UnrecognizedProductURL(RuntimeError):
+    def __init__(self, product):
+        super().__init__("An unrecognized product URL requires review")
+        self.product = product
+
+
+def copied_url_candidates(value):
+    """Enumerate only canonical Amul identities in same-origin copied URLs."""
+    origin = 'https://shop.amul.com'
+    if not isinstance(value, str):
+        raise RuntimeError('Copied URL cannot be safely resolved')
+    value = value.strip()
+    parts = value.split(origin)
+    parsed = urlsplit(value)
+    if (parts[0] or len(parts) < 3 or len(parts) - 1 != value.count('https://')
+            or 'http://' in value or parsed.query or parsed.fragment):
+        raise RuntimeError('Copied URL cannot be safely resolved')
+    slugs = {slug for part in parts[1:]
+             for slug in re.findall(r'/product/([a-z0-9-]+)(?=/|$)', part)}
+    tokens = [token for part in parts[1:] for token in part.split('/') if token]
+    if not slugs or len(slugs) > 5 or any(token not in slugs | {'en', 'product'} for token in tokens):
+        raise RuntimeError('Copied URL cannot be safely resolved')
+    return sorted(product_url(origin + '/en/product/' + slug) for slug in slugs)
+
+
+def match_product_label(names_by_url, expected_name):
+    expected = ' '.join(expected_name.split()).casefold()
+    matches = [url for url, name in names_by_url.items()
+               if ' '.join(name.split()).casefold() == expected]
+    if len(matches) != 1:
+        raise RuntimeError('Copied link identity is ambiguous; no repairs applied')
+    return matches[0]
+
+
+async def resolve_copied_url(product):
+    candidates = copied_url_candidates(product['url'])
+    names = {}
+    with redirect_stdout(io.StringIO()):
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True, args=['--no-sandbox'])
+            try:
+                context = await browser.new_context()
+                for url in candidates:
+                    page = await context.new_page()
+                    try:
+                        _, names[url] = await scraper.check_product_availability(
+                            url, config.PINCODE, page=page, skip_pincode=False
+                        )
+                    except Exception:
+                        continue  # An unavailable candidate is never a match.
+                    finally:
+                        await page.close()
+            finally:
+                await browser.close()
+    return match_product_label(names, product['name'])
+
+
+def plan_repairs(products, resolved_urls=None):
     """Return exact before/after records; never substitute an unrelated item."""
     if not isinstance(products, list):
         raise RuntimeError("Invalid product configuration")
@@ -49,23 +106,10 @@ def plan_repairs(products):
             after.update(url=BLUEBERRY_URL, name=BLUEBERRY_NAME)
         else:
             try:
-                canonical = configured_product_url(url)
+                canonical = (product_url(resolved_urls[pid]) if resolved_urls and pid in resolved_urls
+                             else configured_product_url(url))
             except ValueError:
-                parsed = urlsplit(url) if isinstance(url, str) else None
-                # Describe structure only; never print configuration values.
-                shape = {
-                    "https": bool(parsed and parsed.scheme == 'https'),
-                    "http": bool(parsed and parsed.scheme == 'http'),
-                    "amul_host": bool(parsed and parsed.hostname == 'shop.amul.com'),
-                    "product_path": bool(parsed and parsed.path.startswith('/en/product/')),
-                    "query": bool(parsed and parsed.query),
-                    "fragment": bool(parsed and parsed.fragment),
-                    "embedded_url": bool(parsed and 'https://' in parsed.path),
-                    "embedded_count": url.count('https://') if isinstance(url, str) else 0,
-                    "named_slugs": len(re.findall(r'/product/([a-z0-9-]+)(?=/|$)', url)) if isinstance(url, str) else 0,
-                    "distinct_slugs": len(set(re.findall(r'/product/([a-z0-9-]+)(?=/|$)', url))) if isinstance(url, str) else 0,
-                }
-                raise RuntimeError(f"An unrecognized product URL requires review; shape={shape}") from None
+                raise UnrecognizedProductURL(product) from None
             # Only repair the demonstrated duplicated-path corruption. Ordinary
             # canonical links and custom labels are left exactly as stored.
             if url.count("https://") > 1:
@@ -150,7 +194,15 @@ async def apply_repair(session, token, before, after):
 async def main(check_only=False):
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
         products = await read_products(session)
-        repairs = plan_repairs(products)
+        resolved_urls = {}
+        while True:
+            try:
+                repairs = plan_repairs(products, resolved_urls)
+                break
+            except UnrecognizedProductURL as error:
+                # If copied fragments name different products, retain only a
+                # unique live page matching the existing full label and pack.
+                resolved_urls[str(error.product['id'])] = await resolve_copied_url(error.product)
         if check_only:
             await verify_product_pages(products, repairs)
             print(f"Verified {len(products)} product links; {len(repairs)} approved corrections planned; no writes performed.")
