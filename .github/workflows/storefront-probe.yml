@@ -15,4 +15,4 @@ jobs:
           python-version: '3.12'
       - run: pip install playwright==1.54.0
       - run: playwright install --with-deps chromium
-      - run: python scripts/storefront_probe.py
+      - run: python -m scripts.storefront_probe

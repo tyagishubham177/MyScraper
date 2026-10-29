@@ -16,6 +16,21 @@ def product_url(value):
         raise ValueError("Expected a canonical HTTPS shop.amul.com/en/product/ URL")
     return urlunsplit(('https', 'shop.amul.com', parsed.path.rstrip('/'), '', ''))
 
+def configured_product_url(value):
+    """Recover the known duplicated-path data entry without guessing identity.
+
+    Both copies must name the same product on the exact allowed host. Other
+    malformed values still fail the canonical URL contract.
+    """
+    if isinstance(value, str):
+        duplicate = re.fullmatch(
+            r'https://shop\.amul\.com/enhttps://shop\.amul\.com/en/product/'
+            r'(?P<slug>[a-z0-9-]+)/product/(?P=slug)', value.strip()
+        )
+        if duplicate:
+            return product_url('https://shop.amul.com/en/product/' + duplicate['slug'])
+    return product_url(value)
+
 def pincode(value):
     if not isinstance(value, str) or not re.fullmatch(r'[0-9]{6}', value):
         raise ValueError("Pincode must contain exactly six digits")

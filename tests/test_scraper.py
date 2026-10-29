@@ -138,6 +138,8 @@ class MockPage:
     async def wait_for_selector(self, selector, timeout=None, state='visible'):
         # print(f"MockPage: Waiting for selector '{selector}' with state '{state}'")
         self._waited_selectors[selector] = state
+        if state == 'hidden' and (self.clicked_selectors or 'Enter' in self.keyboard.pressed_keys):
+            return None  # Selecting a suggestion closes the location modal.
         element = await self.query_selector(selector)
         if element:
             if state == 'visible' and await element.is_visible():
@@ -246,6 +248,8 @@ async def test_pincode_modal_appears_input_success_dropdown(mock_page, monkeypat
     # Crucially, ensure wait_for_selector will also find these elements.
     # We can reuse custom_page_qs if it's suitable or make a specific one for wait_for_selector.
     async def mock_wait_for_selector(selector, timeout=None, state=None):
+        if state == "hidden":
+            return None
         # print(f"mock_wait_for_selector called with: {selector}")
         if selector == "#automatic":
             # print("mock_wait_for_selector: #automatic found")
