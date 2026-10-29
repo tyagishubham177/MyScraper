@@ -23,13 +23,27 @@ def configured_product_url(value):
     trailing product slug must match it. Other malformed values still fail.
     """
     if isinstance(value, str):
-        duplicate = re.fullmatch(
-            r'https://shop\.amul\.com/en(?:/product/(?:(?P<outer>[a-z0-9-]+)/?)?)?'
-            r'https://shop\.amul\.com/en/product/(?P<slug>[a-z0-9-]+)'
-            r'(?:/product/(?P=slug))?/?', value.strip()
-        )
-        if duplicate and (not duplicate['outer'] or duplicate['outer'] == duplicate['slug']):
-            return product_url('https://shop.amul.com/en/product/' + duplicate['slug'])
+        origin = 'https://shop.amul.com'
+        parts = value.strip().split(origin)
+        if len(parts) >= 3 and parts[0] == '':
+            # Parse each copied route fragment, rather than selecting an
+            # arbitrary embedded URL. Every named product must agree.
+            final = re.fullmatch(
+                r'/en/product/(?P<slug>[a-z0-9-]+)'
+                r'(?:(?:/en)?/product/(?P=slug))*/?', parts[-1]
+            )
+            if final:
+                slug = final['slug']
+                consistent = True
+                for prefix in parts[1:-1]:
+                    if prefix in ('/en', '/en/product', '/en/product/'):
+                        continue
+                    outer = re.fullmatch(r'/en/product/([a-z0-9-]+)/?', prefix)
+                    if not outer or outer[1] != slug:
+                        consistent = False
+                        break
+                if consistent:
+                    return product_url(origin + '/en/product/' + slug)
     return product_url(value)
 
 def pincode(value):

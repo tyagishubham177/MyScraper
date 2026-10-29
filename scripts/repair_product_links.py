@@ -60,11 +60,12 @@ def plan_repairs(products):
                     "query": bool(parsed and parsed.query),
                     "fragment": bool(parsed and parsed.fragment),
                     "embedded_url": bool(parsed and 'https://' in parsed.path),
+                    "embedded_count": url.count('https://') if isinstance(url, str) else 0,
                 }
                 raise RuntimeError(f"An unrecognized product URL requires review; shape={shape}") from None
             # Only repair the demonstrated duplicated-path corruption. Ordinary
             # canonical links and custom labels are left exactly as stored.
-            if url.count("https://") == 2:
+            if url.count("https://") > 1:
                 after["url"] = canonical
         if after != before:
             repairs.append((before, after))

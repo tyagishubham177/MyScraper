@@ -44,6 +44,8 @@ def test_unknown_corruption_requires_review_without_mutating_source():
     'https://shop.amul.com/en/product/https://shop.amul.com/en/product/demo',
     'https://shop.amul.com/en/product/https://shop.amul.com/en/product/demo/product/demo',
     'https://shop.amul.com/en/product/demohttps://shop.amul.com/en/product/demo',
+    'https://shop.amul.com/en/product/https://shop.amul.com/en/product/demo/en/product/demo',
+    'https://shop.amul.com/en/product/https://shop.amul.com/enhttps://shop.amul.com/en/product/demo',
 ])
 def test_embedded_url_correction_requires_one_unambiguous_product(broken):
     item = {'id': 'example', 'name': 'Original label', 'url': broken}
