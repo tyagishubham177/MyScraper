@@ -1,6 +1,8 @@
 """Read-only investigation of the one remaining configured product failure."""
 import asyncio
 from playwright.async_api import async_playwright
+from scripts.scraper import check_product_availability
+from scripts.repair_product_links import BLUEBERRY_NAME, BLUEBERRY_URL
 
 async def main():
     async with async_playwright() as pw:
@@ -17,6 +19,9 @@ async def main():
             print('BLUEBERRY URL', page.url)
             print('BLUEBERRY BODY', (await page.locator('body').inner_text())[:6000])
             print('BLUEBERRY STRUCTURE', await page.evaluate("""() => Array.from(document.querySelectorAll('h1,.alert,.modal,[class*=loader], [class*=loading], [class*=error]')).map(e=>({tag:e.tagName,id:e.id,class:e.className,text:e.textContent.trim().slice(0,300),visible:!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length)}))"""))
+            result = await check_product_availability(BLUEBERRY_URL, '302021', page=page, skip_pincode=True)
+            assert result[1] == BLUEBERRY_NAME
+            print('APPROVED THIRTY-PACK VERIFIED', result)
         finally:
             await browser.close()
 
