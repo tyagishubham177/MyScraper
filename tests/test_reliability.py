@@ -4,7 +4,7 @@ from datetime import time
 from types import SimpleNamespace
 
 import pytest
-from scripts.validation import CheckError, product_url, pincode
+from scripts.validation import CheckError, product_url, configured_product_url, pincode
 from tests.test_scraper import MockPage, MockElementHandle
 from tests import test_check_stock as stock_tests
 from scripts import scraper
@@ -32,6 +32,15 @@ def test_url_normalization_preserves_product_identity():
     assert product_url('  '+URL+'/  ') == URL
 
 
+def test_known_duplicated_configured_url_preserves_both_matching_slugs():
+    broken = 'https://shop.amul.com/en' + URL + '/product/test-product'
+    assert configured_product_url(broken) == URL
+    with pytest.raises(ValueError):
+        configured_product_url(broken.replace('/product/test-product', '/product/other', 1))
+    with pytest.raises(ValueError):
+        configured_product_url(broken.replace('shop.amul.com/enhttps', 'evil.invalid/enhttps'))
+
+
 @pytest.mark.parametrize('pin', ['12345', '1234567', ' 123456', 'abcdef', '１２３４５６', None, 123456])
 def test_reject_invalid_pincodes(pin):
     with pytest.raises(ValueError): pincode(pin)
@@ -51,6 +60,51 @@ async def test_reused_context_still_verifies_pincode():
     with pytest.raises(CheckError, match='Pincode verification failed'):
         await scraper._check_availability_on_page(page, URL, '123456', True)
     assert page.screenshot_path  # Retain evidence for a failed confirmation.
+
+
+@pytest.mark.asyncio
+async def test_hidden_location_modal_is_not_filled():
+    page = page_for()
+    hidden_input = MockElementHandle(fill_raises=AssertionError('hidden input filled'))
+    page.selectors_config.update({
+        'div.modal-content.bg-transparent': {'visible': False},
+        '#search': hidden_input,
+    })
+    assert (await scraper._check_availability_on_page(page, URL, '123456', False))[0]
+    assert hidden_input.filled_value is None
+
+
+@pytest.mark.asyncio
+async def test_location_header_precedes_product_rendering():
+    page = page_for()
+    name = page.selectors_config.pop(NAME_SELECTOR)
+    control = page.selectors_config.pop('a.btn.btn-primary.add-to-cart:not(.disabled)')
+    original_wait = page.wait_for_selector
+    waited_for_product = False
+    async def wait(selector, **kwargs):
+        nonlocal waited_for_product
+        if selector == NAME_SELECTOR:
+            waited_for_product = True
+            page.selectors_config[NAME_SELECTOR] = name
+            page.selectors_config['a.btn.btn-primary.add-to-cart:not(.disabled)'] = control
+        return await original_wait(selector, **kwargs)
+    page.wait_for_selector = wait
+    result = await scraper._check_availability_on_page(page, URL, '123456', False)
+    assert waited_for_product
+    assert result == (True, 'Example product')
+
+
+@pytest.mark.asyncio
+async def test_location_refresh_cannot_change_product_identity():
+    page = page_for()
+    original_wait = page.wait_for_selector
+    async def wait(selector, **kwargs):
+        if selector == NAME_SELECTOR:
+            page.url = 'https://shop.amul.com/en/product/different-product'
+        return await original_wait(selector, **kwargs)
+    page.wait_for_selector = wait
+    with pytest.raises(CheckError, match='Unexpected product redirect'):
+        await scraper._check_availability_on_page(page, URL, '123456', False)
 
 
 @pytest.mark.asyncio

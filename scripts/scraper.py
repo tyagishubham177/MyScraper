@@ -35,7 +35,7 @@ async def _check_availability_on_page(
 
     async def handle_pincode_modal():
         modal = await page.query_selector("div.modal-content.bg-transparent")
-        if not modal:
+        if not modal or not await modal.is_visible():
             await log("Pincode modal not found")
             return
         if skip_pincode:
@@ -62,6 +62,14 @@ async def _check_availability_on_page(
             await page.keyboard.press("ArrowDown")
             await page.keyboard.press("Enter")
         await page.wait_for_timeout(500)
+        # Selecting a region refreshes the storefront asynchronously. Network
+        # idle alone can occur before that refresh has even started.
+        try:
+            await page.wait_for_selector(
+                "div.modal-content.bg-transparent", state="hidden", timeout=15000
+            )
+        except Exception as exc:
+            raise CheckError("Pincode selection did not close the location modal") from exc
         await page.wait_for_load_state("networkidle")
         await log("Pincode selected/attempted")
 
@@ -102,6 +110,23 @@ async def _check_availability_on_page(
     pincode_confirmed = await confirm_pincode(pincode)
     if not pincode_confirmed:
         await log("Pincode verification failed")
+
+    # The location header renders before the product details. Wait for both
+    # identity and an explicit stock control rather than reading an empty DOM.
+    try:
+        await page.wait_for_selector(
+            "h1.product-name.mb-2.fw-bold.lh-sm.text-dark.h3.mb-4", timeout=15000
+        )
+        await page.wait_for_selector(
+            "div.alert.alert-danger.mt-3:visible, a.btn.btn-primary.add-to-cart:visible, "
+            "button.btn.btn-primary.product_enquiry:visible", timeout=10000
+        )
+    except Exception:
+        await log("Product details did not become ready; validating available evidence")
+
+    # The pincode selection may navigate after the initial URL check.
+    if product_url(page.url) != url:
+        raise CheckError("Unexpected product redirect")
 
     await log("Checking availability indicators…")
     sold_out_visible, so_status = await element_visibility(

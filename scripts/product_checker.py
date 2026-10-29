@@ -2,6 +2,7 @@ import inspect
 import scraper
 from scripts.notifications_util import notify_users
 from scripts import stock_utils
+from scripts.validation import configured_product_url
 
 async def process_product(
     session,
@@ -43,6 +44,7 @@ async def process_product(
         )
 
     try:
+        product_url = configured_product_url(product_url)
         log_prefix = f"{pincode}|{product_id}"
         in_stock, scraped_name = await scraper.check_product_availability(
             product_url,

@@ -389,7 +389,7 @@ async def test_process_product_scraper_exception(monkeypatch):
         raise Exception("Scraper failed")
     monkeypatch.setattr(scraper_module, "check_product_availability", mock_scraper_raises_exception)
 
-    product_info = {"id": 1, "name": "Test Product", "url": "http://example.com"}
+    product_info = {"id": 1, "name": "Test Product", "url": "https://shop.amul.com/en/product/test-product"}
     recipients_map = {1: {"email": "test@example.com", "pincode": "201305"}}
     current_time = dt_time(12, 0)
 
@@ -1147,7 +1147,7 @@ def test_process_product_out_of_stock(monkeypatch):
         product_checker.process_product(
             None,
             object(),
-            {"id": 1, "url": "http://x", "name": "Prod"},
+            {"id": 1, "url": "https://shop.amul.com/en/product/test-product", "name": "Prod"},
             recipients,
             dt_time(12, 0),
             False,
@@ -1178,7 +1178,7 @@ def test_process_product_in_stock(monkeypatch):
         product_checker.process_product(
             None,
             object(),
-            {"id": 1, "url": "http://x", "name": "Prod"},
+            {"id": 1, "url": "https://shop.amul.com/en/product/test-product", "name": "Prod"},
             recipients,
             dt_time(12, 0),
             False,
