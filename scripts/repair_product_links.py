@@ -136,20 +136,25 @@ async def verify_product_pages(products, repairs):
             browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
             try:
                 context = await browser.new_context()
-                for product in products:
-                    candidate = replacements.get(str(product["id"]), product)
-                    url = product_url(candidate["url"])
-                    page = await context.new_page()
-                    try:
-                        _, name = await scraper.check_product_availability(
-                            url, config.PINCODE, page=page, skip_pincode=False
-                        )
-                        if url == BLUEBERRY_URL and " ".join(name.split()) != BLUEBERRY_NAME:
-                            raise RuntimeError("Replacement product identity did not match")
-                    except Exception:
-                        unverified.add(str(product['id']))
-                    finally:
-                        await page.close()
+                semaphore = asyncio.Semaphore(3)
+                async def verify(product):
+                    async with semaphore:
+                        candidate = replacements.get(str(product["id"]), product)
+                        url = product_url(candidate["url"])
+                        page = await context.new_page()
+                        try:
+                            _, name = await scraper.check_product_availability(
+                                url, config.PINCODE, page=page, skip_pincode=False
+                            )
+                            if url == BLUEBERRY_URL and " ".join(name.split()) != BLUEBERRY_NAME:
+                                raise RuntimeError("Replacement product identity did not match")
+                        except Exception:
+                            unverified.add(str(product['id']))
+                        finally:
+                            await page.close()
+                async with asyncio.TaskGroup() as group:
+                    for product in products:
+                        group.create_task(verify(product))
             finally:
                 await browser.close()
     return unverified
@@ -218,6 +223,7 @@ async def main(check_only=False):
         if not repairs and not check_only:
             print(f"Product link migration already applied; no configuration writes needed. {len(unknown)} unresolved links preserved for review.")
             return
+        print(f"Product link audit: {len(products)} entries; {len(repairs)} deterministic corrections; {len(unknown)} copied links require identity checks.")
         unresolved = set()
         for product in unknown:
             try:

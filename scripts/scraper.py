@@ -32,6 +32,11 @@ async def _check_availability_on_page(
     await page.wait_for_load_state("networkidle")
     await page.wait_for_timeout(500)
     await log("Page loaded")
+    error_page = await page.query_selector("section.error_page")
+    if error_page and await error_page.is_visible():
+        error_text = await error_page.text_content() or ""
+        if "not a functioning page" in error_text.lower():
+            raise CheckError("Product page does not exist")
 
     async def handle_pincode_modal():
         modal = await page.query_selector("div.modal-content.bg-transparent")
