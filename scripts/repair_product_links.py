@@ -7,6 +7,7 @@ import asyncio
 import argparse
 from contextlib import redirect_stdout
 import io
+import json
 import os
 import re
 import sys
@@ -17,7 +18,7 @@ if __package__ is None and __name__ == "__main__":
 
 import aiohttp
 from playwright.async_api import async_playwright
-from scripts import config, scraper
+from scripts import config
 from scripts.validation import configured_product_url, product_url
 
 BLUEBERRY_ID = "1758622977117"
@@ -60,6 +61,51 @@ def match_product_label(names_by_url, expected_name):
     return matches[0]
 
 
+def public_identity(url, headings, documents):
+    headings = {" ".join(name.split()) for name in headings if name.strip()}
+    if len(headings) == 1:
+        return next(iter(headings))
+    names = set()
+    def visit(value):
+        if isinstance(value, list):
+            for item in value: visit(item)
+        elif isinstance(value, dict):
+            types = value.get('@type', [])
+            types = [types] if isinstance(types, str) else types
+            if 'Product' in types and isinstance(value.get('name'), str):
+                link = value.get('url')
+                try:
+                    matches_url = not link or product_url(link) == url
+                except ValueError:
+                    matches_url = False
+                if matches_url and value['name'].strip():
+                    names.add(" ".join(value['name'].split()))
+            for item in value.values(): visit(item)
+    for document in documents: visit(document)
+    if len(names) != 1:
+        raise RuntimeError('Public product identity is unavailable or ambiguous')
+    return next(iter(names))
+
+
+async def public_product_name(page, url):
+    response = await page.goto(url, timeout=30000)
+    if response is not None and response.status >= 400:
+        raise RuntimeError('Public product page is unavailable')
+    if product_url(page.url) != url:
+        raise RuntimeError('Public product page changed identity')
+    for attempt in range(2):
+        headings = await page.locator('h1.product-name').all_text_contents()
+        documents = []
+        for raw in await page.locator('script[type="application/ld+json"]').all_text_contents():
+            try: documents.append(json.loads(raw))
+            except (ValueError, TypeError): pass
+        try:
+            return public_identity(url, headings, documents)
+        except RuntimeError:
+            if attempt: raise
+            await page.wait_for_timeout(1000)
+
+
 async def resolve_copied_url(product):
     candidates = copied_url_candidates(product['url'])
     names = {}
@@ -71,11 +117,9 @@ async def resolve_copied_url(product):
                 for url in candidates:
                     page = await context.new_page()
                     try:
-                        _, names[url] = await scraper.check_product_availability(
-                            url, config.PINCODE, page=page, skip_pincode=False
-                        )
+                        names[url] = await public_product_name(page, url)
                     except Exception:
-                        continue  # An unavailable candidate is never a match.
+                        continue
                     finally:
                         await page.close()
             finally:
@@ -127,27 +171,24 @@ async def read_products(session):
 
 
 async def verify_product_pages(products, repairs):
-    replacements = {str(after["id"]): after for _, after in repairs}
+    """Verify public identity only; no recipient data or delivery locations."""
+    replacements = {str(after['id']): after for _, after in repairs}
     unverified = set()
-    # The existing scraper logs public-page details. Keep these transient
-    # diagnostics in memory so this repair does not export selected products.
     with redirect_stdout(io.StringIO()):
         async with async_playwright() as pw:
-            browser = await pw.chromium.launch(headless=True, args=["--no-sandbox"])
+            browser = await pw.chromium.launch(headless=True, args=['--no-sandbox'])
             try:
                 context = await browser.new_context()
                 semaphore = asyncio.Semaphore(3)
                 async def verify(product):
                     async with semaphore:
-                        candidate = replacements.get(str(product["id"]), product)
-                        url = product_url(candidate["url"])
+                        candidate = replacements.get(str(product['id']), product)
                         page = await context.new_page()
                         try:
-                            _, name = await scraper.check_product_availability(
-                                url, config.PINCODE, page=page, skip_pincode=False
-                            )
-                            if url == BLUEBERRY_URL and " ".join(name.split()) != BLUEBERRY_NAME:
-                                raise RuntimeError("Replacement product identity did not match")
+                            url = product_url(candidate['url'])
+                            name = await public_product_name(page, url)
+                            if url == BLUEBERRY_URL and name != BLUEBERRY_NAME:
+                                raise RuntimeError('Replacement product identity did not match')
                         except Exception:
                             unverified.add(str(product['id']))
                         finally:

@@ -90,6 +90,19 @@ def test_copied_candidates_never_follow_foreign_origins_or_variant_parameters(va
         repair.copied_url_candidates(value)
 
 
+def test_public_identity_uses_product_metadata_without_delivery_location():
+    url = repair.BLUEBERRY_URL
+    assert repair.public_identity(url, [], [{'@graph': [
+        {'@type': 'Product', 'url': url, 'name': repair.BLUEBERRY_NAME},
+        {'@type': 'Product', 'url': 'https://shop.amul.com/en/product/other', 'name': 'Other'},
+    ]}]) == repair.BLUEBERRY_NAME
+    with pytest.raises(RuntimeError, match='unavailable or ambiguous'):
+        repair.public_identity(url, [], [{'@type': 'WebSite', 'name': 'Amul'}])
+    with pytest.raises(RuntimeError, match='unavailable or ambiguous'):
+        repair.public_identity(url, [], [
+            {'@type': 'Product', 'name': 'One'}, {'@type': 'Product', 'name': 'Two'}])
+
+
 class Response:
     def __init__(self, data, status=200):
         self.data, self.status = data, status
@@ -104,6 +117,7 @@ class Session:
     async def __aenter__(self): return self
     async def __aexit__(self, *args): pass
     def get(self, url): return Response(self.products)
+
     def put(self, url, *, params, headers, json):
         self.puts.append((params, json))
         if self.apply:
