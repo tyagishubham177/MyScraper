@@ -4,6 +4,8 @@ import ssl
 from html import escape
 from email.mime.text import MIMEText
 
+SMTP_TIMEOUT_SECONDS = 60
+
 # ——————————————————————————————————————————
 # Config from GitHub Secrets / .env (assumed to be in config.py or environment)
 # F2S_KEY   = os.getenv("F2S_API_KEY")
@@ -472,7 +474,7 @@ async def send_email_notification(
     username: str | None = None,
     password: str | None = None,
 ) -> dict[str, bool]:
-    """Return SMTP acceptance per recipient; transport failures propagate."""
+    """Return confirmed SMTP acceptance; failures before confirmation propagate."""
 
     if not (host and sender and recipients and all(recipients)):
         print("⚠️ Essential email configuration or recipient list is missing or invalid.")
@@ -484,16 +486,33 @@ async def send_email_notification(
         msg["From"] = sender
         msg["To"] = sender
         transport = smtplib.SMTP_SSL if port == 465 else smtplib.SMTP
-        options = {"timeout": 20}
+        options = {"timeout": SMTP_TIMEOUT_SECONDS}
         if port == 465:
             options["context"] = ssl.create_default_context()
-        with transport(host, port, **options) as server:
-            if port != 465:
-                server.starttls(context=ssl.create_default_context())
-            if username and password:
-                server.login(username, password)
-            refused = server.sendmail(sender, recipients, msg.as_string()) or {}
-        return {email: email not in refused for email in recipients}
+        phase = "connect/greeting"
+        accepted = None
+        try:
+            with transport(host, port, **options) as server:
+                if port != 465:
+                    phase = "TLS"
+                    server.starttls(context=ssl.create_default_context())
+                if username and password:
+                    phase = "authentication"
+                    server.login(username, password)
+                phase = "message submission"
+                refused = server.sendmail(sender, recipients, msg.as_string()) or {}
+                accepted = {email: email not in refused for email in recipients}
+                phase = "cleanup"
+        except Exception as error:
+            # A sendmail return confirms the final SMTP reply. A later QUIT or
+            # close failure cannot undo acceptance and must not trigger resend.
+            if accepted is not None:
+                print(f"SMTP cleanup failed ({type(error).__name__}); prior acceptance confirmed; no resend.")
+                return accepted
+            outcome = "unconfirmed" if phase == "message submission" else "not submitted"
+            print(f"SMTP failure during {phase} ({type(error).__name__}); acceptance {outcome}; no automatic retry.")
+            raise
+        return accepted
 
     return await asyncio.to_thread(_send)
 
