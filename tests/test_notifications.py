@@ -22,11 +22,20 @@ def smtp_transport(monkeypatch):
     class SMTP:
         def __init__(self, host, port, **kwargs):
             events.update(host=host, port=port, **kwargs)
+            if events.get('connect_error'): raise events['connect_error']
         def __enter__(self): return self
-        def __exit__(self, *args): events['closed'] = True
-        def starttls(self, **kwargs): events['tls'] = kwargs['context']
-        def login(self, user, password): events['login'] = (user, password)
+        def __exit__(self, *args):
+            events['closed'] = True
+            if events.get('cleanup_error'): raise events['cleanup_error']
+        def starttls(self, **kwargs):
+            events['tls'] = kwargs['context']
+            if events.get('tls_error'): raise events['tls_error']
+        def login(self, user, password):
+            events['login'] = (user, password)
+            if events.get('auth_error'): raise events['auth_error']
         def sendmail(self, sender, recipients, message):
+            events['send_attempts'] = events.get('send_attempts', 0) + 1
+            if events.get('submission_error'): raise events['submission_error']
             events['sent'] = (sender, recipients, message)
             return events.get('refused', {})
     monkeypatch.setattr(smtplib, 'SMTP', SMTP)
@@ -46,7 +55,7 @@ def send(**overrides):
 def test_send_email_notification(smtp_transport, port):
     result = send(port=port)
     assert result == {'a@example.invalid': True, 'b@example.invalid': True}
-    assert smtp_transport['timeout'] == 20
+    assert smtp_transport['timeout'] == 60
     assert smtp_transport['closed']
     assert smtp_transport['login'] == ('user', 'password')
     assert (('context' in smtp_transport) if port == 465 else ('tls' in smtp_transport))
@@ -69,6 +78,35 @@ def test_send_email_connect_failure_propagates(monkeypatch, error):
 def test_send_email_partial_refusal(smtp_transport):
     smtp_transport['refused'] = {'b@example.invalid': (550, 'rejected')}
     assert send() == {'a@example.invalid': True, 'b@example.invalid': False}
+
+
+@pytest.mark.parametrize('field, phase', [
+    ('connect_error', 'connect/greeting'), ('tls_error', 'TLS'),
+    ('auth_error', 'authentication'), ('submission_error', 'message submission'),
+])
+def test_transport_timeout_reports_phase_without_retry_or_sensitive_details(smtp_transport, capsys, field, phase):
+    error = smtplib.SMTPServerDisconnected('private-recipient@example.invalid password-value timed out')
+    smtp_transport[field] = error
+    with pytest.raises(smtplib.SMTPServerDisconnected) as caught:
+        send()
+    assert caught.value is error
+    assert smtp_transport.get('send_attempts', 0) == (1 if field == 'submission_error' else 0)
+    output = capsys.readouterr().out
+    assert f'during {phase}' in output
+    outcome = 'unconfirmed' if field == 'submission_error' else 'not submitted'
+    assert outcome in output
+    assert 'no automatic retry' in output
+    assert 'private-recipient' not in output and 'password-value' not in output
+
+
+@pytest.mark.parametrize('error', [TimeoutError('deadline'), smtplib.SMTPResponseException(421, b'closing')])
+def test_cleanup_failure_preserves_confirmed_partial_acceptance_without_resend(smtp_transport, capsys, error):
+    smtp_transport['cleanup_error'] = error
+    smtp_transport['refused'] = {'b@example.invalid': (550, 'rejected')}
+    assert send() == {'a@example.invalid': True, 'b@example.invalid': False}
+    assert smtp_transport['send_attempts'] == 1
+    assert smtp_transport['closed']
+    assert 'prior acceptance confirmed; no resend' in capsys.readouterr().out
 
 
 def test_send_email_sendmail_exception(monkeypatch, smtp_transport):
