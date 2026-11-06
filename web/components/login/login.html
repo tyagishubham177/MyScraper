@@ -1,62 +1,76 @@
 <div id="login-popup" style="display: none;">
-  <div class="particles"></div>
-  <div class="login-container">
-    <div class="login-header">
-      <div class="login-icon">
-        <i data-lucide="user"></i>
-      </div>
-      <h2 class="login-title">Welcome Back</h2>
-      <p class="login-subtitle">Sign in to your account</p>
+  <div class="login-shell">
+    <div class="login-illustration">
+      <div class="login-badge">New Look</div>
+      <h1>Atlas Monitor</h1>
+      <p>Stay ahead of every drop with the new control surface. Switch roles, review runs, and manage subscriptions with a refreshed visual language.</p>
+      <ul>
+        <li><i data-lucide="sparkles"></i>Smarter sign-in and instant context</li>
+        <li><i data-lucide="shield"></i>Role-aware controls at a glance</li>
+        <li><i data-lucide="zap"></i>Lightweight, responsive experience</li>
+      </ul>
     </div>
-
-    <div class="login-role-selector">
-      <button id="user-role-btn" class="active">
-        <i data-lucide="user"></i>
-        <span>User</span>
-      </button>
-      <button id="admin-role-btn">
-        <i data-lucide="shield"></i>
-        <span>Admin</span>
-      </button>
-    </div>
-
-    <div id="admin-section" class="hidden">
-      <div class="input-icon-wrapper">
-        <i data-lucide="mail" class="input-icon"></i>
-        <input type="email" id="admin-email" placeholder="Enter your email" class="enhanced-input">
+    <div class="login-panel">
+      <div class="login-header">
+        <div class="login-icon">
+          <i data-lucide="radar"></i>
+        </div>
+        <div>
+          <p class="eyebrow">Reimagined Console</p>
+          <h2 class="login-title">Sign in to continue</h2>
+        </div>
       </div>
-      <div class="input-icon-wrapper with-toggle">
-        <i data-lucide="lock" class="input-icon"></i>
-        <input type="password" id="admin-password" placeholder="Enter your password" class="enhanced-input">
-        <i id="admin-password-toggle" data-lucide="eye" class="password-toggle"></i>
-      </div>
-      <p id="admin-error-message" class="error-message hidden"></p>
-      <button id="admin-login-btn" class="enhanced-btn btn-success">
-        <i data-lucide="log-in"></i>
-        <span>Sign In</span>
-      </button>
-    </div>
 
-    <div id="user-section">
-      <h4 class="user-login-header">Enter your email to login</h4>
-      <div class="input-icon-wrapper" id="user-email-wrapper">
-        <i data-lucide="mail" class="input-icon"></i>
-        <input type="email" id="user-email" placeholder="Enter your email address" class="enhanced-input">
-      </div>
-      <button id="user-login-btn" class="enhanced-btn btn-primary">
-        <i data-lucide="log-in"></i>
-        <span>Login / Check Email</span>
-      </button>
-      <p id="user-error-message" class="error-message hidden"></p>
-      <div id="user-contact-links" class="hidden">
-        <button id="user-mail-btn" class="contact-link-btn btn-outline-primary">
-          <i data-lucide="mail"></i>
-          <span>Email Admin</span>
+      <div class="login-role-selector">
+        <button id="user-role-btn" class="active">
+          <i data-lucide="user"></i>
+          <span>User</span>
         </button>
-        <a href="#" id="user-reddit-link" class="contact-link-btn btn-outline-danger">
-          <i data-lucide="message-circle"></i>
-          <span>Message Admin</span>
-        </a>
+        <button id="admin-role-btn">
+          <i data-lucide="shield"></i>
+          <span>Admin</span>
+        </button>
+      </div>
+
+      <div id="admin-section" class="hidden">
+        <label class="field-label" for="admin-email">Admin access</label>
+        <div class="input-icon-wrapper">
+          <i data-lucide="mail" class="input-icon"></i>
+          <input type="email" id="admin-email" placeholder="Work email" class="enhanced-input">
+        </div>
+        <div class="input-icon-wrapper with-toggle">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" id="admin-password" placeholder="Password" class="enhanced-input">
+          <i id="admin-password-toggle" data-lucide="eye" class="password-toggle"></i>
+        </div>
+        <p id="admin-error-message" class="error-message hidden"></p>
+        <button id="admin-login-btn" class="enhanced-btn btn-success">
+          <i data-lucide="log-in"></i>
+          <span>Enter Console</span>
+        </button>
+      </div>
+
+      <div id="user-section">
+        <label class="field-label" for="user-email">Quick user access</label>
+        <div class="input-icon-wrapper" id="user-email-wrapper">
+          <i data-lucide="mail" class="input-icon"></i>
+          <input type="email" id="user-email" placeholder="name@email.com" class="enhanced-input">
+        </div>
+        <button id="user-login-btn" class="enhanced-btn btn-primary">
+          <i data-lucide="log-in"></i>
+          <span>Continue</span>
+        </button>
+        <p id="user-error-message" class="error-message hidden"></p>
+        <div id="user-contact-links" class="hidden contact-actions">
+          <button id="user-mail-btn" class="contact-link-btn btn-outline-primary">
+            <i data-lucide="mail"></i>
+            <span>Email Admin</span>
+          </button>
+          <a href="#" id="user-reddit-link" class="contact-link-btn btn-outline-danger">
+            <i data-lucide="message-circle"></i>
+            <span>Message Admin</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>
