@@ -119,49 +119,74 @@ export async function initUserSubscriptionsUI() {
 
   function createSubscribedItem(product, sub, paused = false) {
     const li = document.createElement('li');
-    li.className = 'list-group-item product-list-item-mobile' + (paused ? ' paused' : '');
+    li.className = 'list-group-item bg-glass border-glass rounded-4 p-3 d-flex flex-column gap-3 position-relative overflow-hidden' + (paused ? ' opacity-50' : '');
     li.dataset.productId = product.id;
     li.dataset.name = product.name.toLowerCase();
+    
+    // Add glowing border effect if active
+    if (!paused) {
+      const glow = document.createElement('div');
+      glow.className = 'position-absolute top-0 start-0 w-100 h-100 pointer-events-none rounded-4';
+      glow.style.boxShadow = 'inset 0 0 20px rgba(96, 165, 250, 0.1)';
+      glow.style.border = '1px solid rgba(96, 165, 250, 0.3)';
+      li.appendChild(glow);
+    }
 
     const details = document.createElement('div');
-    details.className = 'product-details mb-2';
-    const headingRow = document.createElement('div');
-    headingRow.className = 'product-heading-row';
+    details.className = 'product-details d-flex flex-column z-1';
+    
+    const nameWrapper = document.createElement('div');
+    nameWrapper.className = 'product-heading-row d-flex align-items-center justify-content-between mb-1';
+    
     const nameEl = document.createElement('h5');
-    nameEl.className = 'product-name mb-0';
+    nameEl.className = 'product-name mb-0 fw-semibold text-white tracking-wide';
     nameEl.textContent = product.name;
-    const statusPill = document.createElement('span');
-    statusPill.className = 'subscription-status ' + (paused ? 'is-paused' : 'is-active');
-    statusPill.textContent = paused ? 'Paused' : 'Active';
+    
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `subscription-status badge rounded-pill ${paused ? 'bg-secondary text-light is-paused' : 'bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50 is-active'}`;
+    statusBadge.style.fontSize = '10px';
+    statusBadge.textContent = paused ? 'SUSPENDED' : 'ACTIVE';
+    
+    nameWrapper.appendChild(nameEl);
+    nameWrapper.appendChild(statusBadge);
+
     const linkEl = document.createElement('a');
     const safeUrl = sanitizeUrl(product.url);
     linkEl.href = safeUrl || '#';
     linkEl.target = '_blank';
-    linkEl.className = 'product-url d-block small';
+    linkEl.className = 'product-url d-inline-flex align-items-center gap-1 text-muted text-decoration-none small hover-white transition-all';
     linkEl.title = product.url;
-    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
-    linkEl.textContent = `${displayUrl} `;
+    const displayUrl = product.url.length > 35 ? product.url.substring(0, 32) + '...' : product.url;
+    
     const icon = document.createElement('i');
     icon.setAttribute('data-lucide', 'external-link');
-    icon.className = 'lucide-xs';
+    icon.style.width = '14px';
+    icon.style.height = '14px';
+    
+    linkEl.textContent = displayUrl;
     linkEl.appendChild(icon);
-    headingRow.appendChild(nameEl);
-    headingRow.appendChild(statusPill);
-    details.appendChild(headingRow);
+    
+    details.appendChild(nameWrapper);
     details.appendChild(linkEl);
 
     const controls = document.createElement('div');
-    controls.className = 'product-controls d-flex align-items-center';
+    controls.className = 'product-controls d-flex align-items-center justify-content-between pt-2 border-top border-glass z-1';
+    
     controls.innerHTML = `
-      <div class="time-slot-group me-1">
-        <input type="time" class="form-control form-control-sm sub-start" value="${sub.start_time || '00:00'}">
+      <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center bg-dark bg-opacity-50 rounded-pill px-2 py-1 border border-glass time-slot-group">
+          <i data-lucide="sun" class="text-warning" style="width:14px;height:14px;"></i>
+          <input type="time" class="form-control form-control-sm sub-start bg-transparent border-0 text-white shadow-none fs-7 p-0 ms-2" value="${sub.start_time || '00:00'}" style="width:auto; font-family:var(--font-display);">
+        </div>
+        <span class="text-muted small">to</span>
+        <div class="d-flex align-items-center bg-dark bg-opacity-50 rounded-pill px-2 py-1 border border-glass time-slot-group">
+          <i data-lucide="moon" class="text-info" style="width:14px;height:14px;"></i>
+          <input type="time" class="form-control form-control-sm sub-end bg-transparent border-0 text-white shadow-none fs-7 p-0 ms-2" value="${sub.end_time || '23:59'}" style="width:auto; font-family:var(--font-display);">
+        </div>
       </div>
-      <div class="time-slot-group me-2">
-        <input type="time" class="form-control form-control-sm sub-end" value="${sub.end_time || '23:59'}">
-      </div>
-      <div class="control-actions">
-        <button class="btn btn-sm btn-outline-secondary pause-btn btn-icon"><i data-lucide="${paused ? 'play' : 'pause'}"></i></button>
-        <button class="btn btn-sm btn-outline-danger unsub-btn btn-icon"><i data-lucide="x"></i></button>
+      <div class="d-flex gap-2 control-actions">
+        <button class="btn btn-sm ${paused ? 'btn-outline-success' : 'btn-outline-warning'} rounded-circle pause-btn p-2 d-flex align-items-center justify-content-center" title="${paused ? 'Resume Tracking' : 'Suspend Tracking'}"><i data-lucide="${paused ? 'play' : 'pause'}" style="width:16px;height:16px;"></i></button>
+        <button class="btn btn-sm btn-outline-danger rounded-circle unsub-btn p-2 d-flex align-items-center justify-content-center" title="Remove Asset"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
       </div>`;
 
     li.appendChild(details);
@@ -171,33 +196,44 @@ export async function initUserSubscriptionsUI() {
 
   function createAllProductItem(product) {
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.className = 'list-group-item bg-glass border-glass rounded-4 p-3 d-flex justify-content-between align-items-center gap-3 transition-all hover-glow';
     li.dataset.productId = product.id;
     li.dataset.name = product.name.toLowerCase();
 
     const info = document.createElement('div');
+    info.className = 'd-flex flex-column overflow-hidden';
+    
     const strong = document.createElement('strong');
+    strong.className = 'text-white fw-medium text-truncate mb-1';
     strong.textContent = product.name;
+    
     const link = document.createElement('small');
-    link.className = 'd-block text-muted';
-    const displayUrl = product.url.length > 30 ? product.url.substring(0, 27) + '...' : product.url;
+    link.className = 'd-flex align-items-center gap-1 text-muted text-truncate';
+    
+    const displayUrl = product.url.length > 40 ? product.url.substring(0, 37) + '...' : product.url;
     const anchor = document.createElement('a');
     const safeUrl = sanitizeUrl(product.url);
     anchor.href = safeUrl || '#';
     anchor.target = '_blank';
     anchor.title = product.url;
-    anchor.textContent = `${displayUrl} `;
+    anchor.className = 'text-muted text-decoration-none hover-white';
+    anchor.textContent = displayUrl;
+    
     const icon2 = document.createElement('i');
     icon2.setAttribute('data-lucide', 'external-link');
-    icon2.className = 'lucide-small';
+    icon2.style.width = '12px';
+    icon2.style.height = '12px';
+    
     anchor.appendChild(icon2);
     link.appendChild(anchor);
+    
     info.appendChild(strong);
     info.appendChild(link);
 
     const btn = document.createElement('button');
-    btn.className = 'btn btn-sm btn-outline-primary sub-btn';
-    btn.innerHTML = '<i data-lucide="plus"></i>';
+    btn.className = 'btn btn-sm btn-primary rounded-circle sub-btn p-2 d-flex align-items-center justify-content-center flex-shrink-0';
+    btn.title = 'Track Asset';
+    btn.innerHTML = '<i data-lucide="plus" style="width:18px;height:18px;"></i>';
 
     li.appendChild(info);
     li.appendChild(btn);

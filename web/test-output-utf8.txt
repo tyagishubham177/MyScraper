@@ -1,0 +1,287 @@
+﻿
+> web-api@0.1.0 test
+> c8 --reporter=text --reporter=lcov node --test
+
+Attempting lucide.createIcons()
+lucide.createIcons() called successfully.
+Error fetching recipients: TypeError: recipients.forEach is not a function
+    at renderRecipientsList (file:///D:/Coding%20Projects/React/MyScraper/web/components/recipients-ui/recipients-ui.js:90:14)
+    at fetchRecipients (file:///D:/Coding%20Projects/React/MyScraper/web/components/recipients-ui/recipients-ui.js:140:5)
+Γ£ö handler redirects to index when no token (56.9182ms)
+Γ£ö initializes logout handler when token present (21.1775ms)
+Γ£ö rejects non-GET (259.9905ms)
+Γ£ö requires admin (6.5085ms)
+Γ£ö missing id (4.5563ms)
+Γ£ö fetch error propagates (12.1667ms)
+Γ£ö successful fetch sends zip (7.4808ms)
+Γ£ö missing secret returns 500 (229.0953ms)
+Γ£ö missing auth header returns 401 (3.1051ms)
+Γ£ö invalid token returns 401 (4.047ms)
+Γ£ö non admin role returns 403 (3.4161ms)
+Γ£ö valid admin returns decoded object (3.6655ms)
+Error fetching legacy products from KV: Error: kv down
+    at Object.get (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:20:25)
+    at listProducts (file:///D:/Coding%20Projects/React/MyScraper/web/api/_kv-helpers.js:214:35)
+    at async handlePost (file:///D:/Coding%20Projects/React/MyScraper/web/api/products.js?1773673954085:61:29)
+    at async Module.handler (file:///D:/Coding%20Projects/React/MyScraper/web/api/products.js?1773673954085:164:7)
+    at async TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:31:3)
+    at async Test.run (node:internal/test_runner/test:1125:7)
+    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
+Error in POST /api/products: Error: kv down
+    at Object.get (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:20:25)
+    at listProducts (file:///D:/Coding%20Projects/React/MyScraper/web/api/_kv-helpers.js:214:35)
+    at async handlePost (file:///D:/Coding%20Projects/React/MyScraper/web/api/products.js?1773673954085:61:29)
+    at async Module.handler (file:///D:/Coding%20Projects/React/MyScraper/web/api/products.js?1773673954085:164:7)
+    at async TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:31:3)
+    at async Test.run (node:internal/test_runner/test:1125:7)
+    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
+Error fetching legacy recipients from KV: Error: kv down
+    at Object.get (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:44:25)
+    at listRecipients (file:///D:/Coding%20Projects/React/MyScraper/web/api/_kv-helpers.js:143:35)
+    at async Module.handler (file:///D:/Coding%20Projects/React/MyScraper/web/api/recipients.js?1773673954369:61:35)
+    at async TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:55:3)
+    at async Test.run (node:internal/test_runner/test:1125:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+Error in POST /api/recipients: Error: kv down
+    at Object.get (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:44:25)
+    at listRecipients (file:///D:/Coding%20Projects/React/MyScraper/web/api/_kv-helpers.js:143:35)
+    at async Module.handler (file:///D:/Coding%20Projects/React/MyScraper/web/api/recipients.js?1773673954369:61:35)
+    at async TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:55:3)
+    at async Test.run (node:internal/test_runner/test:1125:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+Error fetching legacy subscriptions from KV: Error: kv down
+    at Object.get (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:76:15)
+    at listSubscriptions (file:///D:/Coding%20Projects/React/MyScraper/web/api/_kv-helpers.js:281:35)
+    at async handlePost (file:///D:/Coding%20Projects/React/MyScraper/web/api/subscriptions.js?1773673954375:41:19)
+    at async Module.handler (file:///D:/Coding%20Projects/React/MyScraper/web/api/subscriptions.js?1773673954375:130:7)
+    at async TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:88:3)
+    at async Test.run (node:internal/test_runner/test:1125:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+Error in POST /api/subscriptions: Error: kv down
+    at Object.get (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:76:15)
+    at listSubscriptions (file:///D:/Coding%20Projects/React/MyScraper/web/api/_kv-helpers.js:281:35)
+    at async handlePost (file:///D:/Coding%20Projects/React/MyScraper/web/api/subscriptions.js?1773673954375:41:19)
+    at async Module.handler (file:///D:/Coding%20Projects/React/MyScraper/web/api/subscriptions.js?1773673954375:130:7)
+    at async TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/api-kv-failures.test.js:88:3)
+    at async Test.run (node:internal/test_runner/test:1125:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+Γ£ö POST /api/products returns 500 when kv.get fails and avoids kv.set (282.7478ms)
+Γ£ö POST /api/recipients surfaces kv errors without writing empty data (6.2669ms)
+Γ£ö POST /api/subscriptions reports kv failure without persisting data (6.2925ms)
+Γ£ö POST /api/recipients rejects case-insensitive duplicates without writing data (8.2425ms)
+Γ£ö rejects non POST (332.7314ms)
+Γ£ö missing credentials (8.7841ms)
+Γ£ö invalid email (6.5803ms)
+Γ£ö successful login (12.6423ms)
+Γ£ö admin login ignores email casing (9.2346ms)
+Γ£ö missing server config returns 500 (8.5589ms)
+Γ£ö invalid password triggers lockout (10.1073ms)
+Γ£ö locked account returns wait time (7.3796ms)
+Γ£ö user login matches email case-insensitively (11.2244ms)
+Γ£ö user login succeeds when recipients stored in hash (10.2092ms)
+Γ£ö rejects non-GET (245.0457ms)
+Γ£ö requires admin (7.4172ms)
+Γ£ö missing id (5.2116ms)
+Γ£ö fetch error (6.3972ms)
+Γ£ö successful fetch sends zip (11.9105ms)
+Γ£ö API endpoint constants are defined (2.4908ms)
+Attempting lucide.createIcons()
+lucide.createIcons() called successfully.
+Γ£ö initIcons runs lucide and tooltips (11.598ms)
+lucide not ready, retrying initLucideIcons. Retries left: 4
+Γ£ö registers DOMContentLoaded handler (79.3424ms)
+Γ£ö DOMContentLoaded triggers login flow (13.4151ms)
+lucide not ready, retrying initLucideIcons. Retries left: 3
+lucide not ready, retrying initLucideIcons. Retries left: 2
+lucide not ready, retrying initLucideIcons. Retries left: 1
+lucide not ready, retrying initLucideIcons. Retries left: 0
+lucide.createIcons() not available after multiple retries.
+Γ£ö redirects to admin when token stored (15.1664ms)
+Γ£ö redirects to user page when user email stored (6.1716ms)
+Γ£ö shows login popup when no credentials (8.5919ms)
+Γ£ö fetches login html when popup missing (6.1ms)
+Γ£ö admin role button shows admin section (4.3651ms)
+Γ£ö user role button shows user section (4.9222ms)
+Γ£ö admin login with empty fields shows error (6.0882ms)
+Γ£ö admin login shows countdown on lockout (6.5025ms)
+Γ£ö admin login stores normalized and display email (4.5368ms)
+Γ£ö user login blank email shows error (10.4923ms)
+Γ£ö user login success redirects (13.0808ms)
+Γ£ö user login stores normalized and display email (5.3349ms)
+Γ£û user mail button opens gmail on desktop (4.7601ms)
+Γ£ö user reddit link opens compose url (4.6223ms)
+lucide not ready, retrying initLucideIcons. Retries left: 4
+Error fetching products: TypeError: window.fetchAPI is not a function
+    at fetchProducts (file:///D:/Coding%20Projects/React/MyScraper/web/components/products-ui/products-ui.js:125:35)
+    at initProductsUI (file:///D:/Coding%20Projects/React/MyScraper/web/components/products-ui/products-ui.js:274:3)
+    at Object.DOMContentLoaded (file:///D:/Coding%20Projects/React/MyScraper/web/components/main/main.js?1773673954291:16:3)
+    at TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/main.test.js:87:29)
+    at async Test.run (node:internal/test_runner/test:1125:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+Error fetching recipients: TypeError: response.json is not a function
+    at fetchAPI (file:///D:/Coding%20Projects/React/MyScraper/web/components/recipients-ui/recipients-ui.js:55:38)
+    at async fetchRecipients (file:///D:/Coding%20Projects/React/MyScraper/web/components/recipients-ui/recipients-ui.js:139:24)
+Γ£ö registers DOMContentLoaded handler (47.468ms)
+Γ£ö DOMContentLoaded triggers login popup (14.1381ms)
+lucide not ready, retrying initLucideIcons. Retries left: 3
+lucide not ready, retrying initLucideIcons. Retries left: 2
+lucide not ready, retrying initLucideIcons. Retries left: 1
+lucide not ready, retrying initLucideIcons. Retries left: 0
+lucide.createIcons() not available after multiple retries.
+Γ£ö initProductsUI attaches handler and fetches list (10.9637ms)
+Γ£ö handleAddProduct successful submission (4.3321ms)
+Γ£ö handleAddProduct shows error for missing fields (5.4711ms)
+Γ£ö renderProductsList creates list items (4.3594ms)
+Γ£ö delete button calls API and refreshes subscriptions (5.8231ms)
+Γ£ö edit modal populates fields on show (4.4783ms)
+Γ£ö save changes sends PUT and hides modal (4.827ms)
+Γ£ö fallback fetchAPI adds token and parses errors (3.569ms)
+Γ£ö initRecipientsUI attaches handler and fetches list (10.409ms)
+Γ£ö handleAddRecipient successful submission (4.835ms)
+Γ£ö handleAddRecipient shows error for empty email (8.9328ms)
+openSubscriptionModal function not found on window. Subscriptions UI cannot be opened.
+Γ£ö renderRecipientsList populates DOM (19.5989ms)
+Γ£ö delete button calls API and clears selection (4.3587ms)
+Γ£ö manage button opens modal when available (6.8959ms)
+Γ£ö manage button alerts when modal missing (6.615ms)
+Γ£ö close subscriptions clears state (12.9281ms)
+Error loading or parsing log for product summary (run 6): Error: Failed to fetch logs: 404
+    at file:///D:/Coding%20Projects/React/MyScraper/web/components/runs/runs.js:19:15
+Γ£ö parseScraperDecisionsFromLog extracts product statuses (5.6027ms)
+Γ£ö createSkeleton returns requested number of items (1.173ms)
+Γ£ö createAccordionItem builds markup with run info (3.6281ms)
+Γ£ö parseScraperDecisionsFromLog handles empty and irrelevant logs (0.5582ms)
+Γ£ö appendSummary renders product summary and triggers icon replace (0.9105ms)
+Γ£ö appendSummary handles empty decisions (0.3673ms)
+Γ£ö fetchScraperDecisions chooses correct log file (3.4975ms)
+Γ£ö fetchScraperDecisions falls back to alternative names (1.4756ms)
+Γ£ö loadOverview populates info and summary (3.5514ms)
+Γ£ö loadLogs fetches and filters log text (5.3248ms)
+Γ£ö loadArtifacts builds carousel and counter (4.9997ms)
+Γ£ö fetchRuns populates accordion and hooks events (7.2903ms)
+Γ£ö showLoader and hideLoader update elements (12.1911ms)
+Γ£ö fetchStatus populates status text (4.5287ms)
+Γ£ö test\stubs\@vercel\kv\index.js (267.6742ms)
+Γ£ö test\stubs\bcryptjs.js (223.9877ms)
+Γ£ö test\stubs\jsonwebtoken.js (246.1576ms)
+Γ£ö showToastNotification adds toast element (7.9735ms)
+Γ£ö form state helpers detect changes (2.8483ms)
+Γ£ö openSubscriptionModal fetches data and renders (32.0817ms)
+Γ£ö initSubscriptionsUI creates modal and save button (3.6927ms)
+Γ£ö saving subscription changes triggers API calls (10.8622ms)
+Γ£ö initBackground sets gradient (13.8033ms)
+Γ£ö initBackground logs error when missing (3.0871ms)
+Γ£ö initPage attaches handlers and calls helpers (4.86ms)
+Γ£ö user-main registers DOMContentLoaded handler (9.6639ms)
+Γ£ö redirects to index when no email (7.4507ms)
+Γ£ö renders products and empty state (6.3211ms)
+Γ£ö renders existing subscription (7.265ms)
+Γ£ö subscribe button posts to API and updates lists (15.8652ms)
+Γ£ö filterProducts hides unmatched items (5.5177ms)
+Γ£ö unsubscribe button deletes subscription and updates lists (5.531ms)
+Γ£û pause and resume toggle subscription state (14.4343ms)
+Γ£ö changing time inputs updates subscription (7.0108ms)
+Γ£ö escapeHTML escapes characters (2.9642ms)
+Γ£û formatRunDate formats ISO strings (3.6943ms)
+Γ£ö cleanLogText removes debug prefixes (1.3784ms)
+Γ£ö sanitizeUrl filters unsafe protocols (0.4032ms)
+Γ£ö extractCheckStockLog trims relevant section (0.4902ms)
+Γ£ö getStatusBadge renders badge html (0.6524ms)
+Γ£ö normalizeEmail lowercases and trims addresses (0.3874ms)
+Γä╣ tests 108
+Γä╣ suites 0
+Γä╣ pass 105
+Γä╣ fail 3
+Γä╣ cancelled 0
+Γä╣ skipped 0
+Γä╣ todo 0
+Γä╣ duration_ms 5924.9051
+
+Γ£û failing tests:
+
+test at test\login-ui.test.js:191:1
+Γ£û user mail button opens gmail on desktop (4.7601ms)
+  TypeError: Cannot set property navigator of #<Object> which has only a getter
+      at TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/login-ui.test.js:198:20)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+
+test at test\user-subscriptions.test.js:267:1
+Γ£û pause and resume toggle subscription state (14.4343ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert(li.className.includes('paused'))
+  
+      at TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/user-subscriptions.test.js:309:3)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at test\utils.test.js:12:1
+Γ£û formatRunDate formats ISO strings (3.6943ms)
+  AssertionError [ERR_ASSERTION]: '02-Jan-23, 08:34 PM' == '02-Jan-23, 03:04 PM'
+      at TestContext.<anonymous> (file:///D:/Coding%20Projects/React/MyScraper/web/test/utils.test.js:14:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '02-Jan-23, 08:34 PM',
+    expected: '02-Jan-23, 03:04 PM',
+    operator: '==',
+    diff: 'simple'
+  }
+-------------------------------|---------|----------|---------|---------|---------------------------
+File                           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s         
+-------------------------------|---------|----------|---------|---------|---------------------------
+All files                      |   69.65 |     62.7 |   77.01 |   69.65 |                           
+ api                           |   42.47 |    52.02 |   55.93 |   42.47 |                           
+  _kv-helpers.js               |   34.35 |    44.18 |      32 |   34.35 | ...29-338,341-368,371-386 
+  github.js                    |   39.13 |    58.82 |   66.66 |   39.13 | ...93,203-208,231-236,251 
+  login.js                     |   78.86 |    70.73 |      75 |   78.86 | ...8-79,93-95,106,109-122 
+  products.js                  |   36.93 |    41.17 |   66.66 |   36.93 | ...67-168,170-171,173-174 
+  recipients.js                |      50 |    43.47 |     100 |      50 | ...81-102,105-136,139-140 
+  subscriptions.js             |   38.73 |    33.33 |   66.66 |   38.73 | ...33-134,136-137,139-140 
+ components/admin-main         |      50 |       60 |     100 |      50 |                           
+  admin-main.js                |      50 |       60 |     100 |      50 | ...51,165,170-178,184-238 
+ components/config             |     100 |      100 |     100 |     100 |                           
+  config.js                    |     100 |      100 |     100 |     100 |                           
+ components/icons              |   88.57 |    85.71 |     100 |   88.57 |                           
+  icons.js                     |   88.57 |    85.71 |     100 |   88.57 | 9-10,26-27                
+ components/login              |   78.61 |    64.51 |   92.85 |   78.61 |                           
+  login-main.js                |     100 |      100 |     100 |     100 |                           
+  login.js                     |   78.08 |    63.33 |   92.85 |   78.08 | ...33,341,378-381,393-406 
+ components/main               |     100 |      100 |     100 |     100 |                           
+  main.js                      |     100 |      100 |     100 |     100 |                           
+ components/particles-config   |     100 |      100 |     100 |     100 |                           
+  particles-config.js          |     100 |      100 |     100 |     100 |                           
+ components/products-ui        |   77.18 |    57.77 |   88.88 |   77.18 |                           
+  products-ui.js               |   77.18 |    57.77 |   88.88 |   77.18 | ...40-342,348-351,372-375 
+ components/recipients-ui      |   89.24 |    70.21 |     100 |   89.24 |                           
+  recipients-ui.js             |   89.24 |    70.21 |     100 |   89.24 | ...93-194,208-210,216-218 
+ components/runs               |   88.28 |    63.88 |   84.61 |   88.28 |                           
+  runs.js                      |   88.28 |    63.88 |   84.61 |   88.28 | ...27-328,330-331,334-335 
+ components/status             |   89.47 |     87.5 |     100 |   89.47 |                           
+  status.js                    |   89.47 |     87.5 |     100 |   89.47 | 29-32                     
+ components/subscription       |   83.65 |    58.75 |   72.22 |   83.65 |                           
+  subscription-helpers.js      |    91.3 |    68.75 |   66.66 |    91.3 | 20,25-29                  
+  subscription-modal.js        |   81.65 |    55.55 |      75 |   81.65 | ...65,325,327-328,331-333 
+  subscriptions-ui.js          |     100 |      100 |     100 |     100 |                           
+ components/ui                 |   88.63 |      100 |     100 |   88.63 |                           
+  ui.js                        |   88.63 |      100 |     100 |   88.63 | 42-43,72-75,79-82         
+ components/user-subscriptions |   81.81 |    59.13 |    90.9 |   81.81 |                           
+  user-subscriptions.js        |   81.81 |    59.13 |    90.9 |   81.81 | ...33-350,362,379,398-399 
+ components/utils              |   86.02 |    77.77 |    90.9 |   86.02 |                           
+  utils.js                     |   86.02 |    77.77 |    90.9 |   86.02 | 2-14,28-29,83-84,123-124  
+ utils                         |     100 |      100 |     100 |     100 |                           
+  auth.js                      |     100 |      100 |     100 |     100 |                           
+-------------------------------|---------|----------|---------|---------|---------------------------

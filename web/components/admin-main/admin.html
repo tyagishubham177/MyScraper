@@ -16,10 +16,21 @@
       window.location.href = "../../index.html";
     }
   </script>
-  <!-- Login UI moved to components/login/login.html -->
-  <div id="particles-js" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0;"></div>
-  <div id="particles-js-bg"></div> <!-- Div for animated gradient background -->
-  <div id="main-app-content">
+  
+  <div id="particles-js" aria-hidden="true" style="position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0;"></div>
+  <div id="particles-js-bg" aria-hidden="true"></div>
+  
+  <div class="page-header">
+    <div class="container">
+      <img src="../../assets/brand_logo.png" alt="Amul Logo">
+      <h1>Admin Console</h1>
+      <button type="button" id="logout-btn" aria-label="Secure Logout">
+        <i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Logout
+      </button>
+    </div>
+  </div>
+
+  <div id="main-app-content" class="mt-5">
     <div class="container py-4">
       <div class="row"> <!-- Single row for the two main columns -->
         <div class="col-lg-5 mb-4"> <!-- Left Column for Amul Watchdog Control -->

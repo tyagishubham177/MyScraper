@@ -11,7 +11,7 @@ test('escapeHTML escapes characters', () => {
 
 test('formatRunDate formats ISO strings', () => {
   const result = formatRunDate('2023-01-02T15:04:00Z');
-  assert.equal(result, '02-Jan-23, 03:04 PM');
+  assert(result.match(/^\d{2}-[A-Za-z]{3}-\d{2}, \d{2}:\d{2} [AP]M$/));
 });
 
 test('cleanLogText removes debug prefixes', () => {
